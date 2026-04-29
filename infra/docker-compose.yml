@@ -1,0 +1,40 @@
+# Local development stack for Phase 1.
+# Frontend service is added in PR 2.
+# Redis + Celery arrive in Phase 4 — deliberately omitted here to keep the
+# resource footprint minimal during Phase 1 development.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-brewery}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brewery}
+      POSTGRES_DB: ${POSTGRES_DB:-brewery}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brewery}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://brewery:brewery@db:5432/brewery}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend/src:/app/src
+      - ../backend/alembic:/app/alembic
+      - ../backend/alembic.ini:/app/alembic.ini
+
+volumes:
+  db_data:

@@ -1,0 +1,90 @@
+# CLAUDE.md — engineering guidelines
+
+This file is read by Claude Code at the start of every session. It records the
+non-negotiable working rules for this repository.
+
+## Branch & PR hygiene
+
+- **One PR per logical change.** Do not stack unrelated work on the same branch.
+  If a task naturally splits (e.g. backend + frontend), open separate PRs on
+  separate branches.
+- **Each PR gets its own branch.** Branch names follow the pattern
+  `claude/<short-description>` (matches the harness convention) or
+  `<author>/<short-description>` for human authors.
+- **Open PRs as drafts** until the work is complete and locally verified. Mark
+  ready for review only after CI is green and the test plan in the PR body is
+  walked through.
+- **No force-push to shared branches.** If history reconciliation is needed
+  (e.g. unrelated histories, accidental commit), prefer a merge commit or a
+  fresh branch over rewriting history that someone else might already have
+  fetched.
+
+## Commits
+
+- **Conventional, why-focused messages.** First line ≤72 chars, imperative
+  mood. Body explains *why* the change is needed, not *what* the diff shows —
+  the diff already shows the what.
+- **Atomic commits.** Each commit should leave the repo in a working state.
+  Don't mix refactors with feature work in a single commit.
+- **No `--no-verify` and no signing bypass** unless the user explicitly asks
+  for it. If a hook fails, fix the underlying problem.
+
+## Code
+
+- **Edit existing files in preference to creating new ones.** Don't add a new
+  module when an existing one fits.
+- **Don't write speculative abstractions.** Wait for the third repetition
+  before extracting a helper. Three concrete sites are clearer than one
+  premature interface.
+- **Validate at boundaries only.** Trust internal code; don't pepper the
+  codebase with defensive checks for impossible states.
+- **Comments explain *why*, not *what*.** Skip comments where the code is
+  self-evident. Don't reference task IDs, PR numbers, or "added for X" — that
+  belongs in commit messages and rots in code.
+- **Match the surrounding style.** Read neighbouring files before introducing
+  a new pattern.
+
+## Testing
+
+- **New behaviour ships with a test.** If it can't be tested, say so in the PR
+  rather than skipping the test.
+- **Don't claim a UI feature works without exercising it in a browser.**
+  Type-checking and unit tests verify code correctness, not feature behaviour.
+- **Tests are not optional infrastructure.** Treat the test suite as
+  production code: clear names, no flakiness, no commented-out tests.
+
+## Reviewing your own work
+
+Before marking a PR ready or claiming a task complete:
+
+1. Read the diff end-to-end. Look for debug prints, dead code, half-finished
+   changes, accidental file deletions.
+2. Run the tests locally if practical. State explicitly in the PR body if you
+   couldn't.
+3. Check for security regressions (input validation, secret leakage, SQL
+   injection). Defaults: parameterised queries, no string concatenation into
+   SQL or shell, no logging of credentials.
+4. Verify the PR's stated test plan is achievable with what's checked in.
+
+## Domain rules (brewery-specific)
+
+- **All beer volumes are in hectoliters (hl).** 1 hl = 100 l. Never mix units
+  silently. If a number could be ambiguous, label it.
+- **Recipes are versioned and immutable.** Edits create a new row with
+  `version + 1`; existing Süde keep their original recipe link.
+- **Tank double-booking is prevented at the database level** via the GiST
+  `EXCLUDE` constraint on `tank_occupancy`. Application-level validation
+  (Phase 2) is defense in depth, not the only barrier.
+
+## Out of scope (do not build without explicit ask)
+
+These are recorded in `ROADMAP.md` §6.5 and repeated here so they don't drift
+back in:
+
+- Mobile app, multi-brewery, ingredient inventory, POS-as-a-service,
+  microservices, IoT tank sensors. Responsive web is enough; single tenant;
+  Excel import suffices.
+
+## When in doubt
+
+Ask. A 30-second clarifying question is cheaper than a 30-minute wrong turn.
