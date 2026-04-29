@@ -59,6 +59,10 @@ def session(engine) -> Iterator[Session]:
     with SessionLocal() as s:
         for table in reversed(Base.metadata.sorted_tables):
             s.execute(table.delete())
+        # Sequence values aren't reset by row deletion — restart so that
+        # tests asserting specific global_number values stay deterministic
+        # regardless of test ordering.
+        s.execute(text("ALTER SEQUENCE sud_global_seq RESTART WITH 1"))
         s.commit()
         seed(s)
         yield s

@@ -31,6 +31,12 @@ class Base(DeclarativeBase):
     pass
 
 
+# Postgres sequence backing the Sud.global_number column. Bound to
+# Base.metadata so create_all picks it up in tests; production goes through
+# the Alembic migration.
+SUD_GLOBAL_SEQ = Sequence("sud_global_seq", metadata=Base.metadata)
+
+
 class BeerStyle(str, enum.Enum):
     KELLERBIER = "kellerbier"
     WHEAT = "wheat"
@@ -100,9 +106,6 @@ class Tank(Base):
     stage: Mapped[TankStage] = mapped_column(String(32), nullable=False)
     capacity_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
-
-SUD_GLOBAL_SEQ = Sequence("sud_global_seq")
 
 
 class Sud(Base):
