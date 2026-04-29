@@ -168,7 +168,10 @@ def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(
     assert r.status_code == 201, r.text
     occ = r.json()["occupancies"][0]
     expected_end = start + timedelta(days=float(kellerbier.fermentation_duration_days))
-    assert occ["end_at"] == expected_end.isoformat()
+    # Compare parsed datetimes — Pydantic and datetime.isoformat disagree on
+    # whether UTC is "Z" or "+00:00" depending on versions; both are valid ISO.
+    actual_end = datetime.fromisoformat(occ["end_at"].replace("Z", "+00:00"))
+    assert actual_end == expected_end
 
 
 def test_create_sud_404_on_unknown_recipe(client) -> None:
