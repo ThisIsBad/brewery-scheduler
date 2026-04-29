@@ -16,13 +16,14 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from brewery_scheduler.models import Recipe, Sud, Tank
+from brewery_scheduler.models import Recipe, Sud, Tank, TankOccupancy
 
 
 def test_seed_creates_full_inventory(session) -> None:
     assert session.query(Tank).count() == 21
     assert session.query(Recipe).count() == 4
     assert session.query(Sud).count() == 3
+    assert session.query(TankOccupancy).count() == 6
 
 
 def test_health_endpoint(client) -> None:
