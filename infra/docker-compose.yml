@@ -1,7 +1,6 @@
-# Local development stack for Phase 1.
-# Frontend service is added in PR 2.
-# Redis + Celery arrive in Phase 4 — deliberately omitted here to keep the
-# resource footprint minimal during Phase 1 development.
+# Local development stack.
+# Redis + Celery arrive in Phase 4 — deliberately omitted to keep the resource
+# footprint minimal during Phase 1.
 
 services:
   db:
@@ -35,6 +34,24 @@ services:
       - ../backend/src:/app/src
       - ../backend/alembic:/app/alembic
       - ../backend/alembic.ini:/app/alembic.ini
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://backend:8000}
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend/src:/app/src
+      - ../frontend/index.html:/app/index.html
+      - ../frontend/vite.config.ts:/app/vite.config.ts
+      - ../frontend/tsconfig.json:/app/tsconfig.json
+      - ../frontend/tsconfig.app.json:/app/tsconfig.app.json
+      - ../frontend/tsconfig.node.json:/app/tsconfig.node.json
 
 volumes:
   db_data:
