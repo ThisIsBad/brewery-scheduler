@@ -115,24 +115,29 @@ def seed(session: Session) -> None:
     # Sample plan that exercises the full pipeline so the Gantt isn't empty
     # on first launch. The numbers don't reflect real brewing schedules —
     # they're just plausible enough that the brewmaster can drag them around
-    # to get a feel for the UX.
+    # to get a feel for the UX. style_year_number is 1 for each because each
+    # is the first of its style in this brew_date's year. global_number is
+    # left to the sud_global_seq default.
     kellerbier = Sud(
         recipe_id=by_style[BeerStyle.KELLERBIER].id,
         brew_date=today - timedelta(days=14),
         status=SudStatus.STORING,
         brewmaster="seed",
+        style_year_number=1,
     )
     weizen = Sud(
         recipe_id=by_style[BeerStyle.WHEAT].id,
         brew_date=today - timedelta(days=7),
         status=SudStatus.FERMENTING,
         brewmaster="seed",
+        style_year_number=1,
     )
     festbier = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
         brew_date=today + timedelta(days=7),
         status=SudStatus.PLANNED,
         brewmaster="seed",
+        style_year_number=1,
     )
     session.add_all([kellerbier, weizen, festbier])
     session.flush()

@@ -30,6 +30,7 @@ const SUD: Sud = {
   status: "fermenting",
   notes: null,
   brewmaster: "seed",
+  style_year_number: 17,
   occupancies: [
     {
       id: "occ-1",
@@ -49,8 +50,8 @@ describe("ScheduleBoard", () => {
     expect(screen.getByText(/30 hl/)).toBeInTheDocument();
   });
 
-  it("renders an item per occupancy with the recipe name", () => {
+  it("renders the Sud-Nr in the block title", () => {
     render(<ScheduleBoard tanks={[TANK]} sude={[SUD]} onMoveOccupancy={() => {}} />);
-    expect(screen.getByText(/Kellerbier/)).toBeInTheDocument();
+    expect(screen.getByText(/Kellerbier Nr\. 17\/2026 · Gärtank/)).toBeInTheDocument();
   });
 });

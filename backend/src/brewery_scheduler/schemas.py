@@ -56,6 +56,7 @@ class SudOut(BaseModel):
     status: SudStatus
     notes: str | None
     brewmaster: str | None
+    style_year_number: int
     occupancies: list[OccupancyOut] = []
 
 

@@ -58,6 +58,13 @@ export interface Sud {
   status: SudStatus;
   notes: string | null;
   brewmaster: string | null;
+  /**
+   * Sequential per (beer_style, year(brew_date)). Displayed on the Gantt
+   * as the brewmaster-facing Sud-Nr (e.g. "Kellerbier 17/2026").
+   *
+   * The internal global_number is intentionally not exposed to the API.
+   */
+  style_year_number: number;
   occupancies: Occupancy[];
 }
 

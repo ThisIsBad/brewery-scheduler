@@ -51,3 +51,15 @@ The Vite dev server proxies `/api/*` and `/health` to `VITE_BACKEND_URL` (defaul
 - All beer volumes in **hectoliters (hl)**; 1 hl = 100 l.
 - Recipes are **versioned and immutable**: edits create a new row with `version + 1`.
 - Tank double-booking is prevented at the database level via a GiST exclusion constraint (defense in depth beyond application-level validation, which arrives in Phase 2).
+- **Sud numbering**: every Sud has two numbers — a `global_number` (sequential across all years and styles, internal-only) and a `style_year_number` (sequential per beer style per year, shown to the brewmaster as `Kellerbier Nr. 17/2026`).
+
+## Go-live: set the starting global Sud number
+
+If the brewery already has a Sud counter from its previous workflow, set the offset before the first real brew is logged:
+
+```bash
+docker compose -f infra/docker-compose.yml exec backend \
+  python -m brewery_scheduler.set_global_seq 5472
+```
+
+The next inserted Sud gets `global_number = 5472`. The script refuses to set a value below the highest existing `global_number` to avoid duplicate-key errors. Run only once at go-live; the sequence advances on its own afterwards.

@@ -88,11 +88,14 @@ function buildItem(sud: Sud, occ: Occupancy): BoardItem {
     ? moment(occ.end_at)
     : start.clone().add(durationDays(sud, occ), "days");
   const color = STYLE_COLOR[sud.recipe.beer_style] ?? "#888";
+  const year = moment(sud.brew_date).year();
+  const sudNr = `Nr. ${sud.style_year_number}/${year}`;
+  const stage = STAGE_LABEL[occ.stage] ?? occ.stage;
 
   return {
     id: occ.id,
     group: occ.tank_id,
-    title: `${sud.recipe.name} · ${STAGE_LABEL[occ.stage] ?? occ.stage}`,
+    title: `${sud.recipe.name} ${sudNr} · ${stage}`,
     start_time: start,
     end_time: end,
     sudId: sud.id,
