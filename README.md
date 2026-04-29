@@ -6,27 +6,18 @@ See [`ROADMAP.md`](./ROADMAP.md) for full domain context, data model, and phased
 
 ## Status
 
-Phase 1 (Walking Skeleton) — in progress. See open PRs.
-
-This tranche covers the backend skeleton:
-- FastAPI application with three Phase 1 endpoints (no validation — that's Phase 2)
-- PostgreSQL schema via Alembic, including the `tank_occupancy` exclusion constraint
-- Seed script with the real tank inventory from `ROADMAP.md` §2.2
-- pytest smoke tests
-- `docker-compose` for local Postgres + backend
-
-The frontend (React + Gantt) lands in a follow-up PR.
+Phase 1 (Walking Skeleton). Backend tranche merged; frontend tranche in PR.
 
 ## Repository layout
 
 ```
 backend/   FastAPI + SQLAlchemy 2.x + Alembic
-frontend/  Vite + React + TypeScript (added in PR 2)
+frontend/  Vite + React + TypeScript + react-calendar-timeline
 infra/     docker-compose for local development
 docs/      Design notes (Gantt component evaluation, etc.)
 ```
 
-## Quick start (backend)
+## Quick start
 
 Requires Docker and Docker Compose.
 
@@ -35,14 +26,25 @@ cp infra/.env.example infra/.env
 docker compose -f infra/docker-compose.yml up --build
 ```
 
-Then in another terminal:
+Then in another terminal, apply migrations and seed:
 
 ```bash
 docker compose -f infra/docker-compose.yml exec backend alembic upgrade head
 docker compose -f infra/docker-compose.yml exec backend python -m brewery_scheduler.seed
 ```
 
-API available at <http://localhost:8000>, OpenAPI docs at <http://localhost:8000/docs>.
+- Backend API: <http://localhost:8000>, OpenAPI docs at <http://localhost:8000/docs>
+- Frontend: <http://localhost:5173>
+
+## Frontend dev (without Docker)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite dev server proxies `/api/*` and `/health` to `VITE_BACKEND_URL` (default `http://localhost:8000`), so the backend should be running locally too.
 
 ## Conventions
 
