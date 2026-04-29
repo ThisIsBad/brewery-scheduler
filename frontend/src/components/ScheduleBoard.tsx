@@ -25,8 +25,8 @@ interface BoardItem extends TimelineItemBase<Moment> {
 }
 
 const STAGE_LABEL: Record<string, string> = {
-  fermentation_open: "Ferm (offen)",
-  fermentation_closed: "Ferm",
+  fermentation_open: "Gärtank (offen)",
+  fermentation_closed: "Gärtank",
   storage: "Lager",
   ausschank: "Ausschank",
 };
