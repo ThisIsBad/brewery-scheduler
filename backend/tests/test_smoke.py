@@ -26,6 +26,25 @@ def test_seed_creates_full_inventory(session) -> None:
     assert session.query(TankOccupancy).count() == 6
 
 
+def test_seed_assigns_sud_numbers(session) -> None:
+    sude = session.query(Sud).all()
+
+    # Each seeded Sud is the first of its style/year, so style_year_number == 1.
+    assert all(s.style_year_number == 1 for s in sude)
+
+    # global_number is sequential and unique starting from 1.
+    globals_ = sorted(s.global_number for s in sude)
+    assert globals_ == [1, 2, 3]
+
+
+def test_list_sude_exposes_style_year_number(client) -> None:
+    body = client.get("/api/sude").json()
+    assert all("style_year_number" in s for s in body)
+    assert all("global_number" not in s for s in body), (
+        "global_number is internal-only; do not leak it to the frontend"
+    )
+
+
 def test_health_endpoint(client) -> None:
     r = client.get("/health")
     assert r.status_code == 200

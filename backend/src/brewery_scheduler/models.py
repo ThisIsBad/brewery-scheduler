@@ -17,6 +17,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Numeric,
+    Sequence,
     String,
     Text,
     UniqueConstraint,
@@ -101,6 +102,9 @@ class Tank(Base):
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
+SUD_GLOBAL_SEQ = Sequence("sud_global_seq")
+
+
 class Sud(Base):
     __tablename__ = "sude"
 
@@ -113,6 +117,18 @@ class Sud(Base):
     status: Mapped[SudStatus] = mapped_column(String(32), nullable=False, default=SudStatus.PLANNED)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     brewmaster: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    # Sequential across all years and styles. Internal-only — the brewmaster
+    # sets the go-live offset via the set_global_seq CLI; subsequent values
+    # come from the sud_global_seq Postgres sequence.
+    global_number: Mapped[int] = mapped_column(
+        SUD_GLOBAL_SEQ, server_default=SUD_GLOBAL_SEQ.next_value(), nullable=False
+    )
+
+    # Sequential per (recipe.beer_style, year(brew_date)). This is the
+    # "Sud-Nr." shown on the Gantt — "Kellerbier 17/2026" means the 17th
+    # Kellerbier brewed in 2026. Application logic assigns this on insert.
+    style_year_number: Mapped[int] = mapped_column(nullable=False)
 
     recipe: Mapped[Recipe] = relationship(lazy="joined")
     occupancies: Mapped[list[TankOccupancy]] = relationship(
