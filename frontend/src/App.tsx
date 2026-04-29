@@ -1,21 +1,29 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "./api/client";
-import type { ScheduleOccupancyIn, Sud, Tank } from "./api/types";
+import type { Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
+import { NewSudDialog } from "./components/NewSudDialog";
 import { ScheduleBoard } from "./components/ScheduleBoard";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
   const [sude, setSude] = useState<Sud[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, s] = await Promise.all([api.listTanks(), api.listSude()]);
+      const [t, s, r] = await Promise.all([
+        api.listTanks(),
+        api.listSude(),
+        api.listRecipes(),
+      ]);
       setTanks(t);
       setSude(s);
+      setRecipes(r);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -40,9 +48,6 @@ export default function App() {
       const moved = sud.occupancies.find((o) => o.id === occupancyId);
       if (!moved) return;
 
-      // Preserve the moved occupancy's duration; if it had no end_at, leave
-      // it open. The backend has no validation in Phase 1, so this just
-      // shifts the start (and end, when present).
       const originalStart = new Date(moved.start_at).getTime();
       const durationMs = moved.end_at
         ? new Date(moved.end_at).getTime() - originalStart
@@ -77,15 +82,20 @@ export default function App() {
     [sude],
   );
 
+  const handleCreated = useCallback((sud: Sud) => {
+    setSude((prev) => [...prev, sud]);
+  }, []);
+
   return (
     <div className="app">
       <header className="app-header">
         <h1>Brewery Scheduler</h1>
         <span className="status">
-          {loading
-            ? "lade …"
-            : `${tanks.length} Tanks · ${sude.length} Süde`}
+          {loading ? "lade …" : `${tanks.length} Tanks · ${sude.length} Süde`}
         </span>
+        <button type="button" onClick={() => setDialogOpen(true)} disabled={loading}>
+          + Neuer Sud
+        </button>
         {error && <span className="error">{error}</span>}
       </header>
       <div className="app-board">
@@ -93,6 +103,13 @@ export default function App() {
           <ScheduleBoard tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
         )}
       </div>
+      <NewSudDialog
+        open={dialogOpen}
+        recipes={recipes}
+        tanks={tanks}
+        onClose={() => setDialogOpen(false)}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }

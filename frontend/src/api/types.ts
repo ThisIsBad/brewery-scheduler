@@ -78,3 +78,11 @@ export interface ScheduleOccupancyIn {
 export interface ScheduleIn {
   occupancies: ScheduleOccupancyIn[];
 }
+
+export interface SudCreateIn {
+  recipe_id: string;
+  brew_date: string;
+  notes?: string | null;
+  brewmaster?: string | null;
+  initial_occupancy?: ScheduleOccupancyIn;
+}

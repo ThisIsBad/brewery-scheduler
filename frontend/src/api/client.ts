@@ -1,4 +1,4 @@
-import type { ScheduleIn, Sud, Tank } from "./types";
+import type { Recipe, ScheduleIn, Sud, SudCreateIn, Tank } from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -15,6 +15,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   listTanks: () => request<Tank[]>("/api/tanks"),
   listSude: () => request<Sud[]>("/api/sude"),
+  listRecipes: () => request<Recipe[]>("/api/recipes"),
+  createSud: (payload: SudCreateIn) =>
+    request<Sud>("/api/sude", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   updateSchedule: (sudId: string, payload: ScheduleIn) =>
     request<Sud>(`/api/sude/${sudId}/schedule`, {
       method: "PUT",
