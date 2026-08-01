@@ -12,7 +12,9 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Bound to loopback: host-run pytest/backend reach the DB via localhost,
+      # but the weak dev credentials are not exposed to the LAN.
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brewery}"]
       interval: 5s

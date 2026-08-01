@@ -6,7 +6,7 @@ See [`ROADMAP.md`](./ROADMAP.md) for full domain context, data model, and phased
 
 ## Status
 
-Phase 1 (Walking Skeleton). Backend tranche merged; frontend tranche in PR.
+Phase 1 (Walking Skeleton) complete: backend, Gantt frontend, and Sud numbering are merged. The Create-Sud workflow is in review. Next up: Phase 2 (validation layer) — see the open issues for the decisions feeding into it.
 
 ## Repository layout
 

@@ -70,11 +70,19 @@ Before marking a PR ready or claiming a task complete:
 
 - **All beer volumes are in hectoliters (hl).** 1 hl = 100 l. Never mix units
   silently. If a number could be ambiguous, label it.
+- **Terminology: the plural of Sud is "Sude"** (not "Süde") — in docs, UI
+  strings, and comments alike. The DB table is already named `sude`.
 - **Recipes are versioned and immutable.** Edits create a new row with
-  `version + 1`; existing Süde keep their original recipe link.
+  `version + 1`; existing Sude keep their original recipe link. Confirmed
+  2026-08: already-scheduled Sude never re-link to newer versions.
 - **Tank double-booking is prevented at the database level** via the GiST
   `EXCLUDE` constraint on `tank_occupancy`. Application-level validation
-  (Phase 2) is defense in depth, not the only barrier.
+  (Phase 2) is defense in depth, not the only barrier. Phase-2 validation
+  blocks hard — no override mechanism.
+- **30-hl merged batches are real** (confirmed 2026-08, issue #3): the same
+  recipe is brewed twice within 48 h and merged into one 30-hl tank. Until
+  Phase 2 models this explicitly, the `EXCLUDE` constraint blocks the second
+  occupancy — do not "fix" that by relaxing the constraint.
 
 ## Out of scope (do not build without explicit ask)
 
