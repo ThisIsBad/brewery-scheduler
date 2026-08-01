@@ -17,12 +17,12 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from alembic import command
 from alembic.config import Config as AlembicConfig
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from alembic import command
 from brewery_scheduler import db as db_module
 from brewery_scheduler.main import app
 from brewery_scheduler.models import Base
