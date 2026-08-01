@@ -1,6 +1,6 @@
 # Gantt component evaluation
 
-**Status**: Decision recorded. Implementation lands in PR 2 (frontend tranche).
+**Status**: Decided and implemented — `react-calendar-timeline` shipped with the Phase-1 frontend (PR #5) as designed below.
 
 ## Goal
 
@@ -15,7 +15,7 @@ We optimize for low resource use first, then for fit.
 | Dimension | Why it matters |
 | --- | --- |
 | **Frontend bundle size** | Loaded by every brewmaster on every visit; large bundles slow first paint and waste bandwidth. |
-| **Runtime memory / DOM nodes** | The Gantt has up to 21 tank rows × ~100 visible Süde at peak (Pentecost). 2k–5k nodes is realistic. |
+| **Runtime memory / DOM nodes** | The Gantt has up to 21 tank rows × ~100 visible Sude at peak (Pentecost). 2k–5k nodes is realistic. |
 | **License cost** | Commercial Gantts (DHTMLX Pro, Bryntum) start around €700–€1500/developer-year. Free for v1. |
 | **Backend cost** | All candidates render client-side, so backend impact is zero. Not a differentiator. |
 | **Operational cost** | Self-hosted JS, no external services, no per-seat fees. All candidates qualify. |
@@ -36,7 +36,7 @@ We optimize for low resource use first, then for fit.
 - **Drag-and-drop**: items can be dragged horizontally (time) **and vertically across rows** out of the box. This is the exact gesture the brewmaster needs ("move this Sud from F-30-1 to F-30-2 on Wednesday").
 - **Dependencies**: React, moment (legacy — newer fork uses dayjs).
 - **Maintenance**: 2.5k stars; pace has slowed but still receives bug fixes; widely used.
-- **Fit**: best alignment with the "tanks-as-rows, drag-Süde-between-rows" gesture.
+- **Fit**: best alignment with the "tanks-as-rows, drag-Sude-between-rows" gesture.
 
 ### 3. DHTMLX Gantt (commercial / GPL dual-license)
 
@@ -73,8 +73,8 @@ If react-calendar-timeline becomes a blocker (e.g. moment-related bugs, performa
 
 ## What this decision is NOT
 
-- **Not** a final UI design. Phase 1's Gantt is deliberately bare: rows for tanks, blocks for Süde, drag to reschedule, no validation overlays. Polish happens in Phase 2+.
-- **Not** locked in for Phase 4. If the OR-Tools solver introduces visualization needs that exceed react-calendar-timeline (e.g. dependency arrows between Süde stages), revisit. The component is encapsulated in a single `<ScheduleBoard>` React component to keep the swap cost low.
+- **Not** a final UI design. Phase 1's Gantt is deliberately bare: rows for tanks, blocks for Sude, drag to reschedule, no validation overlays. Polish happens in Phase 2+.
+- **Not** locked in for Phase 4. If the OR-Tools solver introduces visualization needs that exceed react-calendar-timeline (e.g. dependency arrows between Sude stages), revisit. The component is encapsulated in a single `<ScheduleBoard>` React component to keep the swap cost low.
 
 ## Resource budget impact
 

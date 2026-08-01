@@ -12,6 +12,17 @@ const TANK: Tank = {
   active: true,
 };
 
+// Fixture dates are derived from "now" so the occupancy always falls inside
+// the timeline's default visible window — hardcoded dates expire once the
+// window (now-7d..now+21d) moves past them and the item is silently culled.
+const NOW = new Date();
+const daysFromNow = (days: number) =>
+  new Date(NOW.getTime() + days * 24 * 60 * 60 * 1000);
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+
+const BREW_DATE = isoDate(NOW);
+const BREW_YEAR = NOW.getFullYear();
+
 const SUD: Sud = {
   id: "sud-1",
   recipe_id: "recipe-1",
@@ -26,7 +37,7 @@ const SUD: Sud = {
     storage_duration_days: 21,
     max_storage_duration_days: 60,
   },
-  brew_date: "2026-04-20",
+  brew_date: BREW_DATE,
   status: "fermenting",
   notes: null,
   brewmaster: "seed",
@@ -37,8 +48,8 @@ const SUD: Sud = {
       sud_id: "sud-1",
       tank_id: "tank-1",
       stage: "fermentation_closed",
-      start_at: "2026-04-22T08:00:00Z",
-      end_at: "2026-04-29T08:00:00Z",
+      start_at: daysFromNow(-2).toISOString(),
+      end_at: daysFromNow(5).toISOString(),
     },
   ],
 };
@@ -52,6 +63,7 @@ describe("ScheduleBoard", () => {
 
   it("renders the Sud-Nr in the block title", () => {
     render(<ScheduleBoard tanks={[TANK]} sude={[SUD]} onMoveOccupancy={() => {}} />);
-    expect(screen.getByText(/Kellerbier Nr\. 17\/2026 · Gärtank/)).toBeInTheDocument();
+    const expected = new RegExp(`Kellerbier Nr\\. 17/${BREW_YEAR} · Gärtank`);
+    expect(screen.getByText(expected)).toBeInTheDocument();
   });
 });

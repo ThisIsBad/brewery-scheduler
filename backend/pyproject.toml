@@ -21,7 +21,9 @@ dependencies = [
 dev = [
     "pytest>=8.3",
     "httpx>=0.27",
-    "ruff>=0.6",
+    # Pinned: an unpinned ruff let a new release change the default rule set
+    # and turn CI red without any code change. Bump deliberately.
+    "ruff==0.16.1",
 ]
 
 [tool.setuptools]
@@ -37,3 +39,9 @@ addopts = "-ra"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# Explicit selection so ruff upgrades can't silently widen the rule set.
+# E/F = pycodestyle+pyflakes baseline, I = import sorting. Deliberately
+# excluded: B008 (FastAPI's `Depends` idiom), DTZ/UP pedantry.
+select = ["E4", "E7", "E9", "F", "I"]
