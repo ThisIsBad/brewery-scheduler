@@ -111,7 +111,7 @@ describe("NewSudDialog", () => {
       target: { value: WEIZEN.id },
     });
 
-    const tankSelect = screen.getByLabelText("Offener Gärtank") as HTMLSelectElement;
+    const tankSelect = screen.getByLabelText("Gärtank (offen)") as HTMLSelectElement;
     const optionTexts = Array.from(tankSelect.options).map((o) => o.text);
     expect(optionTexts).toContain("F-OPEN-15 (15 hl)");
     expect(optionTexts).not.toContain("F-30-1 (30 hl)");

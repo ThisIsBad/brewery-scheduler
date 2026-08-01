@@ -91,7 +91,7 @@ export default function App() {
       <header className="app-header">
         <h1>Brewery Scheduler</h1>
         <span className="status">
-          {loading ? "lade …" : `${tanks.length} Tanks · ${sude.length} Süde`}
+          {loading ? "lade …" : `${tanks.length} Tanks · ${sude.length} Sude`}
         </span>
         <button type="button" onClick={() => setDialogOpen(true)} disabled={loading}>
           + Neuer Sud

@@ -142,7 +142,7 @@ export function NewSudDialog({
           <>
             <label>
               {requiredStage === "fermentation_open"
-                ? "Offener Gärtank"
+                ? "Gärtank (offen)"
                 : "Gärtank"}
               <select
                 value={tankId}

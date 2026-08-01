@@ -115,8 +115,9 @@ def test_create_sud_assigns_next_style_year_number(client, session) -> None:
     )
     # Seed has one Kellerbier with style_year_number=1 in the current year, so
     # the next one in the same year should get 2; a different year should get 1.
+    # A fixed month/day avoids today.replace(year=+1), which raises on Feb 29.
     today = date.today()
-    next_year = today.replace(year=today.year + 1)
+    next_year = date(today.year + 1, 6, 15)
 
     r1 = client.post(
         "/api/sude",
