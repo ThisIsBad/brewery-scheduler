@@ -124,6 +124,7 @@ export function NewSudDialog({
           Braumeister*in (optional)
           <input
             type="text"
+            maxLength={128}
             value={brewmaster}
             onChange={(e) => setBrewmaster(e.target.value)}
           />

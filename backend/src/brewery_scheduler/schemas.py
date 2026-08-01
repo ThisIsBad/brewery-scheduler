@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import BeerStyle, SudStatus, TankCellar, TankStage
 
@@ -87,6 +87,6 @@ class SudCreateIn(BaseModel):
 
     recipe_id: uuid.UUID
     brew_date: date
-    notes: str | None = None
-    brewmaster: str | None = None
+    notes: str | None = Field(default=None, max_length=10_000)
+    brewmaster: str | None = Field(default=None, max_length=128)
     initial_occupancy: ScheduleOccupancyIn | None = None

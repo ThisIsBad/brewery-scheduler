@@ -175,6 +175,20 @@ def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(
     assert actual_end == expected_end
 
 
+def test_create_sud_422_on_overlong_brewmaster(client, session) -> None:
+    recipe_id = str(session.query(Recipe).first().id)
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": recipe_id,
+            "brew_date": date.today().isoformat(),
+            "brewmaster": "x" * 200,
+        },
+    )
+    # Without the schema bound this would hit the String(128) column and 500.
+    assert r.status_code == 422
+
+
 def test_create_sud_404_on_unknown_recipe(client) -> None:
     r = client.post(
         "/api/sude",
