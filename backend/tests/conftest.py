@@ -2,15 +2,23 @@
 
 These tests need a real PostgreSQL — the schema relies on `EXCLUDE USING gist`
 and `tstzrange`, which SQLite cannot emulate. Set `TEST_DATABASE_URL` to point
-at a throwaway database; in CI, docker-compose boots one for us.
+at a throwaway database; in CI, a service container provides one.
+
+The schema is built by running the actual Alembic migrations, not
+`Base.metadata.create_all` — so the migration SQL (including backfills and
+hand-written DDL like the EXCLUDE constraint) is exercised on every test run
+and cannot drift from what production gets.
 """
 
 from __future__ import annotations
 
 import os
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -25,32 +33,27 @@ TEST_DATABASE_URL = os.environ.get(
     "postgresql+psycopg://brewery:brewery@localhost:5432/brewery_test",
 )
 
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
 
 @pytest.fixture(scope="session")
 def engine():
     eng = create_engine(TEST_DATABASE_URL, future=True)
-    with eng.connect() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS btree_gist"))
-        conn.commit()
-    Base.metadata.drop_all(eng)
-    Base.metadata.create_all(eng)
-    # The EXCLUDE constraint isn't expressible via SQLAlchemy core — add it manually
-    # so smoke tests exercise the same defense-in-depth as production.
+
+    # Nuke everything (tables, sequences, the btree_gist extension, the
+    # alembic_version bookkeeping) so `upgrade head` always starts from a
+    # genuinely empty database.
     with eng.begin() as conn:
-        conn.execute(
-            text(
-                """
-                ALTER TABLE tank_occupancy
-                ADD CONSTRAINT ex_tank_occupancy_no_overlap
-                EXCLUDE USING gist (
-                    tank_id WITH =,
-                    tstzrange(start_at, end_at, '[)') WITH &&
-                )
-                """
-            )
-        )
+        conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+
+    cfg = AlembicConfig(str(BACKEND_DIR / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+    command.upgrade(cfg, "head")
+
     yield eng
-    Base.metadata.drop_all(eng)
+    eng.dispose()
 
 
 @pytest.fixture()

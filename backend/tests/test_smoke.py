@@ -4,7 +4,7 @@ Validates only the round trip the brewmaster will actually exercise:
 - the seed populates the expected number of tanks/recipes/sude
 - listing endpoints return them
 - PUT /api/sude/{id}/schedule persists occupancies
-- the database refuses overlapping occupancies on the same tank
+- constraint violations surface as structured 409/422 responses
 
 Phase 2 will add validation-rule coverage.
 """
@@ -12,9 +12,6 @@ Phase 2 will add validation-rule coverage.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-
-import pytest
-from sqlalchemy.exc import IntegrityError
 
 from brewery_scheduler.models import Recipe, Sud, Tank, TankOccupancy
 
@@ -95,10 +92,10 @@ def test_update_schedule_replaces_occupancies(client, session) -> None:
     assert r2.json()["occupancies"] == []
 
 
-def test_db_rejects_overlapping_occupancies_on_same_tank(client, session) -> None:
-    sude = session.query(Sud).limit(2).all()
-    tank_id = str(session.query(Tank).first().id)
-    start = datetime.now(timezone.utc).replace(microsecond=0)
+def test_overlapping_occupancy_returns_structured_409(client, session) -> None:
+    sude = session.query(Sud).order_by(Sud.brew_date).limit(2).all()
+    tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
     window = {
         "tank_id": tank_id,
         "stage": "fermentation_closed",
@@ -110,5 +107,30 @@ def test_db_rejects_overlapping_occupancies_on_same_tank(client, session) -> Non
     assert r1.status_code == 200
 
     overlap = dict(window, start_at=(start + timedelta(days=3)).isoformat())
-    with pytest.raises(IntegrityError):
-        client.put(f"/api/sude/{sude[1].id}/schedule", json={"occupancies": [overlap]})
+    r2 = client.put(f"/api/sude/{sude[1].id}/schedule", json={"occupancies": [overlap]})
+    assert r2.status_code == 409, r2.text
+    body = r2.json()
+    assert body["constraint"] == "ex_tank_occupancy_no_overlap"
+    assert "occupied" in body["detail"]
+
+
+def test_inverted_time_window_returns_structured_422(client, session) -> None:
+    sud_id = str(session.query(Sud).first().id)
+    tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=90)
+
+    r = client.put(
+        f"/api/sude/{sud_id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": tank_id,
+                    "stage": "fermentation_closed",
+                    "start_at": start.isoformat(),
+                    "end_at": (start - timedelta(days=1)).isoformat(),
+                }
+            ]
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert r.json()["constraint"] == "ck_tank_occupancy_time_order"
