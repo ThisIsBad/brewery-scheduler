@@ -112,6 +112,13 @@ def seed(session: Session) -> None:
     today = date.today()
     midnight_utc = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
 
+    # Past brew dates are clamped into the current year: early in January,
+    # "today - 14 days" would land in the previous year, silently shifting
+    # which (style, year) bucket the seeded Sude occupy and breaking every
+    # test that assumes they are the first of the current year.
+    def past_brew_date(days_ago: int) -> date:
+        return max(date(today.year, 1, 1), today - timedelta(days=days_ago))
+
     # Sample plan that exercises the full pipeline so the Gantt isn't empty
     # on first launch. The numbers don't reflect real brewing schedules —
     # they're just plausible enough that the brewmaster can drag them around
@@ -120,14 +127,14 @@ def seed(session: Session) -> None:
     # left to the sud_global_seq default.
     kellerbier = Sud(
         recipe_id=by_style[BeerStyle.KELLERBIER].id,
-        brew_date=today - timedelta(days=14),
+        brew_date=past_brew_date(14),
         status=SudStatus.STORING,
         brewmaster="seed",
         style_year_number=1,
     )
     weizen = Sud(
         recipe_id=by_style[BeerStyle.WHEAT].id,
-        brew_date=today - timedelta(days=7),
+        brew_date=past_brew_date(7),
         status=SudStatus.FERMENTING,
         brewmaster="seed",
         style_year_number=1,
@@ -195,7 +202,7 @@ def seed(session: Session) -> None:
     sude = [kellerbier, weizen, festbier]
     print(
         f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, "
-        f"{len(sude)} Süde, {len(occupancies)} tank occupancies."
+        f"{len(sude)} Sude, {len(occupancies)} tank occupancies."
     )
 
 

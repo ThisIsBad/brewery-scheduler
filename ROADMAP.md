@@ -14,7 +14,7 @@ This section is the source of truth for the brewery's operational reality. All s
 
 | Term | Meaning |
 | --- | --- |
-| **Sud** | A single batch of brewed beer. Standard size: **15 hectoliters (hl)**. |
+| **Sud** (plural: **Sude**) | A single batch of brewed beer. Standard size: **15 hectoliters (hl)**. |
 | **Hektoliter (hl)** | 100 liters. The standard volume unit in German breweries. |
 | **Ausschank tank** | Final-stage tank from which beer is poured directly to customers (the brewery does not bottle). Lying-down tanks; beer must be free of active yeast before entering. |
 | **Kellerbier** | The brewery's flagship year-round beer. |
@@ -57,7 +57,7 @@ Brewhouse → Fermentation tank → Storage tank → Ausschank tank → Customer
 
 ### 2.4 Hard Constraints
 
-1. **Tank exclusivity:** A tank holds at most one Sud at a time (assuming Sud size matches tank capacity; a 30 hl tank holds 2 Süde of the same beer brewed back-to-back, but this needs product confirmation).
+1. **Tank exclusivity:** A tank holds at most one batch at a time. **Confirmed 2026-08 (issue #3):** the 30-hl case is real and typical — the same recipe is brewed twice within 48 hours and the two Sude are merged into one 30-hl tank. Phase 2 must model this as a *merged batch* (two brews, one tank occupant); the `EXCLUDE` constraint stays as the barrier against genuinely conflicting occupancies.
 2. **Yeast-free Ausschank:** Beer with active yeast cannot enter Ausschank (lying-down) tanks — residual yeast produces off-flavors ("hot sauces").
 3. **Wheat-beer open fermentation prerequisite:** No wheat beer may enter a closed fermentation tank without first spending 4 days in the open fermentation tank.
 4. **Stage ordering:** A Sud may only move forward in the pipeline (no Storage → Fermentation regression).
@@ -76,7 +76,7 @@ Brewhouse → Fermentation tank → Storage tank → Ausschank tank → Customer
 
 ### 2.6 Pentecost Production Targets
 
-| Beer style | Süde | Volume |
+| Beer style | Sude | Volume |
 | --- | --- | --- |
 | Wheat beer | 3 | 45 hl |
 | Kellerbier | 20 | 300 hl |
@@ -84,11 +84,11 @@ Brewhouse → Fermentation tank → Storage tank → Ausschank tank → Customer
 | Festbier | 32 | 480 hl |
 | **Total** | **61** | **915 hl** |
 
-With only 180 hl of fermentation capacity (12 Süde concurrent maximum), this requires roughly 5–6 sequential fermentation cycles in the lead-up to Pentecost while simultaneously maintaining regular beer garden supply.
+With only 180 hl of fermentation capacity (12 Sude concurrent maximum), this requires roughly 5–6 sequential fermentation cycles in the lead-up to Pentecost while simultaneously maintaining regular beer garden supply.
 
 ### 2.7 Per-Beer-Style Durations (to be filled in with brewmaster)
 
-These values live in the recipe table and drive the solver. Initial placeholders — **must be confirmed and refined with the brewmaster:**
+These values live in the recipe table and drive the solver. **Decision (2026-08, issue #2):** the placeholders below are confirmed as working values until the brewmaster session delivers real numbers — they are editable per recipe at any time, so nothing blocks on them. Whether durations vary by season is still open.
 
 | Beer style | Open ferm. (days) | Closed ferm. (days) | Storage (days) | Max storage (days) |
 | --- | --- | --- | --- | --- |
@@ -190,7 +190,7 @@ Core tables. The schema is the highest-leverage thing to get right because it's 
 
 **Key design notes:**
 
-- Recipes are **versioned, immutable**. Updating a recipe creates a new row with version + 1. Existing Süde keep their original recipe link.
+- Recipes are **versioned, immutable**. Updating a recipe creates a new row with version + 1. Existing Sude keep their original recipe link.
 - `recipe_overrides` on `sude` allows per-Sud brewmaster adjustments without polluting the recipe table.
 - The PostgreSQL `EXCLUDE USING gist` constraint on `tank_occupancy` enforces no double-booking of tanks at the database level — defense in depth beyond application logic.
 
@@ -204,13 +204,13 @@ The guiding principle: **walking skeleton**. Build a thin vertical slice (fronte
 
 - Set up monorepo: `/backend` (FastAPI), `/frontend` (Vite + React), `/infra` (Bicep or Terraform for Azure)
 - Postgres schema migrations via Alembic — create the tables from §4
-- Seed data: real tank inventory from §2.2, placeholder recipes, a handful of test Süde
+- Seed data: real tank inventory from §2.2, placeholder recipes, a handful of test Sude
 - Three FastAPI endpoints:
   - `GET /api/tanks` — list tanks with current occupancy
-  - `GET /api/sude` — list Süde with their tank assignments and time windows
-  - `PUT /api/sude/{id}/schedule` — update a Sud's tank assignment and time window (no validation yet — accept anything)
-- React frontend with Gantt view: tanks as rows, time as horizontal axis, Süde as draggable blocks
-- **No validation. No solver. No conflict highlighting.** Drag a Sud onto an occupied tank → system saves it.
+  - `GET /api/sude` — list Sude with their tank assignments and time windows
+  - `PUT /api/sude/{id}/schedule` — update a Sud's tank assignment and time window (no application-level validation)
+- React frontend with Gantt view: tanks as rows, time as horizontal axis, Sude as draggable blocks
+- **No application validation. No solver. No conflict highlighting.** The one exception, per §4: the database-level `EXCLUDE` constraint rejects overlapping occupancies of the same tank — an overlapping drop fails (currently as an unstructured error; Phase 2 turns this into a structured 409 with conflict details). Everything else — wrong stage, wrong capacity, impossible dates — saves without complaint.
 
 **Definition of done:** brewmaster can open the app, see the tanks rendered, drag a Sud, and the change persists across page reload.
 
@@ -239,9 +239,9 @@ The guiding principle: **walking skeleton**. Build a thin vertical slice (fronte
 - Per-Sud override UI: brewmaster can deviate from recipe defaults for a single batch and the override is recorded
 - Recipe history view: see all versions of Kellerbier over time, when they changed, who changed them
 
-**Decision point to confirm with brewmaster:** when a recipe version updates, do already-scheduled Süde keep their old recipe (recommended default) or get the option to re-link to the new version?
+**Decision (2026-08, issue #4): keep.** Already-scheduled Sude retain their original recipe version; new Sude use the latest version; one-off deviations go through `recipe_overrides`. No re-link UI.
 
-**Definition of done:** brewmaster can update a recipe, see the history, and trust that past Süde retain their original recipe data.
+**Definition of done:** brewmaster can update a recipe, see the history, and trust that past Sude retain their original recipe data.
 
 ### Phase 4 — Solver Integration (2–3 weeks)
 
@@ -321,7 +321,7 @@ Structured JSON logs from day one (consistent with Stefan's preference for struc
 ### 6.4 Local Development
 
 - `docker-compose up` brings up Postgres, Redis, the backend, and the frontend
-- Seed script populates realistic test data (the actual tank inventory, sample recipes, a few Süde)
+- Seed script populates realistic test data (the actual tank inventory, sample recipes, a few Sude)
 - `.env.example` documents all required environment variables
 
 ### 6.5 What NOT to Build
