@@ -7,7 +7,11 @@ from brewery_scheduler.config import settings
 from brewery_scheduler.models import Base
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# The test fixture injects its own sqlalchemy.url; only fall back to the app
+# settings when none was provided (the normal CLI path — alembic.ini carries
+# no URL).
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

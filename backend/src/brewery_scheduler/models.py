@@ -110,6 +110,9 @@ class Tank(Base):
 
 class Sud(Base):
     __tablename__ = "sude"
+    __table_args__ = (
+        UniqueConstraint("global_number", name="uq_sude_global_number"),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     recipe_id: Mapped[uuid.UUID] = mapped_column(
