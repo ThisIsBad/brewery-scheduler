@@ -68,4 +68,23 @@ describe("ScheduleBoard", () => {
     const expected = new RegExp(`Kellerbier Nr\\. 17/${BREW_YEAR} · Gärtank`);
     expect(screen.getByText(expected)).toBeInTheDocument();
   });
+
+  it("folds merged-batch partner numbers into the lead's block title", () => {
+    const partner: Sud = {
+      ...SUD,
+      id: "sud-2",
+      style_year_number: 18,
+      merged_into_sud_id: SUD.id,
+      occupancies: [],
+    };
+    render(
+      <ScheduleBoard
+        tanks={[TANK]}
+        sude={[SUD, partner]}
+        onMoveOccupancy={() => {}}
+      />,
+    );
+    const expected = new RegExp(`Kellerbier Nr\\. 17\\+18/${BREW_YEAR} · Gärtank`);
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
 });

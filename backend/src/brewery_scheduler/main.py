@@ -23,6 +23,8 @@ CONSTRAINT_RESPONSES: dict[str | None, tuple[int, str]] = {
     ),
     "ck_tank_occupancy_time_order": (422, "end_at must be after start_at."),
     "uq_sude_global_number": (409, "Duplicate global Sud number."),
+    "ck_sude_no_self_merge": (422, "A Sud cannot be merged into itself."),
+    "fk_sude_merged_into": (422, "The referenced lead Sud does not exist."),
 }
 
 

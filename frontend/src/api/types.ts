@@ -91,4 +91,6 @@ export interface SudCreateIn {
   notes?: string | null;
   brewmaster?: string | null;
   initial_occupancy?: ScheduleOccupancyIn;
+  /** Create this Sud as a merged-batch partner of the given lead Sud. */
+  merge_into_sud_id?: string | null;
 }

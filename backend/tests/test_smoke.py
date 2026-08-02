@@ -232,6 +232,7 @@ def test_merge_partner_happy_path(client, session) -> None:
     body = r.json()
     assert body["merged_into_sud_id"] == str(lead.id)
     assert body["occupancies"] == []
+    assert body["volume_hl"] == 15
     # Its own brew number: seed Kellerbier is Nr. 1, so the partner is Nr. 2.
     assert body["style_year_number"] == 2
 
@@ -268,18 +269,33 @@ def test_merge_rejects_different_recipe(client, session) -> None:
     assert "same recipe" in r.json()["detail"]
 
 
-def test_merge_rejects_brew_gap_over_48h(client, session) -> None:
+def test_merge_brew_gap_boundary(client, session) -> None:
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
-    r = client.post(
+
+    # Exactly 2 calendar days: accepted.
+    r_ok = client.post(
         "/api/sude",
         json={
             "recipe_id": str(lead.recipe_id),
-            "brew_date": (lead.brew_date + timedelta(days=5)).isoformat(),
+            "brew_date": (lead.brew_date + timedelta(days=2)).isoformat(),
             "merge_into_sud_id": str(lead.id),
         },
     )
-    assert r.status_code == 422, r.text
-    assert "48" in r.json()["detail"]
+    assert r_ok.status_code == 201, r_ok.text
+
+    # 3 days: rejected. (Weizen lead is untouched, so use it for the reject
+    # case to keep the Kellerbier tank's volume budget out of the picture.)
+    weizen_lead = _seeded_lead(session, BeerStyle.WHEAT)
+    r_reject = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(weizen_lead.recipe_id),
+            "brew_date": (weizen_lead.brew_date + timedelta(days=3)).isoformat(),
+            "merge_into_sud_id": str(weizen_lead.id),
+        },
+    )
+    assert r_reject.status_code == 422, r_reject.text
+    assert "48" in r_reject.json()["detail"]
 
 
 def test_merge_rejects_chaining_onto_a_partner(client, session) -> None:
@@ -293,7 +309,64 @@ def test_merge_rejects_chaining_onto_a_partner(client, session) -> None:
         },
     )
     assert r.status_code == 422, r.text
-    assert "lead" in r.json()["detail"]
+    assert "itself a partner" in r.json()["detail"]
+
+
+def test_merge_capped_for_unscheduled_lead(client, session) -> None:
+    # An unscheduled lead has no occupancies to validate against — the cap
+    # against the largest fermentation tank (30 hl) must still fire.
+    recipe_id = str(
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.SPECIAL).one().id
+    )
+    lead = client.post(
+        "/api/sude",
+        json={"recipe_id": recipe_id, "brew_date": date.today().isoformat()},
+    ).json()
+
+    first = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": recipe_id,
+            "brew_date": date.today().isoformat(),
+            "merge_into_sud_id": lead["id"],
+        },
+    )
+    assert first.status_code == 201, first.text
+
+    second = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": recipe_id,
+            "brew_date": date.today().isoformat(),
+            "merge_into_sud_id": lead["id"],
+        },
+    )
+    assert second.status_code == 409, second.text
+    assert "largest fermentation tank" in second.json()["detail"]
+
+
+def test_schedule_rechecks_combined_volume_for_lead(client, session) -> None:
+    # The POST-time check must not be bypassable by rescheduling the lead
+    # into a smaller tank afterwards.
+    lead = _seeded_lead(session, BeerStyle.FESTBIER)  # 15 + 15 hl partner
+    small_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=150)
+
+    r = client.put(
+        f"/api/sude/{lead.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(small_tank.id),
+                    "stage": "fermentation_closed",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=7)).isoformat(),
+                }
+            ]
+        },
+    )
+    assert r.status_code == 409, r.text
+    assert "merged batch" in r.json()["detail"]
 
 
 def test_merge_rejects_initial_occupancy_combination(client, session) -> None:
@@ -348,7 +421,7 @@ def test_schedule_rejected_for_merge_partner(client, session) -> None:
         },
     )
     assert r.status_code == 422, r.text
-    assert "lead" in r.json()["detail"]
+    assert "shares its lead" in r.json()["detail"]
 
 
 def test_overlapping_occupancy_returns_structured_409(client, session) -> None:

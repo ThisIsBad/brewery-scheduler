@@ -127,14 +127,19 @@ class Sud(Base):
 
     # Standard Sud is 15 hl (ROADMAP §2.1); drives combined-volume vs. tank
     # capacity validation for merged batches.
-    volume_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False, default=15)
+    volume_hl: Mapped[float] = mapped_column(
+        Numeric(6, 2), nullable=False, default=15, server_default="15"
+    )
 
     # Merged batches (confirmed 2026-08, issue #3): the same recipe brewed
     # twice within 48 h shares one tank. The first brew is the "lead" and
     # owns the occupancies; partners point here and never carry occupancies
     # of their own.
     merged_into_sud_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("sude.id", name="fk_sude_merged_into"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("sude.id", name="fk_sude_merged_into"),
+        nullable=True,
+        index=True,
     )
 
     # Sequential across all years and styles. Internal-only — the brewmaster

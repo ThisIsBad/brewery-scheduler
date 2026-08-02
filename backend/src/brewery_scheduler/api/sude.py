@@ -6,7 +6,7 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
-from ..models import Recipe, Sud, TankOccupancy, TankStage
+from ..models import Recipe, Sud, Tank, TankOccupancy, TankStage
 from ..schemas import ScheduleIn, SudCreateIn, SudOut
 
 router = APIRouter(prefix="/api/sude", tags=["sude"])
@@ -116,6 +116,33 @@ def update_schedule(
             ),
         )
 
+    # A lead with merged partners must keep the combined batch volume inside
+    # every tank it is being scheduled into — otherwise the POST-time merge
+    # validation could be undone by a later reschedule.
+    partner_volumes = list(
+        session.scalars(
+            select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id)
+        )
+    )
+    if partner_volumes and payload.occupancies:
+        combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+        tank_ids = {occ.tank_id for occ in payload.occupancies}
+        tanks = {
+            t.id: t
+            for t in session.scalars(select(Tank).where(Tank.id.in_(tank_ids)))
+        }
+        for occ in payload.occupancies:
+            tank = tanks.get(occ.tank_id)
+            if tank is not None and combined_hl > float(tank.capacity_hl):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"This Sud leads a merged batch of {combined_hl:g} hl, "
+                        f"which exceeds the {float(tank.capacity_hl):g} hl "
+                        f"capacity of tank {tank.name}."
+                    ),
+                )
+
     sud.occupancies.clear()
     session.flush()
 
@@ -185,8 +212,9 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"Merged batches must be brewed within 48 h of each other — "
-                f"the gap to the lead's brew date is {gap.days} days."
+                f"Merged batches must be brewed within 48 h of each other "
+                f"(2 calendar days) — the gap to the lead's brew date is "
+                f"{gap.days} days."
             ),
         )
 
@@ -195,6 +223,10 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
         + sum(float(p.volume_hl) for p in lead.merged_partners)
         + 15.0  # the new partner; standard Sud volume, ROADMAP §2.1
     )
+
+    # Conservative by design (hard-block philosophy): every tank the lead is
+    # or was booked into must fit the combined volume — a false rejection on
+    # stale history beats silently recording an impossible batch.
     for occ in lead.occupancies:
         capacity = float(occ.tank.capacity_hl)
         if combined_hl > capacity:
@@ -205,6 +237,32 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
                     f"{capacity:g} hl capacity of tank {occ.tank.name}."
                 ),
             )
+
+    # An unscheduled lead has no occupancies to check against, so cap the
+    # combined volume at the largest active fermentation tank — the merge
+    # physically happens in the fermenter (issue #3: "in einem 30-hl-Tank
+    # zusammengeführt"), so a batch bigger than every fermenter can never
+    # exist regardless of later scheduling.
+    largest_ferm_hl = float(
+        session.scalar(
+            select(func.max(Tank.capacity_hl)).where(
+                Tank.active,
+                Tank.stage.in_(
+                    (TankStage.FERMENTATION_OPEN, TankStage.FERMENTATION_CLOSED)
+                ),
+            )
+        )
+        or 0
+    )
+    if combined_hl > largest_ferm_hl:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Combined batch volume of {combined_hl:g} hl exceeds the "
+                f"largest fermentation tank ({largest_ferm_hl:g} hl) — no "
+                "fermenter could ever hold this merged batch."
+            ),
+        )
     return lead
 
 
