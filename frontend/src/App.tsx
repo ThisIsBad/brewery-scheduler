@@ -62,12 +62,14 @@ export default function App() {
               stage: o.stage,
               start_at: new Date(nextStartMs).toISOString(),
               end_at: nextEnd,
+              volume_hl: o.volume_hl,
             }
           : {
               tank_id: o.tank_id,
               stage: o.stage,
               start_at: o.start_at,
               end_at: o.end_at,
+              volume_hl: o.volume_hl,
             },
       );
 

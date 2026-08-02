@@ -6,8 +6,8 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
-from ..models import Recipe, Sud, Tank, TankOccupancy, TankStage
-from ..schemas import ScheduleIn, SudCreateIn, SudOut
+from ..models import Recipe, Sud, SudStatus, Tank, TankOccupancy, TankStage
+from ..schemas import ScheduleIn, SudCreateIn, SudOut, TransferIn
 
 router = APIRouter(prefix="/api/sude", tags=["sude"])
 
@@ -81,6 +81,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
                 stage=occ.stage,
                 start_at=occ.start_at,
                 end_at=end_at,
+                volume_hl=occ.volume_hl,
             )
         )
 
@@ -116,16 +117,14 @@ def update_schedule(
             ),
         )
 
-    # A lead with merged partners must keep the combined batch volume inside
-    # every tank it is being scheduled into — otherwise the POST-time merge
-    # validation could be undone by a later reschedule.
     partner_volumes = list(
         session.scalars(
             select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id)
         )
     )
-    if partner_volumes and payload.occupancies:
-        combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+
+    if payload.occupancies:
         tank_ids = {occ.tank_id for occ in payload.occupancies}
         tanks = {
             t.id: t
@@ -133,7 +132,16 @@ def update_schedule(
         }
         for occ in payload.occupancies:
             tank = tanks.get(occ.tank_id)
-            if tank is not None and combined_hl > float(tank.capacity_hl):
+            if tank is None:
+                continue
+            # A lead with merged partners must keep the combined batch volume
+            # inside every non-Ausschank tank it is scheduled into — otherwise
+            # the POST-time merge validation could be undone by a reschedule.
+            if (
+                partner_volumes
+                and occ.stage != TankStage.AUSSCHANK
+                and combined_hl > float(tank.capacity_hl)
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
@@ -141,6 +149,18 @@ def update_schedule(
                         f"which exceeds the {float(tank.capacity_hl):g} hl "
                         f"capacity of tank {tank.name}."
                     ),
+                )
+            # Ausschank tanks blend batches; the DB EXCLUDE constraint is
+            # scoped away from that stage, so the headroom rule applies here
+            # exactly as in the transfer endpoint.
+            if occ.stage == TankStage.AUSSCHANK:
+                _check_ausschank_headroom(
+                    session,
+                    tank,
+                    float(occ.volume_hl) if occ.volume_hl is not None else combined_hl,
+                    occ.start_at,
+                    occ.end_at,
+                    exclude_sud_id=sud.id,
                 )
 
     sud.occupancies.clear()
@@ -153,12 +173,235 @@ def update_schedule(
                 stage=occ.stage,
                 start_at=occ.start_at,
                 end_at=occ.end_at,
+                volume_hl=occ.volume_hl,
             )
         )
 
     session.commit()
     session.refresh(sud)
     return sud
+
+
+STAGE_ORDER: dict[TankStage, int] = {
+    TankStage.FERMENTATION_OPEN: 0,
+    TankStage.FERMENTATION_CLOSED: 1,
+    TankStage.STORAGE: 2,
+    TankStage.AUSSCHANK: 3,
+}
+
+STAGE_TO_STATUS: dict[TankStage, SudStatus] = {
+    TankStage.FERMENTATION_OPEN: SudStatus.FERMENTING,
+    TankStage.FERMENTATION_CLOSED: SudStatus.FERMENTING,
+    TankStage.STORAGE: SudStatus.STORING,
+    TankStage.AUSSCHANK: SudStatus.IN_AUSSCHANK,
+}
+
+
+@router.post("/{sud_id}/transfer", response_model=SudOut)
+def transfer_sud(
+    sud_id: uuid.UUID,
+    payload: TransferIn,
+    session: Session = Depends(get_session),
+) -> Sud:
+    """Umdrücken: move the batch (lead + merged partners) to its next stage.
+
+    Before the Ausschank stage the batch stays together (exactly one target
+    tank). At the Ausschank stage it can be split across several tanks with
+    explicit volume shares, and Ausschank tanks may blend several batches —
+    guarded by the sum-of-allocations ≤ capacity rule (issue #13).
+    """
+    sud = session.scalar(
+        select(Sud).options(selectinload(Sud.occupancies)).where(Sud.id == sud_id)
+    )
+    if sud is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sud not found")
+    if sud.merged_into_sud_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "This Sud is a partner in a merged batch and shares its lead's "
+                "tank — transfer the lead Sud instead."
+            ),
+        )
+    if not sud.occupancies:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This Sud has no tank occupancy yet — schedule it before transferring.",
+        )
+
+    current = max(sud.occupancies, key=lambda o: o.start_at)
+    # Stage columns are plain String(32); coerce so enum comparisons and
+    # .value in messages behave regardless of how the row was loaded.
+    current_stage = TankStage(current.stage)
+    current_rank = STAGE_ORDER[current_stage]
+
+    tank_ids = [a.tank_id for a in payload.allocations]
+    if len(set(tank_ids)) != len(tank_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Duplicate target tank in allocations.",
+        )
+    tanks = {
+        t.id: t for t in session.scalars(select(Tank).where(Tank.id.in_(tank_ids)))
+    }
+    missing = [str(tid) for tid in tank_ids if tid not in tanks]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Target tank(s) not found: {', '.join(missing)}",
+        )
+
+    target_stages = {TankStage(tanks[tid].stage) for tid in tank_ids}
+    if len(target_stages) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="All target tanks must belong to the same stage.",
+        )
+    target_stage = target_stages.pop()
+    if STAGE_ORDER[target_stage] <= current_rank:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"A Sud only moves forward in the pipeline — it is currently in "
+                f"{current_stage.value} and cannot transfer to {target_stage.value}."
+            ),
+        )
+
+    partner_volumes = list(
+        session.scalars(select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id))
+    )
+    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+
+    if target_stage != TankStage.AUSSCHANK:
+        if len(payload.allocations) != 1:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Batches stay together before the Ausschank stage — "
+                    "exactly one target tank is allowed."
+                ),
+            )
+        target = tanks[tank_ids[0]]
+        if combined_hl > float(target.capacity_hl):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Batch volume of {combined_hl:g} hl exceeds the "
+                    f"{float(target.capacity_hl):g} hl capacity of tank {target.name}."
+                ),
+            )
+        volumes: list[float | None] = [None]
+    else:
+        volumes = [
+            a.volume_hl if a.volume_hl is not None else combined_hl
+            for a in payload.allocations
+        ]
+        total = sum(volumes)
+        if abs(total - combined_hl) > 0.01:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Allocated volumes sum to {total:g} hl but the batch "
+                    f"holds {combined_hl:g} hl."
+                ),
+            )
+        for allocation, volume in zip(payload.allocations, volumes):
+            tank = tanks[allocation.tank_id]
+            _check_ausschank_headroom(
+                session,
+                tank,
+                volume,
+                payload.start_at,
+                payload.end_at,
+                exclude_sud_id=sud.id,
+            )
+
+    end_at = payload.end_at
+    if end_at is None and target_stage != TankStage.AUSSCHANK:
+        duration_days = _default_duration_days(sud.recipe, target_stage)
+        end_at = payload.start_at + timedelta(days=duration_days)
+
+    for occ in sud.occupancies:
+        if occ.end_at is None:
+            if payload.start_at <= occ.start_at:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        "Transfer starts before the current occupancy begins — "
+                        "check the start_at."
+                    ),
+                )
+            occ.end_at = payload.start_at
+
+    for allocation, volume in zip(payload.allocations, volumes):
+        sud.occupancies.append(
+            TankOccupancy(
+                tank_id=allocation.tank_id,
+                stage=target_stage,
+                start_at=payload.start_at,
+                end_at=end_at,
+                volume_hl=volume,
+            )
+        )
+
+    new_status = STAGE_TO_STATUS[target_stage]
+    sud.status = new_status
+    for partner in session.scalars(
+        select(Sud).where(Sud.merged_into_sud_id == sud.id)
+    ):
+        partner.status = new_status
+
+    session.commit()
+    session.refresh(sud)
+    return sud
+
+
+def _check_ausschank_headroom(
+    session: Session,
+    tank: Tank,
+    volume_hl: float,
+    start_at,
+    end_at,
+    exclude_sud_id: uuid.UUID | None = None,
+) -> None:
+    """Ausschank tanks blend several batches; the DB EXCLUDE constraint is
+    scoped away from this stage, so the capacity rule lives here: the sum of
+    time-overlapping allocations plus the new one must fit the tank.
+    """
+    stmt = (
+        select(TankOccupancy)
+        .options(selectinload(TankOccupancy.sud))
+        .where(
+            TankOccupancy.tank_id == tank.id,
+            TankOccupancy.end_at.is_(None) | (TankOccupancy.end_at > start_at),
+        )
+    )
+    if end_at is not None:
+        stmt = stmt.where(TankOccupancy.start_at < end_at)
+    if exclude_sud_id is not None:
+        stmt = stmt.where(TankOccupancy.sud_id != exclude_sud_id)
+
+    allocated = 0.0
+    for occ in session.scalars(stmt):
+        if occ.volume_hl is not None:
+            allocated += float(occ.volume_hl)
+        else:
+            partner_volumes = session.scalars(
+                select(Sud.volume_hl).where(Sud.merged_into_sud_id == occ.sud_id)
+            )
+            allocated += float(occ.sud.volume_hl) + sum(
+                float(v) for v in partner_volumes
+            )
+
+    if allocated + volume_hl > float(tank.capacity_hl):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Tank {tank.name} holds {allocated:g} hl in this window — "
+                f"adding {volume_hl:g} hl exceeds its "
+                f"{float(tank.capacity_hl):g} hl capacity."
+            ),
+        )
 
 
 MERGE_MAX_BREW_GAP = timedelta(days=2)

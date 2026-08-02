@@ -48,6 +48,8 @@ export interface Occupancy {
   stage: TankStage;
   start_at: string;
   end_at: string | null;
+  /** Volume share in hl; null = the full combined volume of the batch. */
+  volume_hl: number | null;
 }
 
 export interface Sud {
@@ -79,6 +81,7 @@ export interface ScheduleOccupancyIn {
   stage: TankStage;
   start_at: string;
   end_at: string | null;
+  volume_hl?: number | null;
 }
 
 export interface ScheduleIn {

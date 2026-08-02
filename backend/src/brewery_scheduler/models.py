@@ -188,5 +188,10 @@ class TankOccupancy(Base):
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Volume share of this allocation in hl. NULL = the full combined volume
+    # of the occupying batch — the normal case before the Ausschank stage,
+    # where batches can be split across tanks (issue #13).
+    volume_hl: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
+
     sud: Mapped[Sud] = relationship(back_populates="occupancies")
     tank: Mapped[Tank] = relationship(lazy="joined")
