@@ -97,6 +97,34 @@ These values live in the recipe table and drive the solver. **Decision (2026-08,
 | Festbier | — | TBD | TBD | TBD |
 | Specials | — | TBD | TBD | TBD |
 
+### 2.8 Usage Context (confirmed 2026-08)
+
+Primary usage is **mobile — the phone in the cellar is the main device**, for
+all four core actions:
+
+- checking tank status during cellar rounds
+- booking transfers (Umdrücken) at the moment they happen
+- creating new Sude
+- **and full planning work** (moving Sude across weeks, Pentecost cycles)
+
+Cellar connectivity is **spotty** (vaulted cellar, radio dead spots). Two
+consequences, both architectural:
+
+1. The frontend ships as a **PWA with an offline read cache and a queue for
+   offline mutations** (create/transfer/reschedule are captured offline and
+   replayed on reconnect; server-side 409 conflicts from the replay must
+   surface clearly, not vanish).
+2. Every user-facing feature is designed **mobile-first**; the desktop view
+   is the derivative, not the other way around. Two parallel surfaces:
+   - **Kellerblick** — card list per tank (contents, day N of M, next due
+     action) with validated tap-flows for transfers; the everyday surface.
+   - **Planning timeline** — the Gantt, made genuinely touch-capable
+     (targets, zoom, tap-to-select-then-move); the planning surface.
+
+This supersedes the older reading of §6.5 ("responsive web is sufficient"),
+which had been interpreted desktop-first. No native app — the PWA is the
+delivery model.
+
 ## 3. Tech Stack
 
 | Layer | Choice | Rationale |
@@ -105,7 +133,8 @@ These values live in the recipe table and drive the solver. **Decision (2026-08,
 | Solver | Google OR-Tools (CP-SAT) | Industry standard for resource-constrained scheduling; excellent Python bindings |
 | Database | PostgreSQL 16 | Strong relational integrity; native tstzrange for tank occupancy windows |
 | Frontend | React 18 + TypeScript, Vite | Standard, well-supported |
-| Gantt component | DHTMLX Gantt **or** Bryntum Scheduler (commercial) **or** frappe-gantt (open source) | Evaluate first — drag-and-drop scheduling is the core UX, the component choice will define the frontend |
+| Timeline component | react-calendar-timeline (Phase 1) → **custom timeline on `@dnd-kit/core` in Phase 2 Track C** | Touch re-evaluation (docs/gantt-evaluation.md addendum): rct's interaction engine can't be made touch-first; our flat tank-row domain makes a ~500-line bespoke component the lowest-complexity option, and the swap removes moment + interactjs |
+| PWA / offline | vite-plugin-pwa (`generateSW`) for the offline read cache; **TanStack Query v5** persisted-mutation queue for offline writes — explicitly *no* Workbox Background Sync | iOS has no Background Sync API, and Workbox drops 409 replies silently — our double-booking conflicts must instead land in normal `onError` UI (see gantt-evaluation.md addendum) |
 | Auth | Microsoft Entra ID via MSAL | Native M365 integration; SSO from Teams |
 | Hosting | Azure App Service (Linux, B1 tier) for API; Azure Static Web Apps for frontend; Azure PostgreSQL Flexible Server (burstable) | Aligns with M365 stack; estimated infra cost ~€30–40/month |
 | Excel I/O | OpenPyXL | Two-way sync with brewmaster's existing Excel workflow |
@@ -214,20 +243,53 @@ The guiding principle: **walking skeleton**. Build a thin vertical slice (fronte
 
 **Definition of done:** brewmaster can open the app, see the tanks rendered, drag a Sud, and the change persists across page reload.
 
-### Phase 2 — Validation Layer (1–2 weeks)
+### Phase 2 — Validation Layer + Mobile Surfaces (3–4 weeks, re-scoped 2026-08)
 
-**Goal:** encode all hard constraints from §2.4 as backend validation.
+**Goal:** encode all hard constraints from §2.4 as backend validation, and
+deliver the two mobile-first surfaces from §2.8 on top of them.
 
-- Backend rejects invalid drops with structured error responses:
-  - Tank double-booking
+**Track A — validation core (backend):**
+
+- Validation blocks **hard** — no override mechanism (decided 2026-08)
+- Backend rejects invalid actions with structured error responses
+  (extending the 409/422 constraint contract shipped in PR #9):
+  - Tank double-booking (done at DB level; application check adds detail)
+  - Tank capacity vs. batch size
   - Wheat beer skipping open fermentation
-  - Beer entering Ausschank with active yeast (i.e. fermentation not complete)
+  - Beer entering Ausschank with active yeast (fermentation not complete)
   - Stage regression
-- Frontend visualizes conflicts: red outline on invalid blocks, tooltip explaining why
-- Add per-beer fermentation/storage duration calculations from recipe data — when a Sud is dropped at brew date X, the system auto-calculates expected fermentation and storage end dates
-- **This phase is where edge cases get discovered.** Plan a working session with the brewmaster to walk through scenarios.
+- **Merged-batch model** (issue #3): same recipe brewed twice within 48 h
+  merges into one 30-hl tank — model explicitly, don't relax the EXCLUDE
+  constraint
+- `POST /api/sude/{id}/transfer` — the validated "move to next stage"
+  action the tap-flows are built on
+- Per-recipe duration calculations: dropping a Sud at brew date X derives
+  expected fermentation/storage end dates
+- DB-level uniqueness for `style_year_number` (deferred from PR #6)
 
-**Definition of done:** brewmaster can no longer create an invalid schedule by accident.
+**Track B — Kellerblick (mobile-first everyday surface):**
+
+- Card list per tank: contents, Sud-Nr., day N of M, next due action
+- Tap-flow transfers using Track A's endpoint: pick target tank from the
+  valid candidates only, confirm, done
+- PWA baseline: installable, offline read cache, offline mutation queue
+  with visible replay/conflict status
+
+**Track C — touch-capable planning timeline:**
+
+- Outcome of the Gantt touch evaluation (docs/gantt-evaluation.md):
+  either make react-calendar-timeline genuinely touch-capable or swap it
+- Conflict visualization: invalid placements flagged with the reason
+- Larger touch targets, pinch zoom, tap-to-select-then-move
+
+**This phase is where edge cases get discovered.** Plan a working session
+with the brewmaster — in the cellar, on the phone, over real radio dead
+spots.
+
+**Definition of done:** brewmaster can run a full cellar day from the
+phone — check status, book a transfer, create a Sud, adjust the plan —
+without being able to create an invalid schedule, even with intermittent
+connectivity.
 
 ### Phase 3 — Recipe Management (1 week)
 
@@ -328,7 +390,7 @@ Structured JSON logs from day one (consistent with Stefan's preference for struc
 
 Explicitly out of scope to prevent scope creep:
 
-- Mobile app (responsive web is sufficient)
+- Native mobile app (App Store / Play Store) — the mobile-first **PWA** from §2.8 is the delivery model
 - Multi-brewery support (single tenant)
 - Inventory management (ingredients, hops, malt) — separate concern
 - Sales/POS integration as a service (Excel import is enough)

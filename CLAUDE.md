@@ -83,15 +83,19 @@ Before marking a PR ready or claiming a task complete:
   recipe is brewed twice within 48 h and merged into one 30-hl tank. Until
   Phase 2 models this explicitly, the `EXCLUDE` constraint blocks the second
   occupancy — do not "fix" that by relaxing the constraint.
+- **Primary usage is mobile, in the cellar, with spotty connectivity**
+  (confirmed 2026-08, ROADMAP §2.8). Every user-facing feature ships
+  mobile-first; the app is a PWA with offline read cache and a queued-
+  mutation strategy. Desktop is the derivative view.
 
 ## Out of scope (do not build without explicit ask)
 
 These are recorded in `ROADMAP.md` §6.5 and repeated here so they don't drift
 back in:
 
-- Mobile app, multi-brewery, ingredient inventory, POS-as-a-service,
-  microservices, IoT tank sensors. Responsive web is enough; single tenant;
-  Excel import suffices.
+- Native mobile app, multi-brewery, ingredient inventory, POS-as-a-service,
+  microservices, IoT tank sensors. The mobile-first PWA is the delivery
+  model (no App-Store app); single tenant; Excel import suffices.
 
 ## When in doubt
 
