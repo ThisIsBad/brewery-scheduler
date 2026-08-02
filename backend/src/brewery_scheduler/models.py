@@ -197,6 +197,48 @@ class Sud(Base):
     merged_partners: Mapped[list[Sud]] = relationship(
         "Sud", foreign_keys=[merged_into_sud_id], viewonly=True
     )
+    withdrawals: Mapped[list[Withdrawal]] = relationship(
+        back_populates="sud", cascade="all, delete-orphan", order_by="Withdrawal.at"
+    )
+
+
+class WithdrawalKind(str, enum.Enum):
+    KEG_FILL = "keg_fill"
+
+
+class Withdrawal(Base):
+    """Volume leaving a tank without entering another one (issue #15) —
+    keg fills for festival stands and secondary serving points."""
+
+    __tablename__ = "withdrawals"
+    __table_args__ = (
+        CheckConstraint("volume_hl > 0", name="ck_withdrawals_positive_volume"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    sud_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sude.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tank_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tanks.id"), nullable=False, index=True
+    )
+    volume_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    kind: Mapped[WithdrawalKind] = mapped_column(
+        _enum(WithdrawalKind, 32),
+        nullable=False,
+        default=WithdrawalKind.KEG_FILL,
+        server_default="keg_fill",
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    sud: Mapped[Sud] = relationship(back_populates="withdrawals")
 
 
 class TankOccupancy(Base):

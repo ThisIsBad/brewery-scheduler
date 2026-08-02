@@ -786,6 +786,82 @@ def test_transfer_rejects_unscheduled_sud(client, session) -> None:
     assert "schedule it before" in r.json()["detail"]
 
 
+def test_withdraw_happy_path_and_remaining_volume(client, session) -> None:
+    # Kellerbier (15 hl) sits in storage tank S-30-1 right now.
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r1 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "volume_hl": 5,
+            "at": now.isoformat(),
+            "notes": "2 Fässer fürs Festzelt",
+        },
+    )
+    assert r1.status_code == 200, r1.text
+    body = r1.json()
+    assert len(body["withdrawals"]) == 1
+    assert body["withdrawals"][0]["volume_hl"] == 5
+    assert body["withdrawals"][0]["kind"] == "keg_fill"
+
+    # 5 of 15 hl are gone — withdrawing 12 more must fail with the remainder.
+    r2 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "volume_hl": 12,
+            "at": now.isoformat(),
+        },
+    )
+    assert r2.status_code == 409, r2.text
+    assert "10 hl" in r2.json()["detail"]
+
+
+def test_withdraw_rejects_tank_not_occupied_at_time(client, session) -> None:
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    wrong_tank = session.query(Tank).filter(Tank.name == "A-120").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(wrong_tank.id),
+            "volume_hl": 1,
+            "at": now.isoformat(),
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "does not occupy" in r.json()["detail"]
+
+
+def test_withdraw_rejects_partner(client, session) -> None:
+    partner = session.query(Sud).filter(Sud.merged_into_sud_id.is_not(None)).one()
+    tank = session.query(Tank).filter(Tank.name == "F-30-2").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        f"/api/sude/{partner.id}/withdraw",
+        json={"tank_id": str(tank.id), "volume_hl": 1, "at": now.isoformat()},
+    )
+    assert r.status_code == 422, r.text
+    assert "withdraw from the lead" in r.json()["detail"]
+
+
+def test_withdraw_rejects_non_positive_volume(client, session) -> None:
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={"tank_id": str(tank.id), "volume_hl": 0, "at": now.isoformat()},
+    )
+    assert r.status_code == 422
+
+
 def test_schedule_rejected_for_merge_partner(client, session) -> None:
     partner = session.query(Sud).filter(Sud.merged_into_sud_id.is_not(None)).one()
     tank_id = str(session.query(Tank).filter(Tank.name == "F-15-2").one().id)
