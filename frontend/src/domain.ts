@@ -44,7 +44,9 @@ export function sudNumberLabel(lead: Sud, all: Sud[]): string {
     lead.style_year_number,
     ...partnersOf(lead, all).map((p) => p.style_year_number),
   ].sort((a, b) => a - b);
-  const year = new Date(lead.brew_date).getFullYear();
+  // brew_date is a date-only string; slicing avoids the UTC-midnight parse
+  // that would shift Jan 1 into the previous year west of UTC.
+  const year = lead.brew_date.slice(0, 4);
   return `Nr. ${numbers.join("+")}/${year}`;
 }
 
@@ -84,15 +86,22 @@ export function remainingHl(
   return allocationHl(occ, lead, all) - withdrawn;
 }
 
-/** "Tag 3 von 7" within an occupancy window; "Tag 3" for open-ended ones. */
+/** "Tag 3 von 7" within an occupancy window; "Tag 3" for open-ended ones.
+ * Calendar-day based (local midnights): the morning round on the day after
+ * a 14:00 start counts as Tag 2, matching how the brewmaster counts.
+ * Math.round absorbs DST hour shifts. */
 export function dayProgressLabel(occ: Occupancy, when: Date): string {
-  const start = new Date(occ.start_at).getTime();
-  const day = Math.floor((when.getTime() - start) / 86_400_000) + 1;
+  const midnight = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const start = new Date(occ.start_at);
+  const day =
+    Math.round((midnight(when) - midnight(start)) / 86_400_000) + 1;
   if (!occ.end_at) return `Tag ${day}`;
-  const total = Math.ceil(
-    (new Date(occ.end_at).getTime() - start) / 86_400_000,
+  const total = Math.max(
+    1,
+    Math.round((midnight(new Date(occ.end_at)) - midnight(start)) / 86_400_000),
   );
-  return `Tag ${day} von ${total}`;
+  return `Tag ${Math.min(day, total)} von ${total}`;
 }
 
 export function formatHl(volume: number): string {

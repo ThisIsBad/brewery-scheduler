@@ -361,15 +361,34 @@ def transfer_sud(
         duration_days = _default_duration_days(sud.recipe, target_stage)
         end_at = payload.start_at + timedelta(days=duration_days)
 
+    # The beer physically leaves its current tank at the transfer start, so
+    # every occupancy still running at that moment — open-ended OR with a
+    # planned future end — is truncated to it. Without this, an early
+    # transfer left the batch nominally in two tanks at once: the stale
+    # occupancy blocked the old tank, misdirected keg withdrawals, and made
+    # the wheat rule reject legitimate open→closed moves.
+    def effective_end(o: TankOccupancy):
+        if o.end_at is None or o.end_at > payload.start_at:
+            return payload.start_at
+        return o.end_at
+
+    for occ in sud.occupancies:
+        if (
+            occ.end_at is None or occ.end_at > payload.start_at
+        ) and payload.start_at <= occ.start_at:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Transfer starts before an existing occupancy begins — "
+                    "adjust the plan first."
+                ),
+            )
+
     # Evaluate the pipeline rules against the future picture: the existing
-    # occupancies (open ones closing at the transfer start) plus the new
+    # occupancies as they will look after truncation, plus the new
     # allocations.
     future = [
-        SimpleNamespace(
-            stage=o.stage,
-            start_at=o.start_at,
-            end_at=o.end_at if o.end_at is not None else payload.start_at,
-        )
+        SimpleNamespace(stage=o.stage, start_at=o.start_at, end_at=effective_end(o))
         for o in sud.occupancies
     ] + [
         SimpleNamespace(stage=target_stage, start_at=payload.start_at, end_at=end_at)
@@ -378,15 +397,7 @@ def transfer_sud(
     _rule_yeast_free_ausschank(sud.recipe, future)
 
     for occ in sud.occupancies:
-        if occ.end_at is None:
-            if payload.start_at <= occ.start_at:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=(
-                        "Transfer starts before the current occupancy begins — "
-                        "check the start_at."
-                    ),
-                )
+        if occ.end_at is None or occ.end_at > payload.start_at:
             occ.end_at = payload.start_at
 
     for allocation, volume in zip(payload.allocations, volumes):

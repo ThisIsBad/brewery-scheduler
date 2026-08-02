@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
 import {
@@ -30,18 +30,48 @@ type DialogState =
 
 export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
   const [dialog, setDialog] = useState<DialogState>(null);
-  const now = useMemo(() => new Date(), []);
+  // Re-render every minute so cards move between sections while the phone
+  // stays open on the cellar round — `now` is recomputed per render.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const now = new Date();
   const tankById = useMemo(() => new Map(tanks.map((t) => [t.id, t])), [tanks]);
 
   const leads = sude.filter((s) => s.merged_into_sud_id === null);
-  const current = leads
-    .map((sud) => ({ sud, occ: occupancyAt(sud, now) }))
-    .filter((x): x is { sud: Sud; occ: Occupancy } => x.occ !== null);
+  // A batch split across Ausschank tanks has several concurrent occupancies
+  // — every occupied tank gets its own card.
+  const current = leads.flatMap((sud) =>
+    sud.occupancies
+      .filter((o) => {
+        const start = new Date(o.start_at).getTime();
+        const end = o.end_at ? new Date(o.end_at).getTime() : Infinity;
+        return start <= now.getTime() && now.getTime() < end;
+      })
+      .map((occ) => ({ sud, occ })),
+  );
   const planned = leads
     .filter((sud) => occupancyAt(sud, now) === null)
     .map((sud) => ({ sud, occ: firstFutureOccupancy(sud, now) }))
     .filter((x): x is { sud: Sud; occ: Occupancy } => x.occ !== null);
   const unplanned = leads.filter((sud) => sud.occupancies.length === 0);
+  // Past their planned window with nothing active or upcoming: exactly when
+  // the Umdrücken is due, so these must stay visible and actionable.
+  const overdue = leads
+    .filter(
+      (sud) =>
+        sud.occupancies.length > 0 &&
+        occupancyAt(sud, now) === null &&
+        firstFutureOccupancy(sud, now) === null,
+    )
+    .map((sud) => ({
+      sud,
+      occ: sud.occupancies.reduce((latest, o) =>
+        new Date(o.start_at) > new Date(latest.start_at) ? o : latest,
+      ),
+    }));
 
   return (
     <div className="kellerblick">
@@ -93,6 +123,45 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
           );
         })}
       </section>
+
+      {overdue.length > 0 && (
+        <section>
+          <h2>Überfällig</h2>
+          {overdue.map(({ sud, occ }) => {
+            const tank = tankById.get(occ.tank_id);
+            const target = nextStage(occ.stage);
+            return (
+              <article className="card overdue" key={occ.id}>
+                <header>
+                  <strong>{tank?.name ?? "?"}</strong>
+                  <span className="muted">{STAGE_LABEL[occ.stage]}</span>
+                </header>
+                <div className="card-body">
+                  <div className="beer">
+                    {sud.recipe.name} {sudNumberLabel(sud, sude)}
+                  </div>
+                  <div className="muted">
+                    geplantes Ende {occ.end_at ? formatDate(occ.end_at) : "—"} ist
+                    vorbei — Bier steht noch im Tank
+                  </div>
+                </div>
+                <footer>
+                  {target && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDialog({ kind: "transfer", sud, occupancy: occ })
+                      }
+                    >
+                      Umdrücken → {STAGE_LABEL[target]}
+                    </button>
+                  )}
+                </footer>
+              </article>
+            );
+          })}
+        </section>
+      )}
 
       {planned.length > 0 && (
         <section>
@@ -170,6 +239,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
         <ScheduleDialog
           sud={dialog.sud}
           tanks={tanks}
+          sude={sude}
           onClose={() => setDialog(null)}
           onDone={(updated) => {
             onChanged(updated);

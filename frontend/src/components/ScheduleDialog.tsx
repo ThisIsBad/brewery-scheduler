@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 
 import { api } from "../api/client";
 import type { Sud, Tank, TankStage } from "../api/types";
-import { formatHl, sudNumberLabel } from "../domain";
+import { combinedVolumeHl, formatHl, sudNumberLabel } from "../domain";
 
 interface ScheduleDialogProps {
   sud: Sud;
   tanks: Tank[];
+  sude: Sud[];
   onClose: () => void;
   onDone: (updated: Sud) => void;
 }
@@ -16,7 +17,13 @@ function toLocalInputValue(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
 }
 
-export function ScheduleDialog({ sud, tanks, onClose, onDone }: ScheduleDialogProps) {
+export function ScheduleDialog({
+  sud,
+  tanks,
+  sude,
+  onClose,
+  onDone,
+}: ScheduleDialogProps) {
   // Wheat starts in the open fermenter, everything else in a closed one —
   // same recipe-driven rule the create dialog applies; the server enforces
   // it regardless.
@@ -27,12 +34,15 @@ export function ScheduleDialog({ sud, tanks, onClose, onDone }: ScheduleDialogPr
     ? (sud.recipe.open_fermentation_duration_days ?? 4)
     : sud.recipe.fermentation_duration_days;
 
+  // Merged batches share the lead's tank — offer only fermenters that fit
+  // the combined volume, matching the server's capacity rule.
+  const combined = combinedVolumeHl(sud, sude);
   const candidates = useMemo(
     () =>
       tanks.filter(
-        (t) => t.stage === stage && t.active && t.capacity_hl >= sud.volume_hl,
+        (t) => t.stage === stage && t.active && t.capacity_hl >= combined,
       ),
-    [tanks, stage, sud.volume_hl],
+    [tanks, stage, combined],
   );
 
   const [tankId, setTankId] = useState("");
@@ -69,8 +79,9 @@ export function ScheduleDialog({ sud, tanks, onClose, onDone }: ScheduleDialogPr
     <div className="dialog-backdrop" role="dialog" aria-label="Einplanen">
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          Einplanen: {sud.recipe.name} {sudNumberLabel(sud, [sud])}
+          Einplanen: {sud.recipe.name} {sudNumberLabel(sud, sude)}
         </h2>
+        <p className="muted">{formatHl(combined)} in den Gärtank</p>
 
         <label>
           {stage === "fermentation_open" ? "Gärtank (offen)" : "Gärtank"}

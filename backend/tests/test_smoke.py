@@ -772,6 +772,68 @@ def test_create_rejects_initial_occupancy_over_capacity(client, session) -> None
     assert "capacity" in r.json()["detail"]
 
 
+def test_transfer_truncates_running_occupancy(client, session) -> None:
+    # Kellerbier's storage occupancy has a planned end 14 days out; an early
+    # transfer must truncate it at the transfer start — the beer physically
+    # left, the tank is free again, and no overlapping two-tank state exists.
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = _transfer(client, lead.id, [{"tank_id": str(a50.id)}], start)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    storage = [o for o in body["occupancies"] if o["stage"] == "storage"]
+    assert len(storage) == 1
+    truncated_end = datetime.fromisoformat(storage[0]["end_at"].replace("Z", "+00:00"))
+    assert truncated_end == start
+
+
+def test_transfer_out_of_open_fermentation_respects_minimum_days(
+    client, session
+) -> None:
+    wheat_recipe = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+    )
+    open_tank = session.query(Tank).filter(Tank.name == "F-OPEN-15").one()
+    closed_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    base = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=30)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(wheat_recipe.id),
+            "brew_date": date.today().isoformat(),
+            "initial_occupancy": {
+                "tank_id": str(open_tank.id),
+                "stage": "fermentation_open",
+                "start_at": base.isoformat(),
+                "end_at": (base + timedelta(days=4)).isoformat(),
+            },
+        },
+    ).json()
+
+    # Day 2: truncating at the transfer start would leave only 2 open days —
+    # the wheat rule blocks hard.
+    early = _transfer(
+        client,
+        created["id"],
+        [{"tank_id": str(closed_tank.id)}],
+        base + timedelta(days=2),
+    )
+    assert early.status_code == 422, early.text
+    assert "open fermentation" in early.json()["detail"]
+
+    # After the full 4 open days the move goes through.
+    on_time = _transfer(
+        client,
+        created["id"],
+        [{"tank_id": str(closed_tank.id)}],
+        base + timedelta(days=4),
+    )
+    assert on_time.status_code == 200, on_time.text
+
+
 def test_transfer_rejects_unscheduled_sud(client, session) -> None:
     recipe_id = str(session.query(Recipe).first().id)
     created = client.post(

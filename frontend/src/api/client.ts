@@ -15,7 +15,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+    // Surface the API's structured `detail` sentence instead of a raw JSON
+    // blob — these messages are shown verbatim in the tap-flow dialogs.
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") message = parsed.detail;
+    } catch {
+      if (body) message = `${message}: ${body}`;
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }

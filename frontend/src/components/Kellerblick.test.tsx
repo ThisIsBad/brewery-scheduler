@@ -116,6 +116,85 @@ describe("Kellerblick", () => {
     expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 
+  it("renders one card per tank for a multi-tank Ausschank split", () => {
+    const split = baseSud({
+      id: "sud-5",
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-a",
+          sud_id: "sud-5",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 20,
+        },
+        {
+          id: "occ-b",
+          sud_id: "sud-5",
+          tank_id: "tank-a80",
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 10,
+        },
+      ],
+    });
+    const a80: Tank = {
+      id: "tank-a80",
+      name: "A-80",
+      cellar: "main",
+      stage: "ausschank",
+      capacity_hl: 80,
+      active: true,
+    };
+
+    render(
+      <Kellerblick
+        tanks={[AUSSCHANK_TANK, a80]}
+        sude={[split]}
+        onChanged={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("A-50")).toBeInTheDocument();
+    expect(screen.getByText("A-80")).toBeInTheDocument();
+    expect(screen.getByText(/noch 20 hl/)).toBeInTheDocument();
+    expect(screen.getByText(/noch 10 hl/)).toBeInTheDocument();
+  });
+
+  it("keeps past-window Sude visible under Überfällig with a transfer action", () => {
+    const overdue = baseSud({
+      id: "sud-6",
+      occupancies: [
+        {
+          id: "occ-c",
+          sud_id: "sud-6",
+          tank_id: STORAGE_TANK.id,
+          stage: "storage",
+          start_at: daysFromNow(-10),
+          end_at: daysFromNow(-1),
+          volume_hl: null,
+        },
+      ],
+    });
+
+    render(
+      <Kellerblick
+        tanks={[STORAGE_TANK, AUSSCHANK_TANK]}
+        sude={[overdue]}
+        onChanged={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Überfällig")).toBeInTheDocument();
+    expect(screen.getByText(/Bier steht noch im Tank/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Umdrücken → Ausschank/ }),
+    ).toBeInTheDocument();
+  });
+
   it("shows future-only Sude under Geplant without action buttons", () => {
     const planned = baseSud({
       id: "sud-4",

@@ -38,6 +38,13 @@ export default function App() {
 
   useEffect(() => {
     void refresh();
+    // Refetch when the phone comes back to the app — the cellar round
+    // often happens with the tab backgrounded in between.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refresh]);
 
   const applySudUpdate = useCallback((updated: Sud) => {
@@ -145,13 +152,15 @@ export default function App() {
         </div>
       )}
 
-      <NewSudDialog
-        open={dialogOpen}
-        recipes={recipes}
-        tanks={tanks}
-        onClose={() => setDialogOpen(false)}
-        onCreated={applySudUpdate}
-      />
+      {dialogOpen && (
+        <NewSudDialog
+          open
+          recipes={recipes}
+          tanks={tanks}
+          onClose={() => setDialogOpen(false)}
+          onCreated={applySudUpdate}
+        />
+      )}
     </div>
   );
 }

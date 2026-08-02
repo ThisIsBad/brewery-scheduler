@@ -173,6 +173,11 @@ button:disabled {
   border-style: dashed;
 }
 
+.card.overdue {
+  border-color: #d9822b;
+  background: #fdf6ee;
+}
+
 /* --- Dialogs --- */
 
 .dialog-backdrop {
