@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from .api import sude, tanks
+from .api import recipes, sude, tanks
 from .config import settings
 
 app = FastAPI(title=settings.api_title, version="0.1.0")
 
 app.include_router(tanks.router)
+app.include_router(recipes.router)
 app.include_router(sude.router)
 
 

@@ -46,3 +46,96 @@ body {
   padding: 16px;
   color: #b00;
 }
+
+.app-header button {
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid #888;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.app-header button:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.app-header button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  min-width: 360px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dialog h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #444;
+}
+
+.dialog label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.dialog input,
+.dialog select {
+  padding: 6px 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.dialog .error {
+  padding: 6px 8px;
+  color: #b00;
+  border: 1px solid #fbb;
+  background: #fee;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dialog-actions button[type="submit"] {
+  background: #2a6;
+  color: #fff;
+  border-color: #185;
+}
+
+.dialog-actions button[type="submit"]:hover:not(:disabled) {
+  background: #185;
+}

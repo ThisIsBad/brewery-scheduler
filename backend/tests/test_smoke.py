@@ -4,6 +4,7 @@ Validates only the round trip the brewmaster will actually exercise:
 - the seed populates the expected number of tanks/recipes/sude
 - listing endpoints return them
 - PUT /api/sude/{id}/schedule persists occupancies
+- POST /api/sude creates a Sud with auto-assigned style_year_number
 - constraint violations surface as structured 409/422 responses
 
 Phase 2 will add validation-rule coverage.
@@ -11,9 +12,9 @@ Phase 2 will add validation-rule coverage.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
-from brewery_scheduler.models import Recipe, Sud, Tank, TankOccupancy
+from brewery_scheduler.models import BeerStyle, Recipe, Sud, Tank, TankOccupancy
 
 
 def test_seed_creates_full_inventory(session) -> None:
@@ -90,6 +91,110 @@ def test_update_schedule_replaces_occupancies(client, session) -> None:
     r2 = client.put(f"/api/sude/{sud_id}/schedule", json={"occupancies": []})
     assert r2.status_code == 200
     assert r2.json()["occupancies"] == []
+
+
+def test_list_recipes_returns_seeded_recipes(client) -> None:
+    r = client.get("/api/recipes")
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 4
+    assert {x["beer_style"] for x in body} == {
+        "kellerbier",
+        "wheat",
+        "festbier",
+        "special",
+    }
+
+
+def test_create_sud_assigns_next_style_year_number(client, session) -> None:
+    kellerbier_recipe = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    # Seed has one Kellerbier with style_year_number=1 in the current year, so
+    # the next one in the same year should get 2; a different year should get 1.
+    # A fixed month/day avoids today.replace(year=+1), which raises on Feb 29.
+    today = date.today()
+    next_year = date(today.year + 1, 6, 15)
+
+    r1 = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier_recipe.id),
+            "brew_date": today.isoformat(),
+            "brewmaster": "test",
+        },
+    )
+    assert r1.status_code == 201, r1.text
+    assert r1.json()["style_year_number"] == 2
+
+    r2 = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier_recipe.id),
+            "brew_date": next_year.isoformat(),
+            "brewmaster": "test",
+        },
+    )
+    assert r2.status_code == 201, r2.text
+    assert r2.json()["style_year_number"] == 1
+
+
+def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(
+    client, session
+) -> None:
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    ferm_tank = (
+        session.query(Tank).filter(Tank.name == "F-15-2").one()
+    )  # not used by seed, so free for fermentation_closed
+    start = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier.id),
+            "brew_date": date.today().isoformat(),
+            "initial_occupancy": {
+                "tank_id": str(ferm_tank.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+                # end_at omitted on purpose — server should fill from recipe.
+            },
+        },
+    )
+    assert r.status_code == 201, r.text
+    occ = r.json()["occupancies"][0]
+    expected_end = start + timedelta(days=float(kellerbier.fermentation_duration_days))
+    # Compare parsed datetimes — Pydantic and datetime.isoformat disagree on
+    # whether UTC is "Z" or "+00:00" depending on versions; both are valid ISO.
+    actual_end = datetime.fromisoformat(occ["end_at"].replace("Z", "+00:00"))
+    assert actual_end == expected_end
+
+
+def test_create_sud_422_on_overlong_brewmaster(client, session) -> None:
+    recipe_id = str(session.query(Recipe).first().id)
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": recipe_id,
+            "brew_date": date.today().isoformat(),
+            "brewmaster": "x" * 200,
+        },
+    )
+    # Without the schema bound this would hit the String(128) column and 500.
+    assert r.status_code == 422
+
+
+def test_create_sud_404_on_unknown_recipe(client) -> None:
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": "00000000-0000-0000-0000-000000000000",
+            "brew_date": date.today().isoformat(),
+        },
+    )
+    assert r.status_code == 404
 
 
 def test_overlapping_occupancy_returns_structured_409(client, session) -> None:

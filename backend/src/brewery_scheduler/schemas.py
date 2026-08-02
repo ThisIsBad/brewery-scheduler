@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import BeerStyle, SudStatus, TankCellar, TankStage
 
@@ -74,3 +74,19 @@ class ScheduleIn(BaseModel):
     """
 
     occupancies: list[ScheduleOccupancyIn]
+
+
+class SudCreateIn(BaseModel):
+    """Request body for POST /api/sude.
+
+    The brewmaster supplies the recipe and brew date; the server computes
+    style_year_number and global_number. The initial occupancy is optional
+    so a Sud can be created and parked in "Ungeplant" until the brewmaster
+    decides which fermentation tank it goes into.
+    """
+
+    recipe_id: uuid.UUID
+    brew_date: date
+    notes: str | None = Field(default=None, max_length=10_000)
+    brewmaster: str | None = Field(default=None, max_length=128)
+    initial_occupancy: ScheduleOccupancyIn | None = None
