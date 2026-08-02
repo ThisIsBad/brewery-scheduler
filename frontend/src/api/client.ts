@@ -1,4 +1,12 @@
-import type { Recipe, ScheduleIn, Sud, SudCreateIn, Tank } from "./types";
+import type {
+  Recipe,
+  ScheduleIn,
+  Sud,
+  SudCreateIn,
+  Tank,
+  TransferIn,
+  WithdrawIn,
+} from "./types";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -7,7 +15,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+    // Surface the API's structured `detail` sentence instead of a raw JSON
+    // blob — these messages are shown verbatim in the tap-flow dialogs.
+    let message = `${res.status} ${res.statusText}`;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") message = parsed.detail;
+    } catch {
+      if (body) message = `${message}: ${body}`;
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }
@@ -24,6 +41,16 @@ export const api = {
   updateSchedule: (sudId: string, payload: ScheduleIn) =>
     request<Sud>(`/api/sude/${sudId}/schedule`, {
       method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  transferSud: (sudId: string, payload: TransferIn) =>
+    request<Sud>(`/api/sude/${sudId}/transfer`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  withdraw: (sudId: string, payload: WithdrawIn) =>
+    request<Sud>(`/api/sude/${sudId}/withdraw`, {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
 };

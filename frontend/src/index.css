@@ -10,20 +10,22 @@
 body {
   margin: 0;
   padding: 0;
+  background: #f5f3ef;
 }
 
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
 }
 
 .app-header {
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid #ddd;
-  background: #fafafa;
+  background: #fff;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
 }
 
@@ -32,9 +34,41 @@ body {
   margin: 0;
 }
 
-.app-header .status {
-  font-size: 13px;
-  color: #666;
+.tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.tabs button {
+  font-size: 14px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.tabs button.active {
+  background: #2a6;
+  color: #fff;
+  font-weight: 600;
+}
+
+.new-sud {
+  font-size: 14px;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid #888;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .app-board {
@@ -42,49 +76,143 @@ body {
   overflow: hidden;
 }
 
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .error {
-  padding: 16px;
   color: #b00;
 }
 
-.app-header button {
+.error.banner {
+  padding: 10px 12px;
+  background: #fee;
+  border-bottom: 1px solid #fbb;
   font-size: 13px;
-  padding: 4px 10px;
-  border: 1px solid #888;
+}
+
+.empty {
+  padding: 16px;
+  color: #666;
+}
+
+/* --- Kellerblick cards --- */
+
+.kellerblick {
+  padding: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.kellerblick h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 16px 0 8px;
+}
+
+.card {
   background: #fff;
-  border-radius: 4px;
+  border: 1px solid #e2ddd4;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.card .beer {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.card .muted,
+.muted {
+  color: #777;
+  font-size: 13px;
+}
+
+.card footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.card footer button {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #2a6;
+  color: #fff;
   cursor: pointer;
 }
 
-.app-header button:hover:not(:disabled) {
-  background: #f0f0f0;
+.card footer button.secondary {
+  background: #fff;
+  color: #333;
+  border: 1px solid #bbb;
 }
 
-.app-header button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.card.planned,
+.card.unplanned {
+  background: #fbfaf7;
+  border-style: dashed;
 }
+
+.card.overdue {
+  border-color: #d9822b;
+  background: #fdf6ee;
+}
+
+/* --- Dialogs --- */
 
 .dialog-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 100;
 }
 
+@media (min-width: 480px) {
+  .dialog-backdrop {
+    align-items: center;
+  }
+}
+
 .dialog {
   background: #fff;
-  padding: 20px 24px;
-  border-radius: 8px;
-  min-width: 360px;
+  padding: 20px;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
   max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 480px) {
+  .dialog {
+    border-radius: 12px;
+  }
 }
 
 .dialog h2 {
@@ -108,18 +236,18 @@ body {
 
 .dialog input,
 .dialog select {
-  padding: 6px 8px;
+  padding: 12px;
   border: 1px solid #bbb;
-  border-radius: 4px;
+  border-radius: 8px;
   font: inherit;
+  min-height: 44px;
 }
 
 .dialog .error {
-  padding: 6px 8px;
-  color: #b00;
+  padding: 8px 10px;
   border: 1px solid #fbb;
   background: #fee;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 12px;
 }
 
@@ -130,12 +258,49 @@ body {
   margin-top: 8px;
 }
 
+.dialog-actions button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
 .dialog-actions button[type="submit"] {
   background: #2a6;
   color: #fff;
   border-color: #185;
 }
 
-.dialog-actions button[type="submit"]:hover:not(:disabled) {
-  background: #185;
+.allocation-row {
+  display: flex;
+  gap: 8px;
+}
+
+.allocation-row select {
+  flex: 2;
+}
+
+.allocation-row input {
+  flex: 1;
+  min-width: 70px;
+}
+
+.allocation-row button {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.dialog button.secondary {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px dashed #bbb;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
 }
