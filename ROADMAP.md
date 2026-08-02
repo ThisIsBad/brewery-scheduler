@@ -57,7 +57,7 @@ Brewhouse → Fermentation tank → Storage tank → Ausschank tank → Customer
 
 ### 2.4 Hard Constraints
 
-1. **Tank exclusivity:** A tank holds at most one batch at a time. **Confirmed 2026-08 (issue #3):** the 30-hl case is real and typical — the same recipe is brewed twice within 48 hours and the two Sude are merged into one 30-hl tank. Phase 2 must model this as a *merged batch* (two brews, one tank occupant); the `EXCLUDE` constraint stays as the barrier against genuinely conflicting occupancies.
+1. **Tank exclusivity:** A fermentation or storage tank holds at most one batch at a time. **Confirmed 2026-08 (issue #3):** the 30-hl case is real and typical — the same recipe is brewed twice within 48 hours and the two Sude are merged into one 30-hl tank, modeled as a *merged batch* (lead + partner, one tank occupant). **Ausschank tanks are different (confirmed 2026-08, issue #13):** they blend several batches at once, and a batch can be split across two Ausschank tanks (e.g. 6×30 hl → 100 + 80 hl). The `EXCLUDE` constraint therefore guards fermentation/storage only; Ausschank headroom (sum of allocations ≤ capacity) is enforced in the application.
 2. **Yeast-free Ausschank:** Beer with active yeast cannot enter Ausschank (lying-down) tanks — residual yeast produces off-flavors ("hot sauces").
 3. **Wheat-beer open fermentation prerequisite:** No wheat beer may enter a closed fermentation tank without first spending 4 days in the open fermentation tank.
 4. **Stage ordering:** A Sud may only move forward in the pipeline (no Storage → Fermentation regression).

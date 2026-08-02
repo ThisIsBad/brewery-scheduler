@@ -52,6 +52,7 @@ const SUD: Sud = {
       stage: "fermentation_closed",
       start_at: daysFromNow(-2).toISOString(),
       end_at: daysFromNow(5).toISOString(),
+      volume_hl: null,
     },
   ],
 };

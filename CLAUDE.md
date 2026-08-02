@@ -76,9 +76,12 @@ Before marking a PR ready or claiming a task complete:
   `version + 1`; existing Sude keep their original recipe link. Confirmed
   2026-08: already-scheduled Sude never re-link to newer versions.
 - **Tank double-booking is prevented at the database level** via the GiST
-  `EXCLUDE` constraint on `tank_occupancy`. Application-level validation
-  (Phase 2) is defense in depth, not the only barrier. Phase-2 validation
-  blocks hard — no override mechanism.
+  `EXCLUDE` constraint on `tank_occupancy` — scoped to fermentation and
+  storage. Ausschank tanks legally blend several batches (confirmed
+  2026-08, issue #13: 6×30 hl → 100+80 hl); there the rule is
+  sum-of-allocations ≤ capacity, enforced in the application at every
+  mutating endpoint. Phase-2 validation blocks hard — no override
+  mechanism.
 - **30-hl merged batches are real** (confirmed 2026-08, issue #3): the same
   recipe is brewed twice within 48 h and merged into one 30-hl tank. Until
   Phase 2 models this explicitly, the `EXCLUDE` constraint blocks the second

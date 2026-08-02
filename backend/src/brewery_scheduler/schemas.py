@@ -19,6 +19,7 @@ class OccupancyOut(BaseModel):
     stage: TankStage
     start_at: datetime
     end_at: datetime | None
+    volume_hl: float | None
 
 
 class TankOut(BaseModel):
@@ -67,6 +68,7 @@ class ScheduleOccupancyIn(BaseModel):
     stage: TankStage
     start_at: datetime
     end_at: datetime | None = None
+    volume_hl: float | None = Field(default=None, gt=0)
 
 
 class ScheduleIn(BaseModel):
@@ -98,3 +100,23 @@ class SudCreateIn(BaseModel):
     # tank. Mutually exclusive with initial_occupancy: partners never carry
     # occupancies of their own.
     merge_into_sud_id: uuid.UUID | None = None
+
+
+class TransferAllocationIn(BaseModel):
+    tank_id: uuid.UUID
+    # Required when splitting across several Ausschank tanks; omitted for a
+    # whole-batch move (the server uses the combined batch volume).
+    volume_hl: float | None = Field(default=None, gt=0)
+
+
+class TransferIn(BaseModel):
+    """Request body for POST /api/sude/{id}/transfer (Umdrücken).
+
+    Moves the batch (lead + merged partners) forward one or more stages:
+    a single target tank before the Ausschank stage, one or more targets
+    with explicit volume shares at the Ausschank stage (issue #13).
+    """
+
+    start_at: datetime
+    end_at: datetime | None = None
+    allocations: list[TransferAllocationIn] = Field(min_length=1)
