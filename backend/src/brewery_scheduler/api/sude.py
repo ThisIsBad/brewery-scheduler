@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import extract, func, select
@@ -75,6 +76,29 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         if end_at is None:
             duration_days = _default_duration_days(recipe, occ.stage)
             end_at = occ.start_at + timedelta(days=float(duration_days))
+
+        tank = session.get(Tank, occ.tank_id)
+        if tank is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tank {occ.tank_id} not found",
+            )
+        planned = [
+            SimpleNamespace(stage=occ.stage, start_at=occ.start_at, end_at=end_at)
+        ]
+        _rule_wheat_open_fermentation(recipe, planned)
+        _rule_yeast_free_ausschank(recipe, planned)
+        if occ.stage != TankStage.AUSSCHANK and float(sud.volume_hl) > float(
+            tank.capacity_hl
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Batch volume of {float(sud.volume_hl):g} hl exceeds the "
+                    f"{float(tank.capacity_hl):g} hl capacity of tank {tank.name}."
+                ),
+            )
+
         sud.occupancies.append(
             TankOccupancy(
                 tank_id=occ.tank_id,
@@ -134,20 +158,23 @@ def update_schedule(
             tank = tanks.get(occ.tank_id)
             if tank is None:
                 continue
-            # A lead with merged partners must keep the combined batch volume
-            # inside every non-Ausschank tank it is scheduled into — otherwise
-            # the POST-time merge validation could be undone by a reschedule.
+            # Batch volume (lead + merged partners) must fit every
+            # non-Ausschank tank in the new schedule.
             if (
-                partner_volumes
-                and occ.stage != TankStage.AUSSCHANK
+                occ.stage != TankStage.AUSSCHANK
                 and combined_hl > float(tank.capacity_hl)
             ):
+                described = (
+                    f"This Sud leads a merged batch of {combined_hl:g} hl"
+                    if partner_volumes
+                    else f"Batch volume of {combined_hl:g} hl"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
-                        f"This Sud leads a merged batch of {combined_hl:g} hl, "
-                        f"which exceeds the {float(tank.capacity_hl):g} hl "
-                        f"capacity of tank {tank.name}."
+                        f"{described}, which exceeds the "
+                        f"{float(tank.capacity_hl):g} hl capacity of tank "
+                        f"{tank.name}."
                     ),
                 )
             # Ausschank tanks blend batches; the DB EXCLUDE constraint is
@@ -162,6 +189,10 @@ def update_schedule(
                     occ.end_at,
                     exclude_sud_id=sud.id,
                 )
+
+        _rule_stage_order(payload.occupancies)
+        _rule_wheat_open_fermentation(sud.recipe, payload.occupancies)
+        _rule_yeast_free_ausschank(sud.recipe, payload.occupancies)
 
     sud.occupancies.clear()
     session.flush()
@@ -321,6 +352,22 @@ def transfer_sud(
         duration_days = _default_duration_days(sud.recipe, target_stage)
         end_at = payload.start_at + timedelta(days=duration_days)
 
+    # Evaluate the pipeline rules against the future picture: the existing
+    # occupancies (open ones closing at the transfer start) plus the new
+    # allocations.
+    future = [
+        SimpleNamespace(
+            stage=o.stage,
+            start_at=o.start_at,
+            end_at=o.end_at if o.end_at is not None else payload.start_at,
+        )
+        for o in sud.occupancies
+    ] + [
+        SimpleNamespace(stage=target_stage, start_at=payload.start_at, end_at=end_at)
+    ]
+    _rule_wheat_open_fermentation(sud.recipe, future)
+    _rule_yeast_free_ausschank(sud.recipe, future)
+
     for occ in sud.occupancies:
         if occ.end_at is None:
             if payload.start_at <= occ.start_at:
@@ -402,6 +449,72 @@ def _check_ausschank_headroom(
                 f"{float(tank.capacity_hl):g} hl capacity."
             ),
         )
+
+
+def _rule_stage_order(occs) -> None:
+    """§2.4 rule 4: a Sud only moves forward through the pipeline."""
+    ordered = sorted(occs, key=lambda o: o.start_at)
+    ranks = [STAGE_ORDER[TankStage(o.stage)] for o in ordered]
+    if any(later < earlier for earlier, later in zip(ranks, ranks[1:])):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "A Sud only moves forward in the pipeline — the occupancies "
+                "regress to an earlier stage over time."
+            ),
+        )
+
+
+def _rule_wheat_open_fermentation(recipe: Recipe, occs) -> None:
+    """§2.4 rule 3: wheat beer must spend its open-fermentation days in the
+    open fermentation tank before entering a closed fermenter."""
+    if not recipe.open_fermentation_required:
+        return
+    required = timedelta(days=float(recipe.open_fermentation_duration_days or 4))
+    opens = [o for o in occs if TankStage(o.stage) == TankStage.FERMENTATION_OPEN]
+    for closed in occs:
+        if TankStage(closed.stage) != TankStage.FERMENTATION_CLOSED:
+            continue
+        satisfied = any(
+            o.end_at is not None
+            and o.end_at <= closed.start_at
+            and (o.end_at - o.start_at) >= required
+            for o in opens
+        )
+        if not satisfied:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"'{recipe.name}' requires {required.days} days in the open "
+                    "fermentation tank before entering a closed fermenter."
+                ),
+            )
+
+
+def _rule_yeast_free_ausschank(recipe: Recipe, occs) -> None:
+    """§2.4 rule 2: no beer with active yeast enters an Ausschank tank —
+    approximated as: a completed closed fermentation of at least the
+    recipe's fermentation duration must precede the Ausschank start."""
+    ferm = timedelta(days=float(recipe.fermentation_duration_days))
+    closed = [o for o in occs if TankStage(o.stage) == TankStage.FERMENTATION_CLOSED]
+    for a in occs:
+        if TankStage(a.stage) != TankStage.AUSSCHANK:
+            continue
+        satisfied = any(
+            c.end_at is not None
+            and c.end_at <= a.start_at
+            and (c.end_at - c.start_at) >= ferm
+            for c in closed
+        )
+        if not satisfied:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Beer may not enter an Ausschank tank with active yeast — "
+                    f"'{recipe.name}' needs a completed closed fermentation of "
+                    f"at least {ferm.days} days before the Ausschank start."
+                ),
+            )
 
 
 MERGE_MAX_BREW_GAP = timedelta(days=2)
