@@ -13,9 +13,11 @@ from datetime import date, datetime
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
+    Integer,
     Numeric,
     Sequence,
     String,
@@ -23,6 +25,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -35,6 +38,18 @@ class Base(DeclarativeBase):
 # Base.metadata so create_all picks it up in tests; production goes through
 # the Alembic migration.
 SUD_GLOBAL_SEQ = Sequence("sud_global_seq", metadata=Base.metadata)
+
+
+def _enum(enum_cls: type[enum.Enum], length: int) -> SAEnum:
+    """VARCHAR-backed enum storing member *values*, so rows loaded from the
+    database come back as enum members instead of bare strings (the str-enum
+    equality that papered over this went as far as `.value` crashing)."""
+    return SAEnum(
+        enum_cls,
+        native_enum=False,
+        length=length,
+        values_callable=lambda e: [m.value for m in e],
+    )
 
 
 class BeerStyle(str, enum.Enum):
@@ -75,7 +90,7 @@ class Recipe(Base):
     __table_args__ = (UniqueConstraint("beer_style", "version", name="uq_recipes_style_version"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    beer_style: Mapped[BeerStyle] = mapped_column(String(32), nullable=False)
+    beer_style: Mapped[BeerStyle] = mapped_column(_enum(BeerStyle, 32), nullable=False)
     version: Mapped[int] = mapped_column(nullable=False, default=1)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     ingredients: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
@@ -102,8 +117,8 @@ class Tank(Base):
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     name: Mapped[str] = mapped_column(String(32), nullable=False)
-    cellar: Mapped[TankCellar] = mapped_column(String(16), nullable=False)
-    stage: Mapped[TankStage] = mapped_column(String(32), nullable=False)
+    cellar: Mapped[TankCellar] = mapped_column(_enum(TankCellar, 16), nullable=False)
+    stage: Mapped[TankStage] = mapped_column(_enum(TankStage, 32), nullable=False)
     capacity_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
@@ -112,6 +127,12 @@ class Sud(Base):
     __tablename__ = "sude"
     __table_args__ = (
         UniqueConstraint("global_number", name="uq_sude_global_number"),
+        UniqueConstraint(
+            "beer_style",
+            "brew_year",
+            "style_year_number",
+            name="uq_sude_style_year_number",
+        ),
         CheckConstraint("merged_into_sud_id != id", name="ck_sude_no_self_merge"),
     )
 
@@ -121,7 +142,9 @@ class Sud(Base):
     )
     recipe_overrides: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     brew_date: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[SudStatus] = mapped_column(String(32), nullable=False, default=SudStatus.PLANNED)
+    status: Mapped[SudStatus] = mapped_column(
+        _enum(SudStatus, 32), nullable=False, default=SudStatus.PLANNED
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     brewmaster: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
@@ -149,10 +172,23 @@ class Sud(Base):
         SUD_GLOBAL_SEQ, server_default=SUD_GLOBAL_SEQ.next_value(), nullable=False
     )
 
-    # Sequential per (recipe.beer_style, year(brew_date)). This is the
-    # "Sud-Nr." shown on the Gantt — "Kellerbier 17/2026" means the 17th
-    # Kellerbier brewed in 2026. Application logic assigns this on insert.
+    # Sequential per (beer_style, year(brew_date)). This is the "Sud-Nr."
+    # shown on the Gantt — "Kellerbier 17/2026" means the 17th Kellerbier
+    # brewed in 2026. Application logic assigns this on insert; the unique
+    # constraint over (beer_style, brew_year, style_year_number) turns a
+    # concurrent-create race into a rejected request instead of a silent
+    # duplicate number.
     style_year_number: Mapped[int] = mapped_column(nullable=False)
+
+    # Denormalized from the recipe at create time — a Sud's style never
+    # changes (recipe versions share their style); exists to back the
+    # unique constraint above.
+    beer_style: Mapped[BeerStyle] = mapped_column(_enum(BeerStyle, 32), nullable=False)
+    brew_year: Mapped[int] = mapped_column(
+        Integer,
+        Computed("(EXTRACT(YEAR FROM brew_date))::int", persisted=True),
+        nullable=False,
+    )
 
     recipe: Mapped[Recipe] = relationship(lazy="joined")
     occupancies: Mapped[list[TankOccupancy]] = relationship(
@@ -184,7 +220,7 @@ class TankOccupancy(Base):
     tank_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tanks.id"), nullable=False
     )
-    stage: Mapped[TankStage] = mapped_column(String(32), nullable=False)
+    stage: Mapped[TankStage] = mapped_column(_enum(TankStage, 32), nullable=False)
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
