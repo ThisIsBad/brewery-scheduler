@@ -133,8 +133,8 @@ delivery model.
 | Solver | Google OR-Tools (CP-SAT) | Industry standard for resource-constrained scheduling; excellent Python bindings |
 | Database | PostgreSQL 16 | Strong relational integrity; native tstzrange for tank occupancy windows |
 | Frontend | React 18 + TypeScript, Vite | Standard, well-supported |
-| Gantt component | react-calendar-timeline (shipped Phase 1); **touch-first re-evaluation in progress** per §2.8 | Drag-and-drop scheduling is the core UX; the 2026-08 mobile-first decision requires verified touch drag/resize — swap candidates under evaluation in docs/gantt-evaluation.md |
-| PWA / offline | vite-plugin-pwa (Workbox) — service worker, offline read cache, queued offline mutations | §2.8: spotty cellar connectivity; stack choice to be confirmed in the Phase-2 design spike |
+| Timeline component | react-calendar-timeline (Phase 1) → **custom timeline on `@dnd-kit/core` in Phase 2 Track C** | Touch re-evaluation (docs/gantt-evaluation.md addendum): rct's interaction engine can't be made touch-first; our flat tank-row domain makes a ~500-line bespoke component the lowest-complexity option, and the swap removes moment + interactjs |
+| PWA / offline | vite-plugin-pwa (`generateSW`) for the offline read cache; **TanStack Query v5** persisted-mutation queue for offline writes — explicitly *no* Workbox Background Sync | iOS has no Background Sync API, and Workbox drops 409 replies silently — our double-booking conflicts must instead land in normal `onError` UI (see gantt-evaluation.md addendum) |
 | Auth | Microsoft Entra ID via MSAL | Native M365 integration; SSO from Teams |
 | Hosting | Azure App Service (Linux, B1 tier) for API; Azure Static Web Apps for frontend; Azure PostgreSQL Flexible Server (burstable) | Aligns with M365 stack; estimated infra cost ~€30–40/month |
 | Excel I/O | OpenPyXL | Two-way sync with brewmaster's existing Excel workflow |

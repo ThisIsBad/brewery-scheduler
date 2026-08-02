@@ -1,6 +1,6 @@
 # Gantt component evaluation
 
-**Status**: Decided and implemented — `react-calendar-timeline` shipped with the Phase-1 frontend (PR #5) as designed below.
+**Status**: Superseded for Phase 2 — `react-calendar-timeline` shipped with the Phase-1 frontend (PR #5) as designed below, but the 2026-08 mobile-first decision (ROADMAP §2.8) triggered a touch re-evaluation. **Verdict: replace with a custom timeline on `@dnd-kit/core` in Phase 2 Track C** — see the addendum at the end of this document. The original evaluation below is kept for the desktop-era reasoning.
 
 ## Goal
 
@@ -85,3 +85,64 @@ If react-calendar-timeline becomes a blocker (e.g. moment-related bugs, performa
 | License cost | €0 |
 
 This stays well inside the "minimal resources" goal.
+
+---
+
+## Addendum (2026-08): touch-first re-evaluation
+
+Trigger: ROADMAP §2.8 — primary usage is the phone, **including full planning**,
+so the timeline must support one-handed touch drag/resize. Findings from the
+research pass (sources linked in issue #10):
+
+### Why react-calendar-timeline cannot become touch-first
+
+- Interactions are delegated to **interact.js**, pinned at 1.10.27 — an
+  effectively dormant engine (first release in ~2 years appeared 2026-08).
+- Structural mobile gaps, unchanged in the 0.30 beta line: items must be
+  tap-selected *before* they can be dragged or resized (upstream issue #694),
+  touch drag fights page scroll (interact.js #595), no edge autoscroll while
+  dragging (#783) — the exact gesture needed to move a block across 21 tank
+  rows on a phone viewport.
+- The project has been mid-rewrite (0.30.0-beta.x) since early 2025; stable
+  is frozen at 0.28. Fine for viewing, not credible for touch-first editing.
+
+### Alternatives assessed
+
+| Option | Touch | License / cost | Verdict |
+| --- | --- | --- | --- |
+| **Custom on `@dnd-kit/core`** | Excellent: unified PointerSensor, long-press activation (preserves scroll), built-in autoscroll | MIT, ~10 kB | **Chosen** |
+| Bryntum Scheduler | Best-in-class commercial | ~$2,040 (3 devs) + yearly | Fallback if custom build stalls |
+| vis-timeline | OK (hammer.js), tap-then-drag | Apache-2.0 | Re-imports moment, no React wrapper — no |
+| DHTMLX | Good | Timeline view is PRO-only | No |
+| planby | Rows fit tanks | Drag/resize paywalled, single maintainer | No |
+| Syncfusion | Good | Community license = revenue bet | No |
+| SVAR Gantt | Good | MIT | Wrong shape (task tree, not resource rows) |
+
+### Decision
+
+Build the Phase-2 planning timeline as a **bespoke component on
+`@dnd-kit/core` (stable 6.3.1)**: tank rows in a CSS grid over a time axis,
+~200 ms long-press activation on touch, ≥44 px resize handles, dnd-kit
+autoscroll for cross-row drags. Our domain is genuinely simple — flat
+resource rows, no dependencies, no nesting — so ~500 bespoke lines are *less*
+total complexity than configuring a general-purpose scheduler, and the swap
+deletes `moment` and `interactjs` from the tree. This is consistent with the
+"möglichst wenig Ressourcen" constraint that drove the original evaluation.
+
+### Offline/PWA stack (same research pass)
+
+- `vite-plugin-pwa` (`generateSW`): app-shell precache + `NetworkFirst`
+  runtime caching of `GET /api/*` → the offline read cache.
+- **No Workbox Background Sync** — iOS Safari has no Background Sync API at
+  all, and Workbox treats a 409 reply as a *successful* replay and silently
+  drops it, which would swallow exactly our double-booking conflicts.
+- Mutation queue in the app layer instead: **TanStack Query v5** with
+  `persistQueryClient` + storage persister; paused mutations replay via
+  `resumePausedMutations()`; each mutation key registers
+  `setMutationDefaults` at startup (persisted mutations lose their function
+  on reload — known gotcha). A replayed 409 lands in the ordinary `onError`
+  with our structured conflict body: the UI marks the booking "conflicted"
+  and asks for a new slot, consistent with hard-block validation.
+- Net dependency change: + `@dnd-kit/core`, `@tanstack/react-query` (+
+  persist client), `vite-plugin-pwa`, `dayjs`; − `react-calendar-timeline`,
+  `moment`, `interactjs`.
