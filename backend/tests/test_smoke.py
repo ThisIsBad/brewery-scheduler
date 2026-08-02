@@ -14,7 +14,48 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-from brewery_scheduler.models import BeerStyle, Recipe, Sud, Tank, TankOccupancy
+import pytest
+from sqlalchemy.exc import IntegrityError
+
+from brewery_scheduler.models import (
+    BeerStyle,
+    Recipe,
+    Sud,
+    Tank,
+    TankOccupancy,
+    TankStage,
+)
+
+
+def test_db_rejects_duplicate_style_year_number(session) -> None:
+    # The constraint from migration 0005 turns a concurrent-create race into
+    # a rejected insert instead of a silently duplicated Sud-Nr.
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    existing = (
+        session.query(Sud).filter(Sud.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    dupe = Sud(
+        recipe_id=kellerbier.id,
+        beer_style=BeerStyle.KELLERBIER,
+        brew_date=existing.brew_date,
+        style_year_number=existing.style_year_number,
+    )
+    session.add(dupe)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.commit()
+    session.rollback()
+    assert "uq_sude_style_year_number" in str(excinfo.value)
+
+
+def test_orm_returns_enum_members(session) -> None:
+    tank = session.query(Tank).filter(Tank.name == "F-OPEN-15").one()
+    assert isinstance(tank.stage, TankStage)
+    occ = session.query(TankOccupancy).first()
+    assert isinstance(occ.stage, TankStage)
+    sud = session.query(Sud).first()
+    assert isinstance(sud.beer_style, BeerStyle)
 
 
 def test_seed_creates_full_inventory(session) -> None:

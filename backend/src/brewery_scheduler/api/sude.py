@@ -65,6 +65,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         notes=payload.notes,
         brewmaster=payload.brewmaster,
         style_year_number=next_style_year_number,
+        beer_style=recipe.beer_style,
         merged_into_sud_id=lead.id if lead is not None else None,
     )
     session.add(sud)

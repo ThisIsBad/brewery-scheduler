@@ -127,6 +127,7 @@ def seed(session: Session) -> None:
     # left to the sud_global_seq default.
     kellerbier = Sud(
         recipe_id=by_style[BeerStyle.KELLERBIER].id,
+        beer_style=BeerStyle.KELLERBIER,
         brew_date=past_brew_date(14),
         status=SudStatus.STORING,
         brewmaster="seed",
@@ -134,6 +135,7 @@ def seed(session: Session) -> None:
     )
     weizen = Sud(
         recipe_id=by_style[BeerStyle.WHEAT].id,
+        beer_style=BeerStyle.WHEAT,
         brew_date=past_brew_date(7),
         status=SudStatus.FERMENTING,
         brewmaster="seed",
@@ -147,6 +149,7 @@ def seed(session: Session) -> None:
 
     festbier = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
+        beer_style=BeerStyle.FESTBIER,
         brew_date=future_brew_date(7),
         status=SudStatus.PLANNED,
         brewmaster="seed",
@@ -160,6 +163,7 @@ def seed(session: Session) -> None:
     # no occupancies of its own.
     festbier_partner = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
+        beer_style=BeerStyle.FESTBIER,
         brew_date=festbier.brew_date + timedelta(days=1),
         status=SudStatus.PLANNED,
         brewmaster="seed",
