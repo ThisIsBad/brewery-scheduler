@@ -78,10 +78,10 @@ def test_list_sude_returns_seeded_batches(client) -> None:
 
 
 def test_update_schedule_replaces_occupancies(client, session) -> None:
-    sud_id = str(
-        session.query(Sud).filter(Sud.merged_into_sud_id.is_(None)).first().id
-    )
-    tank_id = str(session.query(Tank).first().id)
+    # Kellerbier explicitly: a wheat Sud would trip the open-fermentation rule
+    # on this bare closed-fermentation payload.
+    sud_id = str(_seeded_lead(session, BeerStyle.KELLERBIER).id)
+    tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0)
 
     payload = {
@@ -554,8 +554,23 @@ def test_ausschank_consolidates_batches_until_capacity(client, session) -> None:
     assert statuses == [200, 200, 409]
 
 
+def _existing_occupancies_payload(sud) -> list[dict]:
+    return [
+        {
+            "tank_id": str(o.tank_id),
+            "stage": o.stage if isinstance(o.stage, str) else o.stage.value,
+            "start_at": o.start_at.isoformat(),
+            "end_at": o.end_at.isoformat() if o.end_at else None,
+            "volume_hl": float(o.volume_hl) if o.volume_hl is not None else None,
+        }
+        for o in sud.occupancies
+    ]
+
+
 def test_schedule_enforces_ausschank_headroom(client, session) -> None:
-    # The generic schedule endpoint must apply the same headroom rule.
+    # The generic schedule endpoint must apply the same headroom rule. The
+    # payloads keep each Sud's completed fermentation history so the
+    # yeast-free rule is satisfied and headroom is the deciding factor.
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
     weizen = _seeded_lead(session, BeerStyle.WHEAT)
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
@@ -564,7 +579,8 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     r1 = client.put(
         f"/api/sude/{lead.id}/schedule",
         json={
-            "occupancies": [
+            "occupancies": _existing_occupancies_payload(lead)
+            + [
                 {
                     "tank_id": str(a35.id),
                     "stage": "ausschank",
@@ -580,7 +596,8 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     r2 = client.put(
         f"/api/sude/{weizen.id}/schedule",
         json={
-            "occupancies": [
+            "occupancies": _existing_occupancies_payload(weizen)
+            + [
                 {
                     "tank_id": str(a35.id),
                     "stage": "ausschank",
@@ -593,6 +610,125 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     )
     assert r2.status_code == 409, r2.text
     assert "capacity" in r2.json()["detail"]
+
+
+def test_schedule_rejects_stage_regression(client, session) -> None:
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    ferm = session.query(Tank).filter(Tank.name == "F-30-1").one()
+    storage = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.put(
+        f"/api/sude/{lead.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(storage.id),
+                    "stage": "storage",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=7)).isoformat(),
+                },
+                {
+                    "tank_id": str(ferm.id),
+                    "stage": "fermentation_closed",
+                    "start_at": (start + timedelta(days=7)).isoformat(),
+                    "end_at": (start + timedelta(days=14)).isoformat(),
+                },
+            ]
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "forward" in r.json()["detail"]
+
+
+def test_schedule_rejects_wheat_without_open_fermentation(client, session) -> None:
+    weizen = _seeded_lead(session, BeerStyle.WHEAT)
+    ferm = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.put(
+        f"/api/sude/{weizen.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(ferm.id),
+                    "stage": "fermentation_closed",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=7)).isoformat(),
+                }
+            ]
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "open" in r.json()["detail"]
+
+
+def test_schedule_rejects_ausschank_with_active_yeast(client, session) -> None:
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.put(
+        f"/api/sude/{lead.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(a50.id),
+                    "stage": "ausschank",
+                    "start_at": start.isoformat(),
+                    "end_at": None,
+                }
+            ]
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "yeast" in r.json()["detail"]
+
+
+def test_create_rejects_wheat_starting_in_closed_fermenter(client, session) -> None:
+    wheat_recipe = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+    )
+    ferm = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(wheat_recipe.id),
+            "brew_date": date.today().isoformat(),
+            "initial_occupancy": {
+                "tank_id": str(ferm.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+            },
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "open" in r.json()["detail"]
+
+
+def test_create_rejects_initial_occupancy_over_capacity(client, session) -> None:
+    recipe_id = str(
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.SPECIAL).one().id
+    )
+    small_storage = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": recipe_id,
+            "brew_date": date.today().isoformat(),
+            "initial_occupancy": {
+                "tank_id": str(small_storage.id),
+                "stage": "storage",
+                "start_at": start.isoformat(),
+            },
+        },
+    )
+    assert r.status_code == 409, r.text
+    assert "capacity" in r.json()["detail"]
 
 
 def test_transfer_rejects_unscheduled_sud(client, session) -> None:
@@ -631,13 +767,12 @@ def test_schedule_rejected_for_merge_partner(client, session) -> None:
 
 
 def test_overlapping_occupancy_returns_structured_409(client, session) -> None:
-    sude = (
-        session.query(Sud)
-        .filter(Sud.merged_into_sud_id.is_(None))
-        .order_by(Sud.brew_date)
-        .limit(2)
-        .all()
-    )
+    # Non-wheat leads only: a bare closed-fermentation payload would trip the
+    # wheat open-fermentation rule before ever reaching the DB constraint.
+    sude = [
+        _seeded_lead(session, BeerStyle.KELLERBIER),
+        _seeded_lead(session, BeerStyle.FESTBIER),
+    ]
     tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
     window = {
@@ -659,9 +794,7 @@ def test_overlapping_occupancy_returns_structured_409(client, session) -> None:
 
 
 def test_inverted_time_window_returns_structured_422(client, session) -> None:
-    sud_id = str(
-        session.query(Sud).filter(Sud.merged_into_sud_id.is_(None)).first().id
-    )
+    sud_id = str(_seeded_lead(session, BeerStyle.KELLERBIER).id)
     tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=90)
 
