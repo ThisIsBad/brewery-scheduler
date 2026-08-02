@@ -44,6 +44,7 @@ const SUD: Sud = {
   style_year_number: 17,
   volume_hl: 15,
   merged_into_sud_id: null,
+  withdrawals: [],
   occupancies: [
     {
       id: "occ-1",

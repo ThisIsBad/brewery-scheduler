@@ -74,6 +74,7 @@ export interface Sud {
    */
   merged_into_sud_id: string | null;
   occupancies: Occupancy[];
+  withdrawals: Withdrawal[];
 }
 
 export interface ScheduleOccupancyIn {
@@ -96,4 +97,34 @@ export interface SudCreateIn {
   initial_occupancy?: ScheduleOccupancyIn;
   /** Create this Sud as a merged-batch partner of the given lead Sud. */
   merge_into_sud_id?: string | null;
+}
+
+export type WithdrawalKind = "keg_fill";
+
+export interface Withdrawal {
+  id: string;
+  sud_id: string;
+  tank_id: string;
+  volume_hl: number;
+  at: string;
+  kind: WithdrawalKind;
+  notes: string | null;
+}
+
+export interface WithdrawIn {
+  tank_id: string;
+  volume_hl: number;
+  at: string;
+  notes?: string | null;
+}
+
+export interface TransferAllocationIn {
+  tank_id: string;
+  volume_hl?: number | null;
+}
+
+export interface TransferIn {
+  start_at: string;
+  end_at?: string | null;
+  allocations: TransferAllocationIn[];
 }

@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { api } from "./api/client";
 import type { Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
+import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { ScheduleBoard } from "./components/ScheduleBoard";
+
+type View = "kellerblick" | "zeitplan";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -12,6 +15,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [view, setView] = useState<View>("kellerblick");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -35,6 +39,16 @@ export default function App() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const applySudUpdate = useCallback((updated: Sud) => {
+    setSude((prev) => {
+      const exists = prev.some((s) => s.id === updated.id);
+      return exists
+        ? prev.map((s) => (s.id === updated.id ? updated : s))
+        : [...prev, updated];
+    });
+    setError(null);
+  }, []);
 
   const handleMove = useCallback(
     async (
@@ -75,42 +89,68 @@ export default function App() {
 
       try {
         const updated = await api.updateSchedule(sudId, { occupancies: payload });
-        setSude((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-        setError(null);
+        applySudUpdate(updated);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       }
     },
-    [sude],
+    [sude, applySudUpdate],
   );
-
-  const handleCreated = useCallback((sud: Sud) => {
-    setSude((prev) => [...prev, sud]);
-  }, []);
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Brewery Scheduler</h1>
-        <span className="status">
-          {loading ? "lade …" : `${tanks.length} Tanks · ${sude.length} Sude`}
-        </span>
-        <button type="button" onClick={() => setDialogOpen(true)} disabled={loading}>
-          + Neuer Sud
+        <h1>Brauerei</h1>
+        <nav className="tabs" aria-label="Ansicht">
+          <button
+            type="button"
+            className={view === "kellerblick" ? "active" : ""}
+            onClick={() => setView("kellerblick")}
+          >
+            Kellerblick
+          </button>
+          <button
+            type="button"
+            className={view === "zeitplan" ? "active" : ""}
+            onClick={() => setView("zeitplan")}
+          >
+            Zeitplan
+          </button>
+        </nav>
+        <button
+          type="button"
+          className="new-sud"
+          onClick={() => setDialogOpen(true)}
+          disabled={loading}
+        >
+          + Sud
         </button>
-        {error && <span className="error">{error}</span>}
       </header>
-      <div className="app-board">
-        {tanks.length > 0 && (
-          <ScheduleBoard tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
-        )}
-      </div>
+
+      {error && <div className="error banner">{error}</div>}
+
+      {view === "kellerblick" ? (
+        <div className="app-scroll">
+          {loading ? (
+            <p className="empty">lade …</p>
+          ) : (
+            <Kellerblick tanks={tanks} sude={sude} onChanged={applySudUpdate} />
+          )}
+        </div>
+      ) : (
+        <div className="app-board">
+          {tanks.length > 0 && (
+            <ScheduleBoard tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
+          )}
+        </div>
+      )}
+
       <NewSudDialog
         open={dialogOpen}
         recipes={recipes}
         tanks={tanks}
         onClose={() => setDialogOpen(false)}
-        onCreated={handleCreated}
+        onCreated={applySudUpdate}
       />
     </div>
   );
