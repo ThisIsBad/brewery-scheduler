@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .models import BeerStyle, SudStatus, TankCellar, TankStage
+from .models import BeerStyle, SudStatus, TankCellar, TankStage, WithdrawalKind
 
 
 class OccupancyOut(BaseModel):
@@ -47,6 +47,18 @@ class RecipeOut(BaseModel):
     max_storage_duration_days: float
 
 
+class WithdrawalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    sud_id: uuid.UUID
+    tank_id: uuid.UUID
+    volume_hl: float
+    at: datetime
+    kind: WithdrawalKind
+    notes: str | None
+
+
 class SudOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -61,6 +73,7 @@ class SudOut(BaseModel):
     volume_hl: float
     merged_into_sud_id: uuid.UUID | None
     occupancies: list[OccupancyOut] = []
+    withdrawals: list[WithdrawalOut] = []
 
 
 class ScheduleOccupancyIn(BaseModel):
@@ -100,6 +113,19 @@ class SudCreateIn(BaseModel):
     # tank. Mutually exclusive with initial_occupancy: partners never carry
     # occupancies of their own.
     merge_into_sud_id: uuid.UUID | None = None
+
+
+class WithdrawIn(BaseModel):
+    """Request body for POST /api/sude/{id}/withdraw (Fassabfüllung).
+
+    The client supplies `at` so offline-queued withdrawals keep their real
+    timestamp when replayed after reconnect.
+    """
+
+    tank_id: uuid.UUID
+    volume_hl: float = Field(gt=0)
+    at: datetime
+    notes: str | None = Field(default=None, max_length=10_000)
 
 
 class TransferAllocationIn(BaseModel):

@@ -7,8 +7,16 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
-from ..models import Recipe, Sud, SudStatus, Tank, TankOccupancy, TankStage
-from ..schemas import ScheduleIn, SudCreateIn, SudOut, TransferIn
+from ..models import (
+    Recipe,
+    Sud,
+    SudStatus,
+    Tank,
+    TankOccupancy,
+    TankStage,
+    Withdrawal,
+)
+from ..schemas import ScheduleIn, SudCreateIn, SudOut, TransferIn, WithdrawIn
 
 router = APIRouter(prefix="/api/sude", tags=["sude"])
 
@@ -399,6 +407,83 @@ def transfer_sud(
     ):
         partner.status = new_status
 
+    session.commit()
+    session.refresh(sud)
+    return sud
+
+
+@router.post("/{sud_id}/withdraw", response_model=SudOut)
+def withdraw(
+    sud_id: uuid.UUID,
+    payload: WithdrawIn,
+    session: Session = Depends(get_session),
+) -> Sud:
+    """Fassabfüllung: volume leaves a tank into kegs (issue #15).
+
+    Validated hard: the Sud must actually occupy the tank at the given
+    time, and the withdrawn volume must not exceed what is left of this
+    batch's allocation in that tank.
+    """
+    sud = session.scalar(
+        select(Sud)
+        .options(selectinload(Sud.occupancies), selectinload(Sud.withdrawals))
+        .where(Sud.id == sud_id)
+    )
+    if sud is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sud not found")
+    if sud.merged_into_sud_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "This Sud is a partner in a merged batch and shares its lead's "
+                "tank — withdraw from the lead Sud instead."
+            ),
+        )
+
+    occupancy = next(
+        (
+            o
+            for o in sud.occupancies
+            if o.tank_id == payload.tank_id
+            and o.start_at <= payload.at
+            and (o.end_at is None or payload.at < o.end_at)
+        ),
+        None,
+    )
+    if occupancy is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This Sud does not occupy that tank at the given time.",
+        )
+
+    partner_volumes = list(
+        session.scalars(select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id))
+    )
+    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+    allocation_hl = (
+        float(occupancy.volume_hl) if occupancy.volume_hl is not None else combined_hl
+    )
+    already_withdrawn = sum(
+        float(w.volume_hl) for w in sud.withdrawals if w.tank_id == payload.tank_id
+    )
+    remaining_hl = allocation_hl - already_withdrawn
+    if payload.volume_hl > remaining_hl + 1e-9:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Only {remaining_hl:g} hl of this batch remain in the tank — "
+                f"cannot withdraw {payload.volume_hl:g} hl."
+            ),
+        )
+
+    sud.withdrawals.append(
+        Withdrawal(
+            tank_id=payload.tank_id,
+            volume_hl=payload.volume_hl,
+            at=payload.at,
+            notes=payload.notes,
+        )
+    )
     session.commit()
     session.refresh(sud)
     return sud
