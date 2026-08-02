@@ -49,10 +49,22 @@ export function ScheduleBoard({ tanks, sude, onMoveOccupancy }: ScheduleBoardPro
   );
 
   const items: BoardItem[] = useMemo(() => {
+    // Merged-batch partners carry no occupancies of their own — their brew
+    // numbers are folded into the lead's block title ("Nr. 1+2/2026") so the
+    // merge is visible on the board.
+    const partnerNumbersByLead = new Map<string, number[]>();
+    for (const sud of sude) {
+      if (sud.merged_into_sud_id) {
+        const list = partnerNumbersByLead.get(sud.merged_into_sud_id) ?? [];
+        list.push(sud.style_year_number);
+        partnerNumbersByLead.set(sud.merged_into_sud_id, list);
+      }
+    }
+
     const result: BoardItem[] = [];
     for (const sud of sude) {
       for (const occ of sud.occupancies) {
-        result.push(buildItem(sud, occ));
+        result.push(buildItem(sud, occ, partnerNumbersByLead.get(sud.id) ?? []));
       }
     }
     return result;
@@ -82,14 +94,15 @@ export function ScheduleBoard({ tanks, sude, onMoveOccupancy }: ScheduleBoardPro
   );
 }
 
-function buildItem(sud: Sud, occ: Occupancy): BoardItem {
+function buildItem(sud: Sud, occ: Occupancy, partnerNumbers: number[]): BoardItem {
   const start = moment(occ.start_at);
   const end = occ.end_at
     ? moment(occ.end_at)
     : start.clone().add(durationDays(sud, occ), "days");
   const color = STYLE_COLOR[sud.recipe.beer_style] ?? "#888";
   const year = moment(sud.brew_date).year();
-  const sudNr = `Nr. ${sud.style_year_number}/${year}`;
+  const numbers = [sud.style_year_number, ...partnerNumbers].sort((a, b) => a - b);
+  const sudNr = `Nr. ${numbers.join("+")}/${year}`;
   const stage = STAGE_LABEL[occ.stage] ?? occ.stage;
 
   return {

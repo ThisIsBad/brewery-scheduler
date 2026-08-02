@@ -57,6 +57,8 @@ class SudOut(BaseModel):
     notes: str | None
     brewmaster: str | None
     style_year_number: int
+    volume_hl: float
+    merged_into_sud_id: uuid.UUID | None
     occupancies: list[OccupancyOut] = []
 
 
@@ -90,3 +92,9 @@ class SudCreateIn(BaseModel):
     notes: str | None = Field(default=None, max_length=10_000)
     brewmaster: str | None = Field(default=None, max_length=128)
     initial_occupancy: ScheduleOccupancyIn | None = None
+
+    # Merged batches (issue #3): pass the lead Sud's id to create this Sud
+    # as its partner — same recipe, brewed within 48 h, sharing the lead's
+    # tank. Mutually exclusive with initial_occupancy: partners never carry
+    # occupancies of their own.
+    merge_into_sud_id: uuid.UUID | None = None

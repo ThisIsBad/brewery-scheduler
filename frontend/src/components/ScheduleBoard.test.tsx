@@ -42,6 +42,8 @@ const SUD: Sud = {
   notes: null,
   brewmaster: "seed",
   style_year_number: 17,
+  volume_hl: 15,
+  merged_into_sud_id: null,
   occupancies: [
     {
       id: "occ-1",
@@ -64,6 +66,25 @@ describe("ScheduleBoard", () => {
   it("renders the Sud-Nr in the block title", () => {
     render(<ScheduleBoard tanks={[TANK]} sude={[SUD]} onMoveOccupancy={() => {}} />);
     const expected = new RegExp(`Kellerbier Nr\\. 17/${BREW_YEAR} · Gärtank`);
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
+
+  it("folds merged-batch partner numbers into the lead's block title", () => {
+    const partner: Sud = {
+      ...SUD,
+      id: "sud-2",
+      style_year_number: 18,
+      merged_into_sud_id: SUD.id,
+      occupancies: [],
+    };
+    render(
+      <ScheduleBoard
+        tanks={[TANK]}
+        sude={[SUD, partner]}
+        onMoveOccupancy={() => {}}
+      />,
+    );
+    const expected = new RegExp(`Kellerbier Nr\\. 17\\+18/${BREW_YEAR} · Gärtank`);
     expect(screen.getByText(expected)).toBeInTheDocument();
   });
 });

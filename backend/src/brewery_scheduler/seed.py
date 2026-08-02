@@ -139,14 +139,34 @@ def seed(session: Session) -> None:
         brewmaster="seed",
         style_year_number=1,
     )
+    # Future brew dates are clamped so lead AND partner stay inside the
+    # current year — around Christmas, "today + 8 days" would cross into
+    # January and silently invalidate the hardcoded style_year_numbers.
+    def future_brew_date(days_ahead: int) -> date:
+        return min(date(today.year, 12, 30), today + timedelta(days=days_ahead))
+
     festbier = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
-        brew_date=today + timedelta(days=7),
+        brew_date=future_brew_date(7),
         status=SudStatus.PLANNED,
         brewmaster="seed",
         style_year_number=1,
     )
     session.add_all([kellerbier, weizen, festbier])
+    session.flush()
+
+    # Merged batch (issue #3): the same Festbier recipe brewed again a day
+    # later shares the lead's 30-hl fermentation tank. The partner carries
+    # no occupancies of its own.
+    festbier_partner = Sud(
+        recipe_id=by_style[BeerStyle.FESTBIER].id,
+        brew_date=festbier.brew_date + timedelta(days=1),
+        status=SudStatus.PLANNED,
+        brewmaster="seed",
+        style_year_number=2,
+        merged_into_sud_id=festbier.id,
+    )
+    session.add(festbier_partner)
     session.flush()
 
     occupancies = [
@@ -199,10 +219,11 @@ def seed(session: Session) -> None:
     session.add_all(occupancies)
 
     session.commit()
-    sude = [kellerbier, weizen, festbier]
+    sude = [kellerbier, weizen, festbier, festbier_partner]
     print(
         f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, "
-        f"{len(sude)} Sude, {len(occupancies)} tank occupancies."
+        f"{len(sude)} Sude (incl. 1 merged batch), "
+        f"{len(occupancies)} tank occupancies."
     )
 
 

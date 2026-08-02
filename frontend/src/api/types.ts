@@ -65,6 +65,12 @@ export interface Sud {
    * The internal global_number is intentionally not exposed to the API.
    */
   style_year_number: number;
+  volume_hl: number;
+  /**
+   * Merged batches (issue #3): when set, this Sud is a partner sharing its
+   * lead's tank and carries no occupancies of its own.
+   */
+  merged_into_sud_id: string | null;
   occupancies: Occupancy[];
 }
 
@@ -85,4 +91,6 @@ export interface SudCreateIn {
   notes?: string | null;
   brewmaster?: string | null;
   initial_occupancy?: ScheduleOccupancyIn;
+  /** Create this Sud as a merged-batch partner of the given lead Sud. */
+  merge_into_sud_id?: string | null;
 }
