@@ -112,6 +112,7 @@ class Sud(Base):
     __tablename__ = "sude"
     __table_args__ = (
         UniqueConstraint("global_number", name="uq_sude_global_number"),
+        CheckConstraint("merged_into_sud_id != id", name="ck_sude_no_self_merge"),
     )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
@@ -123,6 +124,18 @@ class Sud(Base):
     status: Mapped[SudStatus] = mapped_column(String(32), nullable=False, default=SudStatus.PLANNED)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     brewmaster: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+    # Standard Sud is 15 hl (ROADMAP §2.1); drives combined-volume vs. tank
+    # capacity validation for merged batches.
+    volume_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False, default=15)
+
+    # Merged batches (confirmed 2026-08, issue #3): the same recipe brewed
+    # twice within 48 h shares one tank. The first brew is the "lead" and
+    # owns the occupancies; partners point here and never carry occupancies
+    # of their own.
+    merged_into_sud_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("sude.id", name="fk_sude_merged_into"), nullable=True
+    )
 
     # Sequential across all years and styles. Internal-only — the brewmaster
     # sets the go-live offset via the set_global_seq CLI; subsequent values
@@ -139,6 +152,9 @@ class Sud(Base):
     recipe: Mapped[Recipe] = relationship(lazy="joined")
     occupancies: Mapped[list[TankOccupancy]] = relationship(
         back_populates="sud", cascade="all, delete-orphan", order_by="TankOccupancy.start_at"
+    )
+    merged_partners: Mapped[list[Sud]] = relationship(
+        "Sud", foreign_keys=[merged_into_sud_id], viewonly=True
     )
 
 

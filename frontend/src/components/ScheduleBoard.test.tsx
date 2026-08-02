@@ -42,6 +42,8 @@ const SUD: Sud = {
   notes: null,
   brewmaster: "seed",
   style_year_number: 17,
+  volume_hl: 15,
+  merged_into_sud_id: null,
   occupancies: [
     {
       id: "occ-1",

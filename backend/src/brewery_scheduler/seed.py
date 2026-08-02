@@ -149,6 +149,20 @@ def seed(session: Session) -> None:
     session.add_all([kellerbier, weizen, festbier])
     session.flush()
 
+    # Merged batch (issue #3): the same Festbier recipe brewed again a day
+    # later shares the lead's 30-hl fermentation tank. The partner carries
+    # no occupancies of its own.
+    festbier_partner = Sud(
+        recipe_id=by_style[BeerStyle.FESTBIER].id,
+        brew_date=today + timedelta(days=8),
+        status=SudStatus.PLANNED,
+        brewmaster="seed",
+        style_year_number=2,
+        merged_into_sud_id=festbier.id,
+    )
+    session.add(festbier_partner)
+    session.flush()
+
     occupancies = [
         # Kellerbier: finished fermenting, currently in storage.
         TankOccupancy(
@@ -199,10 +213,11 @@ def seed(session: Session) -> None:
     session.add_all(occupancies)
 
     session.commit()
-    sude = [kellerbier, weizen, festbier]
+    sude = [kellerbier, weizen, festbier, festbier_partner]
     print(
         f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, "
-        f"{len(sude)} Sude, {len(occupancies)} tank occupancies."
+        f"{len(sude)} Sude (incl. 1 merged batch), "
+        f"{len(occupancies)} tank occupancies."
     )
 
 
