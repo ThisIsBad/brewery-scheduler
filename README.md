@@ -32,6 +32,8 @@ failed container build). On any failure a `STARTUP-FEHLER.txt` appears next
 to it with the service logs — open it from the file explorer (no terminal
 needed) and share a screenshot. A successful start removes it again. Both
 services run under a watchdog: if one dies, it restarts within 5 seconds.
+A third watchdog watches the checked-out commit: after a repo sync the
+whole stack restarts automatically within ~30 seconds — no `./up` needed.
 
 ## Quick start — local Docker
 
