@@ -1210,3 +1210,39 @@ def test_tank_delete_without_history_removes(client, session) -> None:
     assert r.status_code == 204, r.text
     names = [t["name"] for t in client.get("/api/tanks").json()]
     assert "TEMP-1" not in names
+
+
+def test_list_sude_exposes_persistent_process_warnings(client, session) -> None:
+    # Park the Kellerbier in an Ausschank tank without any completed
+    # fermentation — the yeast warning must survive into plain reads so the
+    # Kellerblick can mark the Sud.
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
+
+    r = client.put(
+        f"/api/sude/{lead.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(a50.id),
+                    "stage": "ausschank",
+                    "start_at": start.isoformat(),
+                    "end_at": None,
+                }
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    listed = client.get("/api/sude").json()
+    flagged = next(s for s in listed if s["id"] == str(lead.id))
+    assert any("Hefe" in w for w in flagged["warnings"]), flagged["warnings"]
+
+    # The seeded Weizen ran its open fermentation correctly — no flag.
+    weizen = next(
+        s
+        for s in listed
+        if s["recipe"]["beer_style"] == "wheat" and s["merged_into_sud_id"] is None
+    )
+    assert weizen["warnings"] == []

@@ -201,6 +201,36 @@ describe("Kellerblick", () => {
     ).toBeInTheDocument();
   });
 
+  it("markiert Sude mit Prozess-Warnungen gelb und nennt den Grund", () => {
+    const flagged = baseSud({
+      status: "in_ausschank",
+      warnings: ["Möglicherweise aktive Hefe im Ausschank: Testfall."],
+      occupancies: [
+        {
+          id: "occ-w",
+          sud_id: "sud-1",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+
+    render(
+      <Kellerblick
+        tanks={[AUSSCHANK_TANK]}
+        sude={[flagged]}
+        onChanged={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/aktive Hefe/)).toBeInTheDocument();
+    const card = screen.getAllByRole("article")[0];
+    expect(card.className).toContain("warn");
+  });
+
   it("shows future-only Sude under Geplant without action buttons", () => {
     const planned = baseSud({
       id: "sud-4",

@@ -22,13 +22,22 @@ router = APIRouter(prefix="/api/sude", tags=["sude"])
 
 
 @router.get("", response_model=list[SudOut])
-def list_sude(session: Session = Depends(get_session)) -> list[Sud]:
+def list_sude(session: Session = Depends(get_session)) -> list[SudOut]:
+    """List all Sude, each with its current process warnings.
+
+    Warnings are evaluated on read (not only after mutations) so the
+    Kellerblick can mark deviating Sude — e.g. beer sitting in an
+    Ausschank tank without a completed fermentation stays flagged.
+    """
     stmt = (
         select(Sud)
         .options(selectinload(Sud.occupancies))
         .order_by(Sud.brew_date)
     )
-    return list(session.scalars(stmt))
+    return [
+        _with_warnings(sud, _process_warnings(sud.recipe, sud.occupancies))
+        for sud in session.scalars(stmt)
+    ]
 
 
 @router.post("", response_model=SudOut, status_code=status.HTTP_201_CREATED)
