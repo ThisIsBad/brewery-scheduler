@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { api } from "../api/client";
-import type { Occupancy, Sud, Tank } from "../api/types";
+import type { Occupancy, Sud, Tank, WithdrawalKind } from "../api/types";
 import { formatHl, remainingHl, sudNumberLabel } from "../domain";
 
 interface WithdrawDialogProps {
@@ -9,15 +9,27 @@ interface WithdrawDialogProps {
   occupancy: Occupancy;
   tanks: Tank[];
   sude: Sud[];
+  kind: WithdrawalKind;
   onClose: () => void;
   onDone: (updated: Sud) => void;
 }
+
+const KIND_TITLE: Record<WithdrawalKind, string> = {
+  keg_fill: "Fass abfüllen",
+  ausschank: "Ausschank eintragen",
+};
+
+const KIND_SUBMIT: Record<WithdrawalKind, string> = {
+  keg_fill: "Abfüllen",
+  ausschank: "Eintragen",
+};
 
 export function WithdrawDialog({
   sud,
   occupancy,
   tanks,
   sude,
+  kind,
   onClose,
   onDone,
 }: WithdrawDialogProps) {
@@ -41,6 +53,7 @@ export function WithdrawDialog({
         tank_id: occupancy.tank_id,
         volume_hl: parsed,
         at: new Date().toISOString(),
+        kind,
         notes: notes || undefined,
       });
       onDone(updated);
@@ -51,10 +64,10 @@ export function WithdrawDialog({
   };
 
   return (
-    <div className="dialog-backdrop" role="dialog" aria-label="Fass abfüllen">
+    <div className="dialog-backdrop" role="dialog" aria-label={KIND_TITLE[kind]}>
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          Fass abfüllen: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          {KIND_TITLE[kind]}: {sud.recipe.name} {sudNumberLabel(sud, sude)}
         </h2>
         <p className="muted">
           Aus {tank?.name ?? "?"} · noch {formatHl(remaining)} im Tank
@@ -79,7 +92,9 @@ export function WithdrawDialog({
             type="text"
             value={notes}
             maxLength={200}
-            placeholder="z. B. 4 Fässer Festzelt"
+            placeholder={
+              kind === "keg_fill" ? "z. B. 4 Fässer Festzelt" : "z. B. Bergkirchweih"
+            }
             onChange={(e) => setNotes(e.target.value)}
           />
         </label>
@@ -96,7 +111,7 @@ export function WithdrawDialog({
             Abbrechen
           </button>
           <button type="submit" disabled={!canSubmit || submitting}>
-            {submitting ? "Speichere …" : "Abfüllen"}
+            {submitting ? "Speichere …" : KIND_SUBMIT[kind]}
           </button>
         </div>
       </form>

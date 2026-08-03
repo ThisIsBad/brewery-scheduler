@@ -180,6 +180,39 @@ describe("TransferDialog (Ausschank split)", () => {
   });
 });
 
+describe("TransferDialog (remaining volume)", () => {
+  it("distributes the remaining volume, not the brewed volume", () => {
+    const lead = sud({
+      occupancies: [storageOcc],
+      withdrawals: [
+        {
+          id: "w-1",
+          sud_id: "sud-1",
+          tank_id: STORAGE_TANK.id,
+          volume_hl: 2,
+          at: new Date().toISOString(),
+          kind: "keg_fill",
+          notes: null,
+        },
+      ],
+    });
+
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[A100]}
+        sude={[lead]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    // 15 hl brewed − 2 hl in kegs = 13 hl to distribute.
+    expect(screen.getByText(/von 13 hl/)).toBeInTheDocument();
+  });
+});
+
 describe("WithdrawDialog", () => {
   it("sends the withdrawal and caps it at the remaining volume", async () => {
     const lead = sud({ occupancies: [storageOcc] });
@@ -189,6 +222,7 @@ describe("WithdrawDialog", () => {
         occupancy={storageOcc}
         tanks={[STORAGE_TANK]}
         sude={[lead]}
+        kind="keg_fill"
         onClose={() => {}}
         onDone={() => {}}
       />,
@@ -205,6 +239,7 @@ describe("WithdrawDialog", () => {
     const [, payload] = mocked.withdraw.mock.calls[0];
     expect(payload.tank_id).toBe(STORAGE_TANK.id);
     expect(payload.volume_hl).toBe(5);
+    expect(payload.kind).toBe("keg_fill");
     expect(typeof payload.at).toBe("string");
   });
 });

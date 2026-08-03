@@ -69,21 +69,42 @@ export function firstFutureOccupancy(sud: Sud, when: Date): Occupancy | null {
   return future[0] ?? null;
 }
 
-/** Allocation volume of an occupancy: explicit share or the whole batch. */
-export function allocationHl(occ: Occupancy, lead: Sud, all: Sud[]): number {
-  return occ.volume_hl ?? combinedVolumeHl(lead, all);
+/** Everything that ever left this batch — kegs and pours, all tanks. */
+export function totalWithdrawnHl(lead: Sud): number {
+  return lead.withdrawals.reduce((sum, w) => sum + w.volume_hl, 0);
 }
 
-/** What is left of this batch in the given tank: allocation − withdrawals. */
-export function remainingHl(
-  lead: Sud,
-  all: Sud[],
-  occ: Occupancy,
-): number {
-  const withdrawn = lead.withdrawals
-    .filter((w) => w.tank_id === occ.tank_id)
-    .reduce((sum, w) => sum + w.volume_hl, 0);
-  return allocationHl(occ, lead, all) - withdrawn;
+/** The volume that physically still exists: brewed minus withdrawn.
+ * This is what transfers move and what capacity checks work with. */
+export function batchRemainingHl(lead: Sud, all: Sud[]): number {
+  return combinedVolumeHl(lead, all) - totalWithdrawnHl(lead);
+}
+
+/** What is left of this batch in the given tank. Explicit allocations
+ * (Ausschank splits) subtract only that tank's withdrawals; a whole-batch
+ * occupancy subtracts everything ever withdrawn. Mirrors the backend. */
+export function remainingHl(lead: Sud, all: Sud[], occ: Occupancy): number {
+  if (occ.volume_hl !== null) {
+    const tankWithdrawn = lead.withdrawals
+      .filter((w) => w.tank_id === occ.tank_id)
+      .reduce((sum, w) => sum + w.volume_hl, 0);
+    return occ.volume_hl - tankWithdrawn;
+  }
+  return batchRemainingHl(lead, all);
+}
+
+/** "Alter: Tag N" — since the batch first entered any tank. */
+export function ageLabel(sud: Sud, when: Date): string | null {
+  if (sud.occupancies.length === 0) return null;
+  const first = sud.occupancies.reduce((earliest, o) =>
+    new Date(o.start_at) < new Date(earliest.start_at) ? o : earliest,
+  );
+  const midnight = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const day =
+    Math.round((midnight(when) - midnight(new Date(first.start_at))) / 86_400_000) +
+    1;
+  return `Alter: Tag ${Math.max(1, day)}`;
 }
 
 /** "Tag 3 von 7" within an occupancy window; "Tag 3" for open-ended ones.

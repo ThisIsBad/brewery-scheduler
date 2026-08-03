@@ -204,6 +204,11 @@ class Sud(Base):
 
 class WithdrawalKind(str, enum.Enum):
     KEG_FILL = "keg_fill"
+    # Poured to customers — from Ausschank tanks in normal operation, and at
+    # the Bergkirchweih directly from a fermentation tank near the Schänke
+    # (confirmed 2026-08). Kept as its own kind: beer-tax reporting needs
+    # poured volumes separable from keg fills.
+    AUSSCHANK = "ausschank"
 
 
 class Withdrawal(Base):
