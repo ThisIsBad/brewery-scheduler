@@ -159,6 +159,19 @@ if [ "$ok_api" != 1 ] || [ "$ok_app" != 1 ]; then
   exit 1
 fi
 
+# Private forwarded ports demand a GitHub login in the very same browser
+# tab; on mobile Safari that auth flow dead-ends in a blank page
+# (field-tested). Stefan explicitly opted in (2026-08-03) to publish the
+# app port: the test deployment serves seed data and the URL is
+# unguessable. Revisit before real production data lands here.
+if [ -n "${CODESPACE_NAME:-}" ] && command -v gh >/dev/null 2>&1; then
+  if gh codespace ports visibility 5173:public -c "$CODESPACE_NAME" >/dev/null 2>&1; then
+    echo "▸ Port 5173 ist öffentlich — der App-Link funktioniert ohne GitHub-Login."
+  else
+    echo "⚠ Port 5173 nicht automatisch öffentlich schaltbar — im Ports-Tab manuell auf Public stellen."
+  fi
+fi
+
 rm -f "$ROOT/STARTUP-FEHLER.txt"
 status_file "✅ Läuft seit $(date '+%Y-%m-%d %H:%M:%S') — Backend OK, Frontend OK"
 echo
