@@ -130,6 +130,21 @@ nohup bash -c ": keller-watchdog-frontend; cd \"$ROOT/frontend\"; while true; do
   >/dev/null 2>&1 &
 disown
 
+# A repo sync in the editor swaps the code under the running services;
+# nobody remembers ./up on a phone in the cellar. Watch the checked-out
+# commit and rerun this script automatically when it changes — migrations
+# included, so backend and frontend always match the checkout.
+HEAD_NOW="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+pkill -f "keller-watchdog-sync" 2>/dev/null || true
+nohup bash -c ": keller-watchdog-sync; cd \"$ROOT\"; base=\"$HEAD_NOW\"; while true; do \
+  sleep 30; cur=\"\$(git rev-parse HEAD 2>/dev/null)\"; \
+  if [ -n \"\$cur\" ] && [ \"\$cur\" != \"\$base\" ]; then \
+    echo \"[sync-watchdog] Code-Stand geändert (\$cur) — starte Stack neu\" >>/tmp/start.log; \
+    setsid bash \"$ROOT/.devcontainer/start.sh\" >>/tmp/start.log 2>&1 </dev/null & \
+    exit 0; \
+  fi; done" >/dev/null 2>&1 &
+disown
+
 phase "Health-Gate"
 for i in $(seq 1 30); do
   ok_api=$(curl -sf http://localhost:8000/health >/dev/null && echo 1 || echo 0)
