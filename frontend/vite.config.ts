@@ -56,6 +56,12 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    // Fail loudly if 5173 is taken instead of drifting to 5174, where the
+    // forwarded Codespace port would point at nothing.
+    strictPort: true,
+    // Codespaces serves the dev server through *.app.github.dev; Vite ≥6.0.9
+    // rejects foreign Host headers unless allowed explicitly.
+    allowedHosts: [".app.github.dev"],
     proxy: {
       "/api": { target: backendUrl, changeOrigin: true },
       "/health": { target: backendUrl, changeOrigin: true },
