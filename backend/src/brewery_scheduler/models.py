@@ -59,11 +59,6 @@ class BeerStyle(str, enum.Enum):
     SPECIAL = "special"
 
 
-class TankCellar(str, enum.Enum):
-    MAIN = "main"
-    SECONDARY = "secondary"
-
-
 class TankStage(str, enum.Enum):
     FERMENTATION_OPEN = "fermentation_open"
     FERMENTATION_CLOSED = "fermentation_closed"
@@ -111,13 +106,33 @@ class Recipe(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class Location(Base):
+    """A physical site holding tanks (Hauptkeller, Nebenkeller, Festzelt …).
+
+    User-defined: the brewery adds sites in the Tankverwaltung; `position`
+    keeps the display order stable regardless of alphabet.
+    """
+
+    __tablename__ = "locations"
+    __table_args__ = (UniqueConstraint("name", name="uq_locations_name"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 class Tank(Base):
     __tablename__ = "tanks"
     __table_args__ = (UniqueConstraint("name", name="uq_tanks_name"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     name: Mapped[str] = mapped_column(String(32), nullable=False)
-    cellar: Mapped[TankCellar] = mapped_column(_enum(TankCellar, 16), nullable=False)
+    location_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id", name="fk_tanks_location"),
+        nullable=False,
+    )
+    location: Mapped[Location] = relationship(lazy="joined")
     stage: Mapped[TankStage] = mapped_column(_enum(TankStage, 32), nullable=False)
     capacity_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

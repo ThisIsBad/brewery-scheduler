@@ -7,7 +7,23 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .models import BeerStyle, SudStatus, TankCellar, TankStage, WithdrawalKind
+from .models import BeerStyle, SudStatus, TankStage, WithdrawalKind
+
+
+class LocationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    position: int
+
+
+class LocationCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class LocationUpdateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
 
 
 class OccupancyOut(BaseModel):
@@ -27,7 +43,7 @@ class TankOut(BaseModel):
 
     id: uuid.UUID
     name: str
-    cellar: TankCellar
+    location_id: uuid.UUID
     stage: TankStage
     capacity_hl: float
     active: bool
@@ -35,7 +51,7 @@ class TankOut(BaseModel):
 
 class TankCreateIn(BaseModel):
     name: str = Field(min_length=1, max_length=32)
-    cellar: TankCellar
+    location_id: uuid.UUID
     stage: TankStage
     capacity_hl: float = Field(gt=0)
 
@@ -46,7 +62,7 @@ class TankUpdateIn(BaseModel):
     occupancy contradicts them."""
 
     name: str | None = Field(default=None, min_length=1, max_length=32)
-    cellar: TankCellar | None = None
+    location_id: uuid.UUID | None = None
     stage: TankStage | None = None
     capacity_hl: float | None = Field(default=None, gt=0)
     active: bool | None = None

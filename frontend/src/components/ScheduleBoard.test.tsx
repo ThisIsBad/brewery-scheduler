@@ -6,7 +6,7 @@ import { ScheduleBoard } from "./ScheduleBoard";
 const TANK: Tank = {
   id: "tank-1",
   name: "F-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "fermentation_closed",
   capacity_hl: 30,
   active: true,

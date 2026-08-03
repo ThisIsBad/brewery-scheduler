@@ -1,19 +1,23 @@
 import { useState } from "react";
 
 import { api } from "../api/client";
-import type { Tank, TankCellar, TankStage } from "../api/types";
-import { CELLAR_LABEL, STAGE_LABEL, STAGE_ORDER, formatHl } from "../domain";
+import type { Location, Tank, TankStage } from "../api/types";
+import { STAGE_LABEL, STAGE_ORDER, formatHl } from "../domain";
 
 interface TankverwaltungProps {
   tanks: Tank[];
+  locations: Location[];
   onReload: () => void;
 }
 
-type DialogState = { kind: "create" } | { kind: "edit"; tank: Tank } | null;
+type DialogState =
+  | { kind: "create-tank" }
+  | { kind: "edit-tank"; tank: Tank }
+  | { kind: "create-location" }
+  | { kind: "edit-location"; location: Location }
+  | null;
 
-const CELLARS: TankCellar[] = ["main", "secondary"];
-
-export function Tankverwaltung({ tanks, onReload }: TankverwaltungProps) {
+export function Tankverwaltung({ tanks, locations, onReload }: TankverwaltungProps) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [reactivating, setReactivating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,18 +45,30 @@ export function Tankverwaltung({ tanks, onReload }: TankverwaltungProps) {
     <div className="tankverwaltung">
       {error && <div className="error banner">{error}</div>}
 
-      {CELLARS.map((cellar) => {
-        const group = active.filter((t) => t.cellar === cellar).sort(byStage);
-        if (group.length === 0) return null;
+      {locations.map((location) => {
+        const group = active
+          .filter((t) => t.location_id === location.id)
+          .sort(byStage);
         return (
-          <section key={cellar}>
-            <h2>{CELLAR_LABEL[cellar]}</h2>
+          <section key={location.id}>
+            <h2>
+              {location.name}
+              <button
+                type="button"
+                className="location-edit"
+                aria-label={`Standort ${location.name} bearbeiten`}
+                onClick={() => setDialog({ kind: "edit-location", location })}
+              >
+                ✎
+              </button>
+            </h2>
+            {group.length === 0 && <p className="muted">Keine Tanks.</p>}
             {group.map((t) => (
               <button
                 type="button"
                 className="tank-row"
                 key={t.id}
-                onClick={() => setDialog({ kind: "edit", tank: t })}
+                onClick={() => setDialog({ kind: "edit-tank", tank: t })}
               >
                 <strong>{t.name}</strong>
                 <span className="muted">
@@ -64,9 +80,16 @@ export function Tankverwaltung({ tanks, onReload }: TankverwaltungProps) {
         );
       })}
 
-      <section>
-        <button type="button" onClick={() => setDialog({ kind: "create" })}>
+      <section className="tank-actions">
+        <button type="button" onClick={() => setDialog({ kind: "create-tank" })}>
           + Tank
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setDialog({ kind: "create-location" })}
+        >
+          + Standort
         </button>
       </section>
 
@@ -95,9 +118,25 @@ export function Tankverwaltung({ tanks, onReload }: TankverwaltungProps) {
         </section>
       )}
 
-      {dialog && (
+      {(dialog?.kind === "create-tank" || dialog?.kind === "edit-tank") && (
         <TankDialog
-          tank={dialog.kind === "edit" ? dialog.tank : null}
+          tank={dialog.kind === "edit-tank" ? dialog.tank : null}
+          locations={locations}
+          onClose={() => setDialog(null)}
+          onDone={() => {
+            setDialog(null);
+            onReload();
+          }}
+        />
+      )}
+      {(dialog?.kind === "create-location" || dialog?.kind === "edit-location") && (
+        <LocationDialog
+          location={dialog.kind === "edit-location" ? dialog.location : null}
+          hasTanks={
+            dialog.kind === "edit-location"
+              ? tanks.some((t) => t.location_id === dialog.location.id)
+              : false
+          }
           onClose={() => setDialog(null)}
           onDone={() => {
             setDialog(null);
@@ -112,13 +151,16 @@ export function Tankverwaltung({ tanks, onReload }: TankverwaltungProps) {
 interface TankDialogProps {
   /** null = create a new tank */
   tank: Tank | null;
+  locations: Location[];
   onClose: () => void;
   onDone: () => void;
 }
 
-function TankDialog({ tank, onClose, onDone }: TankDialogProps) {
+function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
   const [name, setName] = useState(tank?.name ?? "");
-  const [cellar, setCellar] = useState<TankCellar>(tank?.cellar ?? "main");
+  const [locationId, setLocationId] = useState(
+    tank?.location_id ?? locations[0]?.id ?? "",
+  );
   const [stage, setStage] = useState<TankStage>(tank?.stage ?? "storage");
   const [capacity, setCapacity] = useState(
     tank ? String(tank.capacity_hl) : "",
@@ -128,7 +170,7 @@ function TankDialog({ tank, onClose, onDone }: TankDialogProps) {
   const [error, setError] = useState<string | null>(null);
 
   const capacityHl = parseFloat(capacity);
-  const canSubmit = name.trim() !== "" && capacityHl > 0;
+  const canSubmit = name.trim() !== "" && capacityHl > 0 && locationId !== "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,14 +181,14 @@ function TankDialog({ tank, onClose, onDone }: TankDialogProps) {
       if (tank) {
         await api.updateTank(tank.id, {
           name: name.trim(),
-          cellar,
+          location_id: locationId,
           stage,
           capacity_hl: capacityHl,
         });
       } else {
         await api.createTank({
           name: name.trim(),
-          cellar,
+          location_id: locationId,
           stage,
           capacity_hl: capacityHl,
         });
@@ -191,14 +233,15 @@ function TankDialog({ tank, onClose, onDone }: TankDialogProps) {
           />
         </label>
         <label>
-          Keller
+          Standort
           <select
-            value={cellar}
-            onChange={(e) => setCellar(e.target.value as TankCellar)}
+            value={locationId}
+            onChange={(e) => setLocationId(e.target.value)}
+            required
           >
-            {CELLARS.map((c) => (
-              <option key={c} value={c}>
-                {CELLAR_LABEL[c]}
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
               </option>
             ))}
           </select>
@@ -255,6 +298,113 @@ function TankDialog({ tank, onClose, onDone }: TankDialogProps) {
               Wirklich entfernen? Vergangene Belegungen bleiben im Kellerbuch
               erhalten.
             </p>
+            <button
+              type="button"
+              className="danger"
+              disabled={submitting}
+              onClick={() => void handleDelete()}
+            >
+              Ja, entfernen
+            </button>
+          </div>
+        )}
+      </form>
+    </div>
+  );
+}
+
+interface LocationDialogProps {
+  /** null = create a new location */
+  location: Location | null;
+  hasTanks: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}
+
+function LocationDialog({ location, hasTanks, onClose, onDone }: LocationDialogProps) {
+  const [name, setName] = useState(location?.name ?? "");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit = name.trim() !== "";
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      if (location) {
+        await api.updateLocation(location.id, { name: name.trim() });
+      } else {
+        await api.createLocation({ name: name.trim() });
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!location) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.deleteLocation(location.id);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setSubmitting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  return (
+    <div
+      className="dialog-backdrop"
+      role="dialog"
+      aria-label={location ? "Standort bearbeiten" : "Standort anlegen"}
+    >
+      <form className="dialog" onSubmit={handleSubmit}>
+        <h2>{location ? `Standort ${location.name}` : "Neuer Standort"}</h2>
+
+        <label>
+          Name
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={64}
+            required
+          />
+        </label>
+
+        {error && <div className="error">{error}</div>}
+
+        <div className="dialog-actions">
+          <button type="button" onClick={onClose} disabled={submitting}>
+            Abbrechen
+          </button>
+          <button type="submit" disabled={!canSubmit || submitting}>
+            {submitting ? "Speichere …" : "Speichern"}
+          </button>
+        </div>
+
+        {location && !confirmDelete && (
+          <button
+            type="button"
+            className="danger"
+            disabled={submitting || hasTanks}
+            title={hasTanks ? "Erst alle Tanks verschieben oder entfernen." : undefined}
+            onClick={() => setConfirmDelete(true)}
+          >
+            {hasTanks ? "Entfernen (Tanks vorhanden)" : "Entfernen"}
+          </button>
+        )}
+        {location && confirmDelete && (
+          <div className="confirm-delete">
+            <p className="muted">Standort wirklich entfernen?</p>
             <button
               type="button"
               className="danger"

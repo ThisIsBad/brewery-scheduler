@@ -31,7 +31,7 @@ const WEIZEN: Recipe = {
 const CLOSED_FERM_TANK: Tank = {
   id: "tank-closed",
   name: "F-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "fermentation_closed",
   capacity_hl: 30,
   active: true,
@@ -40,7 +40,7 @@ const CLOSED_FERM_TANK: Tank = {
 const OPEN_FERM_TANK: Tank = {
   id: "tank-open",
   name: "F-OPEN-15",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "fermentation_open",
   capacity_hl: 15,
   active: true,
@@ -49,7 +49,7 @@ const OPEN_FERM_TANK: Tank = {
 const STORAGE_TANK: Tank = {
   id: "tank-storage",
   name: "S-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "storage",
   capacity_hl: 30,
   active: true,
