@@ -83,8 +83,12 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
         {current.map(({ sud, occ }) => {
           const tank = tankById.get(occ.tank_id);
           const remaining = remainingHl(sud, sude, occ);
+          const warnings = sud.warnings ?? [];
           return (
-            <article className="card" key={occ.id}>
+            <article
+              className={warnings.length > 0 ? "card warn" : "card"}
+              key={occ.id}
+            >
               <header>
                 <strong>{tank?.name ?? "?"}</strong>
                 <span className="muted">
@@ -102,6 +106,9 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   {" · "}noch {formatHl(remaining)}
                 </div>
                 <div className="muted">{ageLabel(sud, now)}</div>
+                {warnings.length > 0 && (
+                  <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
+                )}
               </div>
               <footer>
                 <button
@@ -151,8 +158,14 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
           <h2>Überfällig</h2>
           {overdue.map(({ sud, occ }) => {
             const tank = tankById.get(occ.tank_id);
+            const warnings = sud.warnings ?? [];
             return (
-              <article className="card overdue" key={occ.id}>
+              <article
+                className={
+                  warnings.length > 0 ? "card overdue warn" : "card overdue"
+                }
+                key={occ.id}
+              >
                 <header>
                   <strong>{tank?.name ?? "?"}</strong>
                   <span className="muted">{STAGE_LABEL[occ.stage]}</span>
@@ -165,6 +178,9 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     geplantes Ende {occ.end_at ? formatDate(occ.end_at) : "—"} ist
                     vorbei — Bier steht noch im Tank
                   </div>
+                  {warnings.length > 0 && (
+                    <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
+                  )}
                 </div>
                 <footer>
                   <button
@@ -187,8 +203,14 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
           <h2>Geplant</h2>
           {planned.map(({ sud, occ }) => {
             const tank = tankById.get(occ.tank_id);
+            const warnings = sud.warnings ?? [];
             return (
-              <article className="card planned" key={occ.id}>
+              <article
+                className={
+                  warnings.length > 0 ? "card planned warn" : "card planned"
+                }
+                key={occ.id}
+              >
                 <div className="card-body">
                   <div className="beer">
                     {sud.recipe.name} {sudNumberLabel(sud, sude)}
@@ -197,6 +219,9 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     ab {formatDate(occ.start_at)} in {tank?.name ?? "?"} (
                     {STAGE_LABEL[occ.stage]})
                   </div>
+                  {warnings.length > 0 && (
+                    <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
+                  )}
                 </div>
                 <footer>
                   <button

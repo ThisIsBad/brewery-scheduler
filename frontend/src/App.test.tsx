@@ -96,8 +96,11 @@ test("zeigt Prozess-Warnungen aus einem Transfer als schließbares Banner", asyn
   fireEvent.click(within(dialog).getByRole("button", { name: "Umdrücken" }));
 
   await waitFor(() => expect(mocked.transferSud).toHaveBeenCalledOnce());
-  expect(await screen.findByText(/aktive Hefe/)).toBeInTheDocument();
+  // The banner (role=status) carries the warning; the card shows its own
+  // warn note, so scope the assertions to the banner.
+  const banner = await screen.findByRole("status");
+  expect(within(banner).getByText(/aktive Hefe/)).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "OK" }));
-  expect(screen.queryByText(/aktive Hefe/)).toBeNull();
+  fireEvent.click(within(banner).getByRole("button", { name: "OK" }));
+  expect(screen.queryByRole("status")).toBeNull();
 });

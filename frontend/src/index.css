@@ -200,6 +200,25 @@ button:disabled {
   background: #fdf6ee;
 }
 
+/* Sude whose current state deviates from the usual process: the action
+   buttons turn amber so the deviation is visible before the next tap. */
+.card.warn footer button {
+  background: #d99b16;
+  color: #fff;
+}
+
+.card.warn footer button.secondary {
+  background: #fff;
+  color: #9a6b00;
+  border: 1px solid #d99b16;
+}
+
+.card .warn-note {
+  color: #9a6b00;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
 /* --- Tankverwaltung --- */
 
 .tankverwaltung {
