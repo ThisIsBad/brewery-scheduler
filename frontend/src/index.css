@@ -294,6 +294,17 @@ div.tank-row {
   cursor: pointer;
 }
 
+.dialog button.lock-toggle {
+  margin-top: 10px;
+  min-height: 44px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #fff;
+  cursor: pointer;
+}
+
 .dialog button.danger {
   margin-top: 10px;
   min-height: 44px;

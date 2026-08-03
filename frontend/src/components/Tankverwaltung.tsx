@@ -70,7 +70,7 @@ export function Tankverwaltung({ tanks, locations, onReload }: TankverwaltungPro
                 key={t.id}
                 onClick={() => setDialog({ kind: "edit-tank", tank: t })}
               >
-                <strong>{t.name}</strong>
+                <strong>{t.locked ? `🔒 ${t.name}` : t.name}</strong>
                 <span className="muted">
                   {STAGE_LABEL[t.stage]} · {formatHl(t.capacity_hl)}
                 </span>
@@ -169,8 +169,23 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isLocked = tank?.locked ?? false;
   const capacityHl = parseFloat(capacity);
-  const canSubmit = name.trim() !== "" && capacityHl > 0 && locationId !== "";
+  const canSubmit =
+    !isLocked && name.trim() !== "" && capacityHl > 0 && locationId !== "";
+
+  const toggleLock = async () => {
+    if (!tank) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.updateTank(tank.id, { locked: !tank.locked });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,6 +237,12 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
     >
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>{tank ? `Tank ${tank.name}` : "Neuer Tank"}</h2>
+        {isLocked && (
+          <p className="muted">
+            🔒 Gesperrt — Stammdaten sind schreibgeschützt. Belegen bleibt
+            möglich.
+          </p>
+        )}
 
         <label>
           Name
@@ -229,6 +250,7 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={32}
+            disabled={isLocked}
             required
           />
         </label>
@@ -237,6 +259,7 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
           <select
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
+            disabled={isLocked}
             required
           >
             {locations.map((l) => (
@@ -251,6 +274,7 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
           <select
             value={stage}
             onChange={(e) => setStage(e.target.value as TankStage)}
+            disabled={isLocked}
           >
             {STAGE_ORDER.map((s) => (
               <option key={s} value={s}>
@@ -267,6 +291,7 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
             step="0.5"
             value={capacity}
             onChange={(e) => setCapacity(e.target.value)}
+            disabled={isLocked}
             required
           />
         </label>
@@ -282,7 +307,18 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
           </button>
         </div>
 
-        {tank && !confirmDelete && (
+        {tank && (
+          <button
+            type="button"
+            className="secondary lock-toggle"
+            disabled={submitting}
+            onClick={() => void toggleLock()}
+          >
+            {isLocked ? "🔓 Entsperren" : "🔒 Sperren"}
+          </button>
+        )}
+
+        {tank && !isLocked && !confirmDelete && (
           <button
             type="button"
             className="danger"
@@ -292,7 +328,7 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
             Entfernen
           </button>
         )}
-        {tank && confirmDelete && (
+        {tank && !isLocked && confirmDelete && (
           <div className="confirm-delete">
             <p className="muted">
               Wirklich entfernen? Vergangene Belegungen bleiben im Kellerbuch

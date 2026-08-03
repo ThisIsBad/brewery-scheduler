@@ -39,6 +39,7 @@ export interface Tank {
   stage: TankStage;
   capacity_hl: number;
   active: boolean;
+  locked: boolean;
 }
 
 export interface Recipe {
@@ -110,6 +111,7 @@ export interface TankUpdateIn {
   stage?: TankStage;
   capacity_hl?: number;
   active?: boolean;
+  locked?: boolean;
 }
 
 export interface ScheduleOccupancyIn {

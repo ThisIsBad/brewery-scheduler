@@ -10,6 +10,7 @@ const TANK: Tank = {
   stage: "fermentation_closed",
   capacity_hl: 30,
   active: true,
+  locked: false,
 };
 
 // Fixture dates are derived from "now" so the occupancy always falls inside

@@ -35,6 +35,7 @@ const CLOSED_FERM_TANK: Tank = {
   stage: "fermentation_closed",
   capacity_hl: 30,
   active: true,
+  locked: false,
 };
 
 const OPEN_FERM_TANK: Tank = {
@@ -44,6 +45,7 @@ const OPEN_FERM_TANK: Tank = {
   stage: "fermentation_open",
   capacity_hl: 15,
   active: true,
+  locked: false,
 };
 
 const STORAGE_TANK: Tank = {
@@ -53,6 +55,7 @@ const STORAGE_TANK: Tank = {
   stage: "storage",
   capacity_hl: 30,
   active: true,
+  locked: false,
 };
 
 describe("NewSudDialog", () => {
