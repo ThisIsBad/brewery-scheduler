@@ -14,6 +14,7 @@ const STORAGE_TANK: Tank = {
   stage: "storage",
   capacity_hl: 30,
   active: true,
+  locked: false,
 };
 
 const AUSSCHANK_TANK: Tank = {
@@ -23,6 +24,7 @@ const AUSSCHANK_TANK: Tank = {
   stage: "ausschank",
   capacity_hl: 50,
   active: true,
+  locked: false,
 };
 
 const baseSud = (over: Partial<Sud>): Sud => ({
@@ -152,6 +154,7 @@ describe("Kellerblick", () => {
       stage: "ausschank",
       capacity_hl: 80,
       active: true,
+      locked: false,
     };
 
     render(

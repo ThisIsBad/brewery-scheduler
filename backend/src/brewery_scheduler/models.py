@@ -136,6 +136,9 @@ class Tank(Base):
     stage: Mapped[TankStage] = mapped_column(_enum(TankStage, 32), nullable=False)
     capacity_hl: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Master-data lock (2026-08-03): a locked tank cannot be edited or
+    # removed until unlocked — occupancies are deliberately unaffected.
+    locked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 class Sud(Base):

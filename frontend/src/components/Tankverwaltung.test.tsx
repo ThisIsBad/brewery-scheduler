@@ -36,6 +36,7 @@ const tank = (over: Partial<Tank>): Tank => ({
   stage: "storage",
   capacity_hl: 30,
   active: true,
+  locked: false,
   ...over,
 });
 
@@ -185,4 +186,42 @@ test("benennt einen Standort um; Entfernen ist bei vorhandenen Tanks gesperrt", 
     }),
   );
   await waitFor(() => expect(onReload).toHaveBeenCalled());
+});
+
+test("gesperrter Tank: Felder schreibgeschützt, Entsperren möglich", async () => {
+  const onReload = vi.fn();
+  render(
+    <Tankverwaltung
+      tanks={[tank({ locked: true })]}
+      locations={[HAUPT]}
+      onReload={onReload}
+    />,
+  );
+
+  expect(screen.getByText("🔒 S-30-1")).toBeInTheDocument();
+  fireEvent.click(screen.getByText("🔒 S-30-1"));
+  const dialog = screen.getByRole("dialog", { name: "Tank bearbeiten" });
+
+  expect(within(dialog).getByLabelText("Name")).toBeDisabled();
+  expect(within(dialog).getByRole("button", { name: "Speichern" })).toBeDisabled();
+  expect(within(dialog).queryByRole("button", { name: "Entfernen" })).toBeNull();
+
+  fireEvent.click(within(dialog).getByRole("button", { name: "🔓 Entsperren" }));
+  await waitFor(() =>
+    expect(mocked.updateTank).toHaveBeenCalledWith("t-1", { locked: false }),
+  );
+  await waitFor(() => expect(onReload).toHaveBeenCalled());
+});
+
+test("Sperren aus dem Bearbeiten-Dialog heraus", async () => {
+  render(
+    <Tankverwaltung tanks={[tank({})]} locations={[HAUPT]} onReload={() => {}} />,
+  );
+
+  fireEvent.click(screen.getByText("S-30-1"));
+  const dialog = screen.getByRole("dialog", { name: "Tank bearbeiten" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "🔒 Sperren" }));
+  await waitFor(() =>
+    expect(mocked.updateTank).toHaveBeenCalledWith("t-1", { locked: true }),
+  );
 });

@@ -47,6 +47,7 @@ class TankOut(BaseModel):
     stage: TankStage
     capacity_hl: float
     active: bool
+    locked: bool
 
 
 class TankCreateIn(BaseModel):
@@ -66,6 +67,7 @@ class TankUpdateIn(BaseModel):
     stage: TankStage | None = None
     capacity_hl: float | None = Field(default=None, gt=0)
     active: bool | None = None
+    locked: bool | None = None
 
 
 class RecipeOut(BaseModel):

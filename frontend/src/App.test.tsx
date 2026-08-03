@@ -31,6 +31,7 @@ const STORAGE_TANK: Tank = {
   stage: "storage",
   capacity_hl: 30,
   active: true,
+  locked: false,
 };
 
 const A100: Tank = {
@@ -40,6 +41,7 @@ const A100: Tank = {
   stage: "ausschank",
   capacity_hl: 100,
   active: true,
+  locked: false,
 };
 
 const lead: Sud = {

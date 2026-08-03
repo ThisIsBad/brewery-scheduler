@@ -1309,3 +1309,47 @@ def test_location_delete_only_when_empty(client) -> None:
     assert gone.status_code == 204
     names = [x["name"] for x in client.get("/api/locations").json()]
     assert "Leerstand" not in names
+
+
+# ---------------------------------------------------------------------------
+# Tank lock (Schloss, 2026-08-03: protects master data, not occupancies)
+
+
+def test_locked_tank_rejects_edits_and_removal_but_not_beer(client, session) -> None:
+    tank = session.query(Tank).filter(Tank.name == "S-30-3").one()
+
+    locked = client.patch(f"/api/tanks/{tank.id}", json={"locked": True})
+    assert locked.status_code == 200, locked.text
+    assert locked.json()["locked"] is True
+
+    renamed = client.patch(f"/api/tanks/{tank.id}", json={"name": "S-30-3b"})
+    assert renamed.status_code == 409, renamed.text
+    assert "gesperrt" in renamed.json()["detail"]
+
+    removed = client.delete(f"/api/tanks/{tank.id}")
+    assert removed.status_code == 409, removed.text
+    assert "gesperrt" in removed.json()["detail"]
+
+    # Beer keeps flowing: scheduling into a locked tank stays allowed.
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=500)
+    scheduled = client.put(
+        f"/api/sude/{lead.id}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(tank.id),
+                    "stage": "storage",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=7)).isoformat(),
+                }
+            ]
+        },
+    )
+    assert scheduled.status_code == 200, scheduled.text
+
+    # Unlocking is always possible; edits work again afterwards.
+    unlocked = client.patch(f"/api/tanks/{tank.id}", json={"locked": False})
+    assert unlocked.status_code == 200
+    renamed_ok = client.patch(f"/api/tanks/{tank.id}", json={"name": "S-30-3b"})
+    assert renamed_ok.status_code == 200, renamed_ok.text

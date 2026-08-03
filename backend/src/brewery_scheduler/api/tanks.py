@@ -61,6 +61,15 @@ def update_tank(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tank not found")
 
     data = payload.model_dump(exclude_unset=True)
+
+    # The lock guards master data against accidental taps; toggling the
+    # lock itself is always allowed, occupancies are unaffected.
+    if tank.locked and any(field != "locked" for field in data):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Tank {tank.name} ist gesperrt — erst entsperren, dann ändern.",
+        )
+
     busy = _active_or_future_occupancies(session, tank.id)
 
     if "name" in data and data["name"] != tank.name:
@@ -106,6 +115,12 @@ def delete_tank(tank_id: uuid.UUID, session: Session = Depends(get_session)) -> 
     tank = session.get(Tank, tank_id)
     if tank is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tank not found")
+
+    if tank.locked:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Tank {tank.name} ist gesperrt — erst entsperren, dann entfernen.",
+        )
 
     if _active_or_future_occupancies(session, tank.id) > 0:
         raise HTTPException(
