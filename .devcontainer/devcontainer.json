@@ -1,0 +1,13 @@
+{
+  "name": "brewery-scheduler",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "forwardPorts": [5173, 8000],
+  "portsAttributes": {
+    "5173": { "label": "Kellerblick (App)", "onAutoForward": "notify" },
+    "8000": { "label": "API", "onAutoForward": "silent" }
+  }
+}

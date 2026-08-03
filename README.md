@@ -17,7 +17,15 @@ infra/     docker-compose for local development
 docs/      Design notes (Gantt component evaluation, etc.)
 ```
 
-## Quick start
+## Quick start — GitHub Codespaces (zero typing)
+
+Open the repo → `<> Code` → **Codespaces** → create/open a Codespace on `main`.
+The devcontainer starts Postgres, backend and frontend, applies migrations and
+seeds automatically (`.devcontainer/start.sh`). When the ports notification
+appears, open **port 5173** in the browser — done. To restart the stack
+manually, a single word suffices in the terminal: `./up`
+
+## Quick start — local Docker
 
 Requires Docker and Docker Compose.
 

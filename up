@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# One-word manual (re)start for environments where pasting is painful:
+# just type  ./up
+exec bash "$(dirname "$0")/.devcontainer/start.sh"
