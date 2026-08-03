@@ -4,7 +4,7 @@ import { api } from "../api/client";
 import type { Occupancy, Sud, Tank, TransferAllocationIn } from "../api/types";
 import {
   STAGE_LABEL,
-  combinedVolumeHl,
+  batchRemainingHl,
   formatHl,
   nextStage,
   occupancyAt,
@@ -29,7 +29,9 @@ export function TransferDialog({
   onDone,
 }: TransferDialogProps) {
   const target = nextStage(occupancy.stage);
-  const combined = combinedVolumeHl(sud, sude);
+  // What moves is what physically remains — kegs and pours already taken
+  // out stay out (mirrors the transfer endpoint's remaining-volume rule).
+  const combined = batchRemainingHl(sud, sude);
   const isAusschank = target === "ausschank";
 
   // Candidate tanks for the target stage. Pre-Ausschank the batch stays

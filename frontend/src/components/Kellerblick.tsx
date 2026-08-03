@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { Occupancy, Sud, Tank } from "../api/types";
+import type { Occupancy, Sud, Tank, WithdrawalKind } from "../api/types";
 import {
   STAGE_LABEL,
+  ageLabel,
   dayProgressLabel,
   firstFutureOccupancy,
   formatDate,
@@ -12,6 +13,7 @@ import {
   remainingHl,
   sudNumberLabel,
 } from "../domain";
+import { ReplanDialog } from "./ReplanDialog";
 import { ScheduleDialog } from "./ScheduleDialog";
 import { TransferDialog } from "./TransferDialog";
 import { WithdrawDialog } from "./WithdrawDialog";
@@ -24,7 +26,8 @@ interface KellerblickProps {
 
 type DialogState =
   | { kind: "transfer"; sud: Sud; occupancy: Occupancy }
-  | { kind: "withdraw"; sud: Sud; occupancy: Occupancy }
+  | { kind: "withdraw"; sud: Sud; occupancy: Occupancy; withdrawalKind: WithdrawalKind }
+  | { kind: "replan"; sud: Sud; occupancy: Occupancy }
   | { kind: "schedule"; sud: Sud }
   | null;
 
@@ -96,10 +99,11 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   {sud.recipe.name} {sudNumberLabel(sud, sude)}
                 </div>
                 <div className="muted">
-                  {dayProgressLabel(occ, now)}
+                  {dayProgressLabel(occ, now)} im Tank
                   {occ.end_at ? ` · bis ${formatDate(occ.end_at)}` : ""}
                   {" · "}noch {formatHl(remaining)}
                 </div>
+                <div className="muted">{ageLabel(sud, now)}</div>
               </div>
               <footer>
                 {target && (
@@ -114,7 +118,29 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   type="button"
                   className="secondary"
                   disabled={remaining <= 0}
-                  onClick={() => setDialog({ kind: "withdraw", sud, occupancy: occ })}
+                  onClick={() =>
+                    setDialog({
+                      kind: "withdraw",
+                      sud,
+                      occupancy: occ,
+                      withdrawalKind: "ausschank",
+                    })
+                  }
+                >
+                  Ausgeschenkt
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={remaining <= 0}
+                  onClick={() =>
+                    setDialog({
+                      kind: "withdraw",
+                      sud,
+                      occupancy: occ,
+                      withdrawalKind: "keg_fill",
+                    })
+                  }
                 >
                   Fass abfüllen
                 </button>
@@ -179,6 +205,15 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     {STAGE_LABEL[occ.stage]})
                   </div>
                 </div>
+                <footer>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => setDialog({ kind: "replan", sud, occupancy: occ })}
+                  >
+                    Umplanen
+                  </button>
+                </footer>
               </article>
             );
           })}
@@ -226,6 +261,20 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
         <WithdrawDialog
           sud={dialog.sud}
           occupancy={dialog.occupancy}
+          tanks={tanks}
+          sude={sude}
+          kind={dialog.withdrawalKind}
+          onClose={() => setDialog(null)}
+          onDone={(updated) => {
+            onChanged(updated);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.kind === "replan" && (
+        <ReplanDialog
+          sud={dialog.sud}
+          firstOccupancy={dialog.occupancy}
           tanks={tanks}
           sude={sude}
           onClose={() => setDialog(null)}

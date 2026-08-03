@@ -150,12 +150,13 @@ def update_schedule(
             ),
         )
 
-    partner_volumes = list(
-        session.scalars(
-            select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id)
+    has_partners = (
+        session.scalar(
+            select(func.count()).where(Sud.merged_into_sud_id == sud.id)
         )
-    )
-    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+        or 0
+    ) > 0
+    _, remaining_hl = _batch_volumes(session, sud)
 
     if payload.occupancies:
         tank_ids = {occ.tank_id for occ in payload.occupancies}
@@ -167,16 +168,17 @@ def update_schedule(
             tank = tanks.get(occ.tank_id)
             if tank is None:
                 continue
-            # Batch volume (lead + merged partners) must fit every
-            # non-Ausschank tank in the new schedule.
+            # The physically remaining batch volume (lead + merged partners
+            # minus withdrawals) must fit every non-Ausschank tank in the
+            # new schedule.
             if (
                 occ.stage != TankStage.AUSSCHANK
-                and combined_hl > float(tank.capacity_hl)
+                and remaining_hl > float(tank.capacity_hl)
             ):
                 described = (
-                    f"This Sud leads a merged batch of {combined_hl:g} hl"
-                    if partner_volumes
-                    else f"Batch volume of {combined_hl:g} hl"
+                    f"This Sud leads a merged batch of {remaining_hl:g} hl"
+                    if has_partners
+                    else f"Batch volume of {remaining_hl:g} hl"
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -193,7 +195,7 @@ def update_schedule(
                 _check_ausschank_headroom(
                     session,
                     tank,
-                    float(occ.volume_hl) if occ.volume_hl is not None else combined_hl,
+                    float(occ.volume_hl) if occ.volume_hl is not None else remaining_hl,
                     occ.start_at,
                     occ.end_at,
                     exclude_sud_id=sud.id,
@@ -220,6 +222,26 @@ def update_schedule(
     session.commit()
     session.refresh(sud)
     return sud
+
+
+def _batch_volumes(session: Session, sud: Sud) -> tuple[float, float]:
+    """(combined, remaining) in hl for the batch led by `sud`.
+
+    combined = lead + merged partners as brewed; remaining subtracts every
+    withdrawal (kegs and pours) — the volume that physically still exists
+    and is what capacity checks and transfers must work with.
+    """
+    partner_volumes = session.scalars(
+        select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id)
+    )
+    combined = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+    withdrawn = sum(
+        float(v)
+        for v in session.scalars(
+            select(Withdrawal.volume_hl).where(Withdrawal.sud_id == sud.id)
+        )
+    )
+    return combined, combined - withdrawn
 
 
 STAGE_ORDER: dict[TankStage, int] = {
@@ -307,10 +329,7 @@ def transfer_sud(
             ),
         )
 
-    partner_volumes = list(
-        session.scalars(select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id))
-    )
-    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
+    _, remaining_hl = _batch_volumes(session, sud)
 
     if target_stage != TankStage.AUSSCHANK:
         if len(payload.allocations) != 1:
@@ -322,27 +341,29 @@ def transfer_sud(
                 ),
             )
         target = tanks[tank_ids[0]]
-        if combined_hl > float(target.capacity_hl):
+        if remaining_hl > float(target.capacity_hl):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    f"Batch volume of {combined_hl:g} hl exceeds the "
+                    f"Batch volume of {remaining_hl:g} hl exceeds the "
                     f"{float(target.capacity_hl):g} hl capacity of tank {target.name}."
                 ),
             )
         volumes: list[float | None] = [None]
     else:
         volumes = [
-            a.volume_hl if a.volume_hl is not None else combined_hl
+            a.volume_hl if a.volume_hl is not None else remaining_hl
             for a in payload.allocations
         ]
         total = sum(volumes)
-        if abs(total - combined_hl) > 0.01:
+        # What must be distributed is what is physically left — kegs and
+        # pours already taken out don't move to the next tank.
+        if abs(total - remaining_hl) > 0.01:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
                     f"Allocated volumes sum to {total:g} hl but the batch "
-                    f"holds {combined_hl:g} hl."
+                    f"holds {remaining_hl:g} hl."
                 ),
             )
         for allocation, volume in zip(payload.allocations, volumes):
@@ -467,17 +488,17 @@ def withdraw(
             detail="This Sud does not occupy that tank at the given time.",
         )
 
-    partner_volumes = list(
-        session.scalars(select(Sud.volume_hl).where(Sud.merged_into_sud_id == sud.id))
-    )
-    combined_hl = float(sud.volume_hl) + sum(float(v) for v in partner_volumes)
-    allocation_hl = (
-        float(occupancy.volume_hl) if occupancy.volume_hl is not None else combined_hl
-    )
-    already_withdrawn = sum(
-        float(w.volume_hl) for w in sud.withdrawals if w.tank_id == payload.tank_id
-    )
-    remaining_hl = allocation_hl - already_withdrawn
+    if occupancy.volume_hl is not None:
+        # Explicit allocation (Ausschank split): this tank's share minus
+        # what already left it.
+        tank_withdrawn = sum(
+            float(w.volume_hl) for w in sud.withdrawals if w.tank_id == payload.tank_id
+        )
+        remaining_hl = float(occupancy.volume_hl) - tank_withdrawn
+    else:
+        # Whole batch in one tank: everything withdrawn anywhere in its
+        # lifetime is gone from it.
+        _, remaining_hl = _batch_volumes(session, sud)
     if payload.volume_hl > remaining_hl + 1e-9:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -492,6 +513,7 @@ def withdraw(
             tank_id=payload.tank_id,
             volume_hl=payload.volume_hl,
             at=payload.at,
+            kind=payload.kind,
             notes=payload.notes,
         )
     )
@@ -530,12 +552,8 @@ def _check_ausschank_headroom(
         if occ.volume_hl is not None:
             allocated += float(occ.volume_hl)
         else:
-            partner_volumes = session.scalars(
-                select(Sud.volume_hl).where(Sud.merged_into_sud_id == occ.sud_id)
-            )
-            allocated += float(occ.sud.volume_hl) + sum(
-                float(v) for v in partner_volumes
-            )
+            _, occ_remaining = _batch_volumes(session, occ.sud)
+            allocated += occ_remaining
 
     if allocated + volume_hl > float(tank.capacity_hl):
         raise HTTPException(
@@ -671,11 +689,10 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
             ),
         )
 
-    combined_hl = (
-        float(lead.volume_hl)
-        + sum(float(p.volume_hl) for p in lead.merged_partners)
-        + 15.0  # the new partner; standard Sud volume, ROADMAP §2.1
-    )
+    # The new partner adds 15 hl of fresh wort (ROADMAP §2.1) to what
+    # physically remains of the lead batch.
+    _, lead_remaining = _batch_volumes(session, lead)
+    combined_hl = lead_remaining + 15.0
 
     # Conservative by design (hard-block philosophy): every tank the lead is
     # or was booked into must fit the combined volume — a false rejection on

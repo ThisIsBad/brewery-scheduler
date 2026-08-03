@@ -116,15 +116,18 @@ class SudCreateIn(BaseModel):
 
 
 class WithdrawIn(BaseModel):
-    """Request body for POST /api/sude/{id}/withdraw (Fassabfüllung).
+    """Request body for POST /api/sude/{id}/withdraw.
 
-    The client supplies `at` so offline-queued withdrawals keep their real
-    timestamp when replayed after reconnect.
+    Covers both movement kinds that take volume out of a tank without a
+    transfer: keg fills (Fassabfüllung) and pours to customers (Ausschank,
+    beer-tax relevant). The client supplies `at` so offline-queued
+    withdrawals keep their real timestamp when replayed after reconnect.
     """
 
     tank_id: uuid.UUID
     volume_hl: float = Field(gt=0)
     at: datetime
+    kind: WithdrawalKind = WithdrawalKind.KEG_FILL
     notes: str | None = Field(default=None, max_length=10_000)
 
 

@@ -882,6 +882,72 @@ def test_withdraw_happy_path_and_remaining_volume(client, session) -> None:
     assert "10 hl" in r2.json()["detail"]
 
 
+def test_transfer_distributes_remaining_volume_after_withdrawals(
+    client, session
+) -> None:
+    # 2 hl went into kegs — the Ausschank split must distribute 13 hl, not
+    # the brewed 15 (Stefan's field-test finding).
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    storage_tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    a100 = session.query(Tank).filter(Tank.name == "A-100").one()
+    a80 = session.query(Tank).filter(Tank.name == "A-80").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    keg = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(storage_tank.id),
+            "volume_hl": 2,
+            "at": now.isoformat(),
+        },
+    )
+    assert keg.status_code == 200, keg.text
+
+    wrong = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(a100.id), "volume_hl": 8},
+            {"tank_id": str(a80.id), "volume_hl": 7},
+        ],
+        now + timedelta(minutes=5),
+    )
+    assert wrong.status_code == 422, wrong.text
+    assert "13 hl" in wrong.json()["detail"]
+
+    right = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(a100.id), "volume_hl": 8},
+            {"tank_id": str(a80.id), "volume_hl": 5},
+        ],
+        now + timedelta(minutes=5),
+    )
+    assert right.status_code == 200, right.text
+
+
+def test_withdraw_ausschank_kind_round_trips(client, session) -> None:
+    # Pours are tracked separately from keg fills (beer tax) — including
+    # pours straight from a fermentation tank (Bergkirchweih).
+    weizen = _seeded_lead(session, BeerStyle.WHEAT)
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-15-1").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        f"/api/sude/{weizen.id}/withdraw",
+        json={
+            "tank_id": str(ferm_tank.id),
+            "volume_hl": 3,
+            "at": now.isoformat(),
+            "kind": "ausschank",
+            "notes": "Bergkirchweih",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["withdrawals"][0]["kind"] == "ausschank"
+
+
 def test_withdraw_rejects_tank_not_occupied_at_time(client, session) -> None:
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
     wrong_tank = session.query(Tank).filter(Tank.name == "A-120").one()

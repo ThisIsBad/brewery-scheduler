@@ -91,6 +91,10 @@ describe("Kellerblick", () => {
     expect(
       screen.getByRole("button", { name: "Fass abfüllen" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ausgeschenkt" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Alter: Tag 4/)).toBeInTheDocument();
   });
 
   it("lists unplanned Sude with an Einplanen action and hides partners", () => {
@@ -215,5 +219,6 @@ describe("Kellerblick", () => {
 
     expect(screen.getByText("Geplant")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Umdrücken/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Umplanen" })).toBeInTheDocument();
   });
 });

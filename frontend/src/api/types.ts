@@ -99,7 +99,7 @@ export interface SudCreateIn {
   merge_into_sud_id?: string | null;
 }
 
-export type WithdrawalKind = "keg_fill";
+export type WithdrawalKind = "keg_fill" | "ausschank";
 
 export interface Withdrawal {
   id: string;
@@ -115,6 +115,7 @@ export interface WithdrawIn {
   tank_id: string;
   volume_hl: number;
   at: string;
+  kind?: WithdrawalKind;
   notes?: string | null;
 }
 
