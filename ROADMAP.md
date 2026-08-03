@@ -227,7 +227,7 @@ Core tables. The schema is the highest-leverage thing to get right because it's 
 
 The guiding principle: **walking skeleton**. Build a thin vertical slice (frontend → backend → database) first, then add intelligence layer by layer. **Every phase ends with a deployable, brewmaster-testable system.**
 
-### Phase 1 — Walking Skeleton (1–2 weeks)
+### Phase 1 — Walking Skeleton (1–2 weeks) — ✅ fertig (2026-08)
 
 **Goal:** prove the end-to-end round trip works.
 
@@ -243,7 +243,7 @@ The guiding principle: **walking skeleton**. Build a thin vertical slice (fronte
 
 **Definition of done:** brewmaster can open the app, see the tanks rendered, drag a Sud, and the change persists across page reload.
 
-### Phase 2 — Validation Layer + Mobile Surfaces (3–4 weeks, re-scoped 2026-08)
+### Phase 2 — Validation Layer + Mobile Surfaces (3–4 weeks, re-scoped 2026-08) — ✅ Tracks A/B/C fertig (2026-08-04); offen: Offline-Mutations-Queue (issue #10). Feldentscheidung 2026-08-03: Prozessregeln warnen statt zu blockieren; nur physikalische Grenzen blocken hart.
 
 **Goal:** encode all hard constraints from §2.4 as backend validation, and
 deliver the two mobile-first surfaces from §2.8 on top of them.
@@ -291,7 +291,7 @@ phone — check status, book a transfer, create a Sud, adjust the plan —
 without being able to create an invalid schedule, even with intermittent
 connectivity.
 
-### Phase 3 — Recipe Management (1 week)
+### Phase 3 — Recipe Management (1 week) — ✅ fertig (2026-08-04)
 
 **Goal:** brewmaster can manage recipes with full version history.
 
@@ -409,4 +409,4 @@ Explicitly out of scope to prevent scope creep:
 
 ---
 
-*Last updated: April 2026. This roadmap is a living document — update as priorities shift and edge cases emerge.*
+*Last updated: 2026-08-04. This roadmap is a living document — update as priorities shift and edge cases emerge. Offene Fragen und nächste Schritte: docs/PLANUNG.md.*

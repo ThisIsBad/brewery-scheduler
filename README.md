@@ -6,7 +6,7 @@ See [`ROADMAP.md`](./ROADMAP.md) for full domain context, data model, and phased
 
 ## Status
 
-Phase 1 (Walking Skeleton) complete: backend, Gantt frontend, and Sud numbering are merged. The Create-Sud workflow is in review. Next up: Phase 2 (validation layer) — see the open issues for the decisions feeding into it.
+Phases 1–3 complete: Kellerblick with tap-flows and warnings, free transfers, keg/pour bookings, tank & location management, recipe versioning with per-Sud overrides, and the custom touch timeline. Outstanding from Phase 2: the offline mutation queue (issue #10). Open questions and next steps live in [`docs/PLANUNG.md`](./docs/PLANUNG.md).
 
 ## Repository layout
 
