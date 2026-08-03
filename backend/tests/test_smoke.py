@@ -1125,3 +1125,88 @@ def test_inverted_time_window_returns_structured_422(client, session) -> None:
     )
     assert r.status_code == 422, r.text
     assert r.json()["constraint"] == "ck_tank_occupancy_time_order"
+
+
+# ---------------------------------------------------------------------------
+# Tank administration (Tankverwaltung)
+
+
+def test_tank_create_and_duplicate_name(client, session) -> None:
+    r = client.post(
+        "/api/tanks",
+        json={"name": "F-NEU-20", "cellar": "main", "stage": "fermentation_closed", "capacity_hl": 20},
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["name"] == "F-NEU-20"
+    assert body["active"] is True
+
+    dup = client.post(
+        "/api/tanks",
+        json={"name": "F-NEU-20", "cellar": "main", "stage": "storage", "capacity_hl": 10},
+    )
+    assert dup.status_code == 409, dup.text
+    assert "vergeben" in dup.json()["detail"]
+
+
+def test_tank_rename_and_capacity_change_when_idle(client, session) -> None:
+    idle = session.query(Tank).filter(Tank.name == "S2-10-2").one()  # never seeded busy
+    r = client.patch(
+        f"/api/tanks/{idle.id}", json={"name": "S2-10-2b", "capacity_hl": 12}
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["name"] == "S2-10-2b"
+    assert r.json()["capacity_hl"] == 12
+
+
+def test_tank_stage_change_blocked_while_occupied(client, session) -> None:
+    busy = session.query(Tank).filter(Tank.name == "S-30-1").one()  # running storage occ
+    r = client.patch(f"/api/tanks/{busy.id}", json={"stage": "ausschank"})
+    assert r.status_code == 409, r.text
+    assert "nicht geändert" in r.json()["detail"]
+
+    rename_only = client.patch(f"/api/tanks/{busy.id}", json={"name": "S-30-1b"})
+    assert rename_only.status_code == 200, rename_only.text
+
+
+def test_tank_capacity_cannot_drop_below_load(client, session) -> None:
+    busy = session.query(Tank).filter(Tank.name == "S-30-1").one()  # holds 15 hl Kellerbier
+    r = client.patch(f"/api/tanks/{busy.id}", json={"capacity_hl": 10})
+    assert r.status_code == 409, r.text
+    assert "Kapazität" in r.json()["detail"]
+
+    ok = client.patch(f"/api/tanks/{busy.id}", json={"capacity_hl": 20})
+    assert ok.status_code == 200, ok.text
+
+
+def test_tank_delete_refused_while_occupied(client, session) -> None:
+    busy = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    r = client.delete(f"/api/tanks/{busy.id}")
+    assert r.status_code == 409, r.text
+    assert "Belegungen" in r.json()["detail"]
+
+
+def test_tank_delete_with_history_deactivates(client, session) -> None:
+    # F-30-1 carries only the Kellerbier's PAST fermentation occupancy.
+    tank = session.query(Tank).filter(Tank.name == "F-30-1").one()
+    r = client.delete(f"/api/tanks/{tank.id}")
+    assert r.status_code == 204, r.text
+
+    listed = {t["name"]: t for t in client.get("/api/tanks").json()}
+    assert listed["F-30-1"]["active"] is False
+
+    # Reactivating brings it back for pickers.
+    back = client.patch(f"/api/tanks/{tank.id}", json={"active": True})
+    assert back.status_code == 200
+    assert back.json()["active"] is True
+
+
+def test_tank_delete_without_history_removes(client, session) -> None:
+    created = client.post(
+        "/api/tanks",
+        json={"name": "TEMP-1", "cellar": "secondary", "stage": "storage", "capacity_hl": 5},
+    ).json()
+    r = client.delete(f"/api/tanks/{created['id']}")
+    assert r.status_code == 204, r.text
+    names = [t["name"] for t in client.get("/api/tanks").json()]
+    assert "TEMP-1" not in names

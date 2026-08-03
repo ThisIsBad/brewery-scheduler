@@ -5,8 +5,9 @@ import type { Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { ScheduleBoard } from "./components/ScheduleBoard";
+import { Tankverwaltung } from "./components/Tankverwaltung";
 
-type View = "kellerblick" | "zeitplan";
+type View = "kellerblick" | "zeitplan" | "tanks";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -127,6 +128,13 @@ export default function App() {
           >
             Zeitplan
           </button>
+          <button
+            type="button"
+            className={view === "tanks" ? "active" : ""}
+            onClick={() => setView("tanks")}
+          >
+            Tanks
+          </button>
         </nav>
         <button
           type="button"
@@ -152,7 +160,7 @@ export default function App() {
         </div>
       )}
 
-      {view === "kellerblick" ? (
+      {view === "kellerblick" && (
         <div className="app-scroll">
           {loading ? (
             <p className="empty">lade …</p>
@@ -160,10 +168,20 @@ export default function App() {
             <Kellerblick tanks={tanks} sude={sude} onChanged={applySudUpdate} />
           )}
         </div>
-      ) : (
+      )}
+      {view === "zeitplan" && (
         <div className="app-board">
           {tanks.length > 0 && (
             <ScheduleBoard tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
+          )}
+        </div>
+      )}
+      {view === "tanks" && (
+        <div className="app-scroll">
+          {loading ? (
+            <p className="empty">lade …</p>
+          ) : (
+            <Tankverwaltung tanks={tanks} onReload={() => void refresh()} />
           )}
         </div>
       )}
