@@ -85,6 +85,21 @@ export interface Sud {
   warnings?: string[];
 }
 
+export interface TankCreateIn {
+  name: string;
+  cellar: TankCellar;
+  stage: TankStage;
+  capacity_hl: number;
+}
+
+export interface TankUpdateIn {
+  name?: string;
+  cellar?: TankCellar;
+  stage?: TankStage;
+  capacity_hl?: number;
+  active?: boolean;
+}
+
 export interface ScheduleOccupancyIn {
   tank_id: string;
   stage: TankStage;

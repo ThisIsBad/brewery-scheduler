@@ -41,11 +41,19 @@ const STYLE_COLOR: Record<string, string> = {
 export function ScheduleBoard({ tanks, sude, onMoveOccupancy }: ScheduleBoardProps) {
   const groups: TimelineGroupBase[] = useMemo(
     () =>
-      tanks.map((t) => ({
-        id: t.id,
-        title: `${t.name} · ${t.capacity_hl} hl · ${STAGE_LABEL[t.stage] ?? t.stage}`,
-      })),
-    [tanks],
+      tanks
+        // Deactivated tanks keep their row only while history references
+        // them — brand-new plans should not land there.
+        .filter(
+          (t) =>
+            t.active ||
+            sude.some((s) => s.occupancies.some((o) => o.tank_id === t.id)),
+        )
+        .map((t) => ({
+          id: t.id,
+          title: `${t.name} · ${t.capacity_hl} hl · ${STAGE_LABEL[t.stage] ?? t.stage}`,
+        })),
+    [tanks, sude],
   );
 
   const items: BoardItem[] = useMemo(() => {

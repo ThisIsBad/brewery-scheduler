@@ -4,6 +4,8 @@ import type {
   Sud,
   SudCreateIn,
   Tank,
+  TankCreateIn,
+  TankUpdateIn,
   TransferIn,
   WithdrawIn,
 } from "./types";
@@ -26,11 +28,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new Error(message);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
 export const api = {
   listTanks: () => request<Tank[]>("/api/tanks"),
+  createTank: (payload: TankCreateIn) =>
+    request<Tank>("/api/tanks", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateTank: (tankId: string, payload: TankUpdateIn) =>
+    request<Tank>(`/api/tanks/${tankId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteTank: (tankId: string) =>
+    request<void>(`/api/tanks/${tankId}`, { method: "DELETE" }),
   listSude: () => request<Sud[]>("/api/sude"),
   listRecipes: () => request<Recipe[]>("/api/recipes"),
   createSud: (payload: SudCreateIn) =>

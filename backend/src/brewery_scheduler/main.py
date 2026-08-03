@@ -29,6 +29,7 @@ CONSTRAINT_RESPONSES: dict[str | None, tuple[int, str]] = {
         409,
         "A Sud with this number already exists for this style and year — retry.",
     ),
+    "uq_tanks_name": (409, "A tank with this name already exists."),
 }
 
 

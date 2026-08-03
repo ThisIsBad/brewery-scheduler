@@ -33,6 +33,25 @@ class TankOut(BaseModel):
     active: bool
 
 
+class TankCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=32)
+    cellar: TankCellar
+    stage: TankStage
+    capacity_hl: float = Field(gt=0)
+
+
+class TankUpdateIn(BaseModel):
+    """Partial update; omitted fields stay untouched. Guards live in the
+    endpoint: stage and capacity only change when no running or planned
+    occupancy contradicts them."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=32)
+    cellar: TankCellar | None = None
+    stage: TankStage | None = None
+    capacity_hl: float | None = Field(default=None, gt=0)
+    active: bool | None = None
+
+
 class RecipeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
