@@ -200,18 +200,11 @@ button:disabled {
   background: #fdf6ee;
 }
 
-/* Sude whose current state deviates from the usual process: the action
-   buttons turn soft yellow so the deviation is visible before the next tap. */
-.card.warn footer button {
-  background: #f6e9b2;
-  color: #5f4c00;
-  border: 1px solid #e6d38a;
-}
-
-.card.warn footer button.secondary {
-  background: #fdf8e3;
-  color: #6b5200;
-  border: 1px solid #e6d38a;
+/* Sude whose current state deviates from the usual process: the card gets
+   a soft yellow background; the action buttons stay in their normal look. */
+.card.warn {
+  background: #fdf6d8;
+  border-color: #e6d38a;
 }
 
 .card .warn-note {
