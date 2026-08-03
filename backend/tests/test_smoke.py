@@ -530,7 +530,7 @@ def test_transfer_to_ausschank_with_active_yeast_warns(client, session) -> None:
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["status"] == "in_ausschank"
-    assert any("Hefe" in w for w in body["warnings"]), body["warnings"]
+    assert any("Gärzeit" in w for w in body["warnings"]), body["warnings"]
 
 
 def test_transfer_rejects_partner(client, session) -> None:
@@ -769,7 +769,7 @@ def test_schedule_warns_ausschank_with_active_yeast(client, session) -> None:
         },
     )
     assert r.status_code == 200, r.text
-    assert any("Hefe" in w for w in r.json()["warnings"])
+    assert any("Gärzeit" in w for w in r.json()["warnings"])
 
 
 def test_create_warns_wheat_starting_in_closed_fermenter(client, session) -> None:
@@ -1248,7 +1248,7 @@ def test_list_sude_exposes_persistent_process_warnings(client, session) -> None:
 
     listed = client.get("/api/sude").json()
     flagged = next(s for s in listed if s["id"] == str(lead.id))
-    assert any("Hefe" in w for w in flagged["warnings"]), flagged["warnings"]
+    assert any("Gärzeit" in w for w in flagged["warnings"]), flagged["warnings"]
 
     # The seeded Weizen ran its open fermentation correctly — no flag.
     weizen = next(

@@ -623,9 +623,8 @@ def _warn_yeast_free_ausschank(recipe: Recipe, occs) -> str | None:
         )
         if not satisfied:
             return (
-                "Möglicherweise aktive Hefe im Ausschank: "
-                f"„{recipe.name}“ hat vor dem Ausschank-Start keine "
-                f"abgeschlossene Gärzeit von {ferm.days} Tagen."
+                f"Gärzeit evtl. zu kurz — „{recipe.name}“ braucht "
+                f"{ferm.days} Tage geschlossene Gärung vor dem Ausschank."
             )
     return None
 

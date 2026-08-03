@@ -201,16 +201,17 @@ button:disabled {
 }
 
 /* Sude whose current state deviates from the usual process: the action
-   buttons turn amber so the deviation is visible before the next tap. */
+   buttons turn soft yellow so the deviation is visible before the next tap. */
 .card.warn footer button {
-  background: #d99b16;
-  color: #fff;
+  background: #f6e9b2;
+  color: #5f4c00;
+  border: 1px solid #e6d38a;
 }
 
 .card.warn footer button.secondary {
-  background: #fff;
-  color: #9a6b00;
-  border: 1px solid #d99b16;
+  background: #fdf8e3;
+  color: #6b5200;
+  border: 1px solid #e6d38a;
 }
 
 .card .warn-note {

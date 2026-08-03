@@ -207,7 +207,7 @@ describe("Kellerblick", () => {
   it("markiert Sude mit Prozess-Warnungen gelb und nennt den Grund", () => {
     const flagged = baseSud({
       status: "in_ausschank",
-      warnings: ["Möglicherweise aktive Hefe im Ausschank: Testfall."],
+      warnings: ["Gärzeit evtl. zu kurz — Testfall."],
       occupancies: [
         {
           id: "occ-w",
@@ -229,7 +229,7 @@ describe("Kellerblick", () => {
       />,
     );
 
-    expect(screen.getByText(/aktive Hefe/)).toBeInTheDocument();
+    expect(screen.getByText(/Gärzeit/)).toBeInTheDocument();
     const card = screen.getAllByRole("article")[0];
     expect(card.className).toContain("warn");
   });
