@@ -481,15 +481,56 @@ def test_transfer_to_storage_happy_path(client, session) -> None:
     assert actual_end == expected_end
 
 
-def test_transfer_rejects_backward_move(client, session) -> None:
-    # Kellerbier's latest occupancy is storage; fermentation would be backward.
+def test_transfer_backward_move_allowed(client, session) -> None:
+    # Kellerbier's latest occupancy is storage; moving back into a
+    # fermentation tank is unusual but allowed (decided 2026-08-03: the
+    # usual order is convention, not a constraint).
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
     ferm_tank = session.query(Tank).filter(Tank.name == "F-30-3").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=30)
 
     r = _transfer(client, lead.id, [{"tank_id": str(ferm_tank.id)}], start)
-    assert r.status_code == 422, r.text
-    assert "forward" in r.json()["detail"]
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "fermenting"
+    assert any(
+        o["tank_id"] == str(ferm_tank.id) and o["stage"] == "fermentation_closed"
+        for o in body["occupancies"]
+    )
+    assert body["warnings"] == []
+
+
+def test_transfer_same_stage_move_allowed(client, session) -> None:
+    # Re-tanking within the same stage (Lagertank → anderer Lagertank).
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    other_storage = session.query(Tank).filter(Tank.name == "S-30-4").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = _transfer(client, lead.id, [{"tank_id": str(other_storage.id)}], start)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "storing"
+    assert any(
+        o["tank_id"] == str(other_storage.id) and o["stage"] == "storage"
+        for o in body["occupancies"]
+    )
+    assert body["warnings"] == []
+
+
+def test_transfer_to_ausschank_with_active_yeast_warns(client, session) -> None:
+    # Bergkirchweih case: straight from the fermenter to an Ausschank tank.
+    # Goes through, but flags the potentially active yeast.
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    a_tank = session.query(Tank).filter(Tank.name == "A2-35-1").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = _transfer(
+        client, lead.id, [{"tank_id": str(a_tank.id), "volume_hl": 15.0}], start
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "in_ausschank"
+    assert any("Hefe" in w for w in body["warnings"]), body["warnings"]
 
 
 def test_transfer_rejects_partner(client, session) -> None:
@@ -658,7 +699,7 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     assert "capacity" in r2.json()["detail"]
 
 
-def test_schedule_rejects_stage_regression(client, session) -> None:
+def test_schedule_allows_stage_regression(client, session) -> None:
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
     ferm = session.query(Tank).filter(Tank.name == "F-30-1").one()
     storage = session.query(Tank).filter(Tank.name == "S-30-1").one()
@@ -683,11 +724,11 @@ def test_schedule_rejects_stage_regression(client, session) -> None:
             ]
         },
     )
-    assert r.status_code == 422, r.text
-    assert "forward" in r.json()["detail"]
+    assert r.status_code == 200, r.text
+    assert len(r.json()["occupancies"]) == 2
 
 
-def test_schedule_rejects_wheat_without_open_fermentation(client, session) -> None:
+def test_schedule_warns_wheat_without_open_fermentation(client, session) -> None:
     weizen = _seeded_lead(session, BeerStyle.WHEAT)
     ferm = session.query(Tank).filter(Tank.name == "F-15-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
@@ -705,11 +746,11 @@ def test_schedule_rejects_wheat_without_open_fermentation(client, session) -> No
             ]
         },
     )
-    assert r.status_code == 422, r.text
-    assert "open" in r.json()["detail"]
+    assert r.status_code == 200, r.text
+    assert any("offene Gärung" in w for w in r.json()["warnings"])
 
 
-def test_schedule_rejects_ausschank_with_active_yeast(client, session) -> None:
+def test_schedule_warns_ausschank_with_active_yeast(client, session) -> None:
     lead = _seeded_lead(session, BeerStyle.KELLERBIER)
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
@@ -727,11 +768,11 @@ def test_schedule_rejects_ausschank_with_active_yeast(client, session) -> None:
             ]
         },
     )
-    assert r.status_code == 422, r.text
-    assert "yeast" in r.json()["detail"]
+    assert r.status_code == 200, r.text
+    assert any("Hefe" in w for w in r.json()["warnings"])
 
 
-def test_create_rejects_wheat_starting_in_closed_fermenter(client, session) -> None:
+def test_create_warns_wheat_starting_in_closed_fermenter(client, session) -> None:
     wheat_recipe = (
         session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
     )
@@ -750,8 +791,8 @@ def test_create_rejects_wheat_starting_in_closed_fermenter(client, session) -> N
             },
         },
     )
-    assert r.status_code == 422, r.text
-    assert "open" in r.json()["detail"]
+    assert r.status_code == 201, r.text
+    assert any("offene Gärung" in w for w in r.json()["warnings"])
 
 
 def test_create_rejects_initial_occupancy_over_capacity(client, session) -> None:
@@ -794,7 +835,7 @@ def test_transfer_truncates_running_occupancy(client, session) -> None:
     assert truncated_end == start
 
 
-def test_transfer_out_of_open_fermentation_respects_minimum_days(
+def test_transfer_out_of_open_fermentation_warns_below_minimum_days(
     client, session
 ) -> None:
     wheat_recipe = (
@@ -818,25 +859,46 @@ def test_transfer_out_of_open_fermentation_respects_minimum_days(
         },
     ).json()
 
-    # Day 2: truncating at the transfer start would leave only 2 open days —
-    # the wheat rule blocks hard.
+    # Day 2: truncating at the transfer start leaves only 2 open days — the
+    # move goes through but carries the wheat warning.
     early = _transfer(
         client,
         created["id"],
         [{"tank_id": str(closed_tank.id)}],
         base + timedelta(days=2),
     )
-    assert early.status_code == 422, early.text
-    assert "open fermentation" in early.json()["detail"]
+    assert early.status_code == 200, early.text
+    body = early.json()
+    assert any("offene Gärung" in w for w in body["warnings"]), body["warnings"]
+    open_occs = [o for o in body["occupancies"] if o["stage"] == "fermentation_open"]
+    truncated_end = datetime.fromisoformat(
+        open_occs[0]["end_at"].replace("Z", "+00:00")
+    )
+    assert truncated_end == base + timedelta(days=2)
 
-    # After the full 4 open days the move goes through.
+    # A second wheat Sud that sits out its full 4 open days moves warning-free.
+    base2 = base + timedelta(days=20)
+    full_term = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(wheat_recipe.id),
+            "brew_at": _brew_at(date.today()),
+            "initial_occupancy": {
+                "tank_id": str(open_tank.id),
+                "stage": "fermentation_open",
+                "start_at": base2.isoformat(),
+                "end_at": (base2 + timedelta(days=4)).isoformat(),
+            },
+        },
+    ).json()
     on_time = _transfer(
         client,
-        created["id"],
+        full_term["id"],
         [{"tank_id": str(closed_tank.id)}],
-        base + timedelta(days=4),
+        base2 + timedelta(days=4),
     )
     assert on_time.status_code == 200, on_time.text
+    assert on_time.json()["warnings"] == []
 
 
 def test_transfer_rejects_unscheduled_sud(client, session) -> None:

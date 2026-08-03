@@ -13,6 +13,7 @@ export default function App() {
   const [sude, setSude] = useState<Sud[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [view, setView] = useState<View>("kellerblick");
@@ -55,6 +56,9 @@ export default function App() {
         : [...prev, updated];
     });
     setError(null);
+    // Process hints (e.g. active yeast into Ausschank) — the action went
+    // through; the banner just tells the brewmaster what deviates.
+    setWarnings(updated.warnings ?? []);
   }, []);
 
   const handleMove = useCallback(
@@ -135,6 +139,18 @@ export default function App() {
       </header>
 
       {error && <div className="error banner">{error}</div>}
+      {warnings.length > 0 && (
+        <div className="warning banner" role="status">
+          <div>
+            {warnings.map((w) => (
+              <p key={w}>⚠️ {w}</p>
+            ))}
+          </div>
+          <button type="button" onClick={() => setWarnings([])}>
+            OK
+          </button>
+        </div>
+      )}
 
       {view === "kellerblick" ? (
         <div className="app-scroll">

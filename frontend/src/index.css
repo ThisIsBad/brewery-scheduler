@@ -93,6 +93,28 @@ button:disabled {
   font-size: 13px;
 }
 
+.warning.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fdf3d7;
+  border-bottom: 1px solid #ecd9a0;
+  font-size: 13px;
+}
+
+.warning.banner div {
+  flex: 1;
+}
+
+.warning.banner p {
+  margin: 0 0 4px;
+}
+
+.warning.banner p:last-child {
+  margin-bottom: 0;
+}
+
 .empty {
   padding: 16px;
   color: #666;
