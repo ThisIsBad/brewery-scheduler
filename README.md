@@ -25,9 +25,13 @@ seeds automatically (`.devcontainer/start.sh`). When the ports notification
 appears, open **port 5173** in the browser — done. To restart the stack
 manually, a single word suffices in the terminal: `./up`
 
-If startup fails, a `STARTUP-FEHLER.txt` appears at the repository root with
-the service logs — open it from the file explorer (no terminal needed) and
-share a screenshot. A successful start removes the file again.
+The startup writes a `STARTUP-STATUS.txt` at the repository root on every
+run — it shows the current phase (⏳), success (✅) or failure (❌). If the
+file is missing entirely, the startup script never ran (stale Codespace or
+failed container build). On any failure a `STARTUP-FEHLER.txt` appears next
+to it with the service logs — open it from the file explorer (no terminal
+needed) and share a screenshot. A successful start removes it again. Both
+services run under a watchdog: if one dies, it restarts within 5 seconds.
 
 ## Quick start — local Docker
 
