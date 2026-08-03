@@ -65,6 +65,7 @@ class SudOut(BaseModel):
     id: uuid.UUID
     recipe_id: uuid.UUID
     recipe: RecipeOut
+    brew_at: datetime
     brew_date: date
     status: SudStatus
     notes: str | None
@@ -103,7 +104,9 @@ class SudCreateIn(BaseModel):
     """
 
     recipe_id: uuid.UUID
-    brew_date: date
+    # The brew moment with time — several Sude share a brew day. The server
+    # derives brew_date (numbering bucket) from this timestamp's date part.
+    brew_at: datetime
     notes: str | None = Field(default=None, max_length=10_000)
     brewmaster: str | None = Field(default=None, max_length=128)
     initial_occupancy: ScheduleOccupancyIn | None = None

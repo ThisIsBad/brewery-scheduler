@@ -26,10 +26,13 @@ export function NewSudDialog({
   onCreated,
 }: NewSudDialogProps) {
   const [recipeId, setRecipeId] = useState<string>("");
-  const [brewDate, setBrewDate] = useState<string>(today());
+  const [brewAt, setBrewAt] = useState<string>(roundedNowLocal());
   const [scheduleNow, setScheduleNow] = useState<boolean>(true);
   const [tankId, setTankId] = useState<string>("");
-  const [startAt, setStartAt] = useState<string>(roundedNowLocal());
+  // Fermentation start defaults to Brauzeit + 8 h (the brewhouse day) and
+  // follows the brew time until the brewmaster edits it deliberately.
+  const [startAt, setStartAt] = useState<string>(plusHours(roundedNowLocal(), 8));
+  const [startTouched, setStartTouched] = useState<boolean>(false);
   const [brewmaster, setBrewmaster] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +60,7 @@ export function NewSudDialog({
   if (!open) return null;
 
   const canSubmit =
-    recipeId !== "" && brewDate !== "" && (!scheduleNow || tankId !== "");
+    recipeId !== "" && brewAt !== "" && (!scheduleNow || tankId !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +70,7 @@ export function NewSudDialog({
     try {
       const payload: SudCreateIn = {
         recipe_id: recipeId,
-        brew_date: brewDate,
+        brew_at: new Date(brewAt).toISOString(),
         brewmaster: brewmaster || undefined,
       };
       if (scheduleNow) {
@@ -111,11 +114,15 @@ export function NewSudDialog({
         </label>
 
         <label>
-          Sudtag
+          Brauzeit (Tag + Uhrzeit)
           <input
-            type="date"
-            value={brewDate}
-            onChange={(e) => setBrewDate(e.target.value)}
+            type="datetime-local"
+            value={brewAt}
+            onChange={(e) => {
+              const next = e.target.value;
+              setBrewAt(next);
+              if (!startTouched && next) setStartAt(plusHours(next, 8));
+            }}
             required
           />
         </label>
@@ -164,7 +171,10 @@ export function NewSudDialog({
               <input
                 type="datetime-local"
                 value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
+                onChange={(e) => {
+                  setStartTouched(true);
+                  setStartAt(e.target.value);
+                }}
                 required
               />
             </label>
@@ -186,12 +196,11 @@ export function NewSudDialog({
   );
 }
 
-function today(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+function plusHours(localValue: string, hours: number): string {
+  const d = new Date(localValue);
+  d.setTime(d.getTime() + hours * 3_600_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function roundedNowLocal(): string {

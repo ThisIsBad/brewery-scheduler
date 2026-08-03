@@ -39,6 +39,7 @@ const baseSud = (over: Partial<Sud>): Sud => ({
     storage_duration_days: 21,
     max_storage_duration_days: 60,
   },
+  brew_at: new Date().toISOString(),
   brew_date: new Date().toISOString().slice(0, 10),
   status: "storing",
   notes: null,

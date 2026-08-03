@@ -12,7 +12,7 @@ Phase 2 will add validation-rule coverage.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -39,6 +39,7 @@ def test_db_rejects_duplicate_style_year_number(session) -> None:
     dupe = Sud(
         recipe_id=kellerbier.id,
         beer_style=BeerStyle.KELLERBIER,
+        brew_at=existing.brew_at,
         brew_date=existing.brew_date,
         style_year_number=existing.style_year_number,
     )
@@ -172,7 +173,7 @@ def test_create_sud_assigns_next_style_year_number(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(kellerbier_recipe.id),
-            "brew_date": today.isoformat(),
+            "brew_at": _brew_at(today),
             "brewmaster": "test",
         },
     )
@@ -183,7 +184,7 @@ def test_create_sud_assigns_next_style_year_number(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(kellerbier_recipe.id),
-            "brew_date": next_year.isoformat(),
+            "brew_at": _brew_at(next_year),
             "brewmaster": "test",
         },
     )
@@ -206,7 +207,7 @@ def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(
         "/api/sude",
         json={
             "recipe_id": str(kellerbier.id),
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "initial_occupancy": {
                 "tank_id": str(ferm_tank.id),
                 "stage": "fermentation_closed",
@@ -230,7 +231,7 @@ def test_create_sud_422_on_overlong_brewmaster(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": recipe_id,
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "brewmaster": "x" * 200,
         },
     )
@@ -243,10 +244,14 @@ def test_create_sud_404_on_unknown_recipe(client) -> None:
         "/api/sude",
         json={
             "recipe_id": "00000000-0000-0000-0000-000000000000",
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
         },
     )
     assert r.status_code == 404
+
+
+def _brew_at(d: date) -> str:
+    return datetime.combine(d, time(9), tzinfo=timezone.utc).isoformat()
 
 
 def _seeded_lead(session, style: BeerStyle) -> Sud:
@@ -265,7 +270,7 @@ def test_merge_partner_happy_path(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(lead.recipe_id),
-            "brew_date": (lead.brew_date + timedelta(days=1)).isoformat(),
+            "brew_at": _brew_at((lead.brew_date + timedelta(days=1))),
             "merge_into_sud_id": str(lead.id),
         },
     )
@@ -285,7 +290,7 @@ def test_merge_rejects_when_combined_volume_exceeds_tank(client, session) -> Non
         "/api/sude",
         json={
             "recipe_id": str(lead.recipe_id),
-            "brew_date": (lead.brew_date + timedelta(days=1)).isoformat(),
+            "brew_at": _brew_at((lead.brew_date + timedelta(days=1))),
             "merge_into_sud_id": str(lead.id),
         },
     )
@@ -302,7 +307,7 @@ def test_merge_rejects_different_recipe(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(wheat_recipe.id),
-            "brew_date": (lead.brew_date + timedelta(days=1)).isoformat(),
+            "brew_at": _brew_at((lead.brew_date + timedelta(days=1))),
             "merge_into_sud_id": str(lead.id),
         },
     )
@@ -318,7 +323,7 @@ def test_merge_brew_gap_boundary(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(lead.recipe_id),
-            "brew_date": (lead.brew_date + timedelta(days=2)).isoformat(),
+            "brew_at": _brew_at((lead.brew_date + timedelta(days=2))),
             "merge_into_sud_id": str(lead.id),
         },
     )
@@ -331,7 +336,7 @@ def test_merge_brew_gap_boundary(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(weizen_lead.recipe_id),
-            "brew_date": (weizen_lead.brew_date + timedelta(days=3)).isoformat(),
+            "brew_at": _brew_at((weizen_lead.brew_date + timedelta(days=3))),
             "merge_into_sud_id": str(weizen_lead.id),
         },
     )
@@ -345,7 +350,7 @@ def test_merge_rejects_chaining_onto_a_partner(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(partner.recipe_id),
-            "brew_date": partner.brew_date.isoformat(),
+            "brew_at": _brew_at(partner.brew_date),
             "merge_into_sud_id": str(partner.id),
         },
     )
@@ -361,14 +366,14 @@ def test_merge_capped_for_unscheduled_lead(client, session) -> None:
     )
     lead = client.post(
         "/api/sude",
-        json={"recipe_id": recipe_id, "brew_date": date.today().isoformat()},
+        json={"recipe_id": recipe_id, "brew_at": _brew_at(date.today())},
     ).json()
 
     first = client.post(
         "/api/sude",
         json={
             "recipe_id": recipe_id,
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "merge_into_sud_id": lead["id"],
         },
     )
@@ -378,7 +383,7 @@ def test_merge_capped_for_unscheduled_lead(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": recipe_id,
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "merge_into_sud_id": lead["id"],
         },
     )
@@ -418,7 +423,7 @@ def test_merge_rejects_initial_occupancy_combination(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": str(lead.recipe_id),
-            "brew_date": (lead.brew_date + timedelta(days=1)).isoformat(),
+            "brew_at": _brew_at((lead.brew_date + timedelta(days=1))),
             "merge_into_sud_id": str(lead.id),
             "initial_occupancy": {
                 "tank_id": tank_id,
@@ -437,7 +442,7 @@ def test_merge_404_on_unknown_lead(client, session) -> None:
         "/api/sude",
         json={
             "recipe_id": recipe_id,
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "merge_into_sud_id": "00000000-0000-0000-0000-000000000000",
         },
     )
@@ -574,7 +579,7 @@ def test_ausschank_consolidates_batches_until_capacity(client, session) -> None:
             "/api/sude",
             json={
                 "recipe_id": recipe_id,
-                "brew_date": date.today().isoformat(),
+                "brew_at": _brew_at(date.today()),
                 "initial_occupancy": {
                     "tank_id": str(ferm_tank.id),
                     "stage": "fermentation_closed",
@@ -737,7 +742,7 @@ def test_create_rejects_wheat_starting_in_closed_fermenter(client, session) -> N
         "/api/sude",
         json={
             "recipe_id": str(wheat_recipe.id),
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "initial_occupancy": {
                 "tank_id": str(ferm.id),
                 "stage": "fermentation_closed",
@@ -760,7 +765,7 @@ def test_create_rejects_initial_occupancy_over_capacity(client, session) -> None
         "/api/sude",
         json={
             "recipe_id": recipe_id,
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "initial_occupancy": {
                 "tank_id": str(small_storage.id),
                 "stage": "storage",
@@ -803,7 +808,7 @@ def test_transfer_out_of_open_fermentation_respects_minimum_days(
         "/api/sude",
         json={
             "recipe_id": str(wheat_recipe.id),
-            "brew_date": date.today().isoformat(),
+            "brew_at": _brew_at(date.today()),
             "initial_occupancy": {
                 "tank_id": str(open_tank.id),
                 "stage": "fermentation_open",
@@ -838,7 +843,7 @@ def test_transfer_rejects_unscheduled_sud(client, session) -> None:
     recipe_id = str(session.query(Recipe).first().id)
     created = client.post(
         "/api/sude",
-        json={"recipe_id": recipe_id, "brew_date": date.today().isoformat()},
+        json={"recipe_id": recipe_id, "brew_at": _brew_at(date.today())},
     ).json()
     target = session.query(Tank).filter(Tank.name == "S-30-5").one()
     start = datetime.now(timezone.utc).replace(microsecond=0)

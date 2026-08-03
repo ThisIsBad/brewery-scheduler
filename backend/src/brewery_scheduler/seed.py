@@ -7,7 +7,7 @@ before Phase 2 validation logic depends on them.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -119,24 +119,31 @@ def seed(session: Session) -> None:
     def past_brew_date(days_ago: int) -> date:
         return max(date(today.year, 1, 1), today - timedelta(days=days_ago))
 
+    def brew_morning(d: date) -> datetime:
+        return datetime.combine(d, time(8), tzinfo=timezone.utc)
+
     # Sample plan that exercises the full pipeline so the Gantt isn't empty
     # on first launch. The numbers don't reflect real brewing schedules —
     # they're just plausible enough that the brewmaster can drag them around
     # to get a feel for the UX. style_year_number is 1 for each because each
     # is the first of its style in this brew_date's year. global_number is
     # left to the sud_global_seq default.
+    kellerbier_day = past_brew_date(14)
     kellerbier = Sud(
         recipe_id=by_style[BeerStyle.KELLERBIER].id,
         beer_style=BeerStyle.KELLERBIER,
-        brew_date=past_brew_date(14),
+        brew_at=brew_morning(kellerbier_day),
+        brew_date=kellerbier_day,
         status=SudStatus.STORING,
         brewmaster="seed",
         style_year_number=1,
     )
+    weizen_day = past_brew_date(7)
     weizen = Sud(
         recipe_id=by_style[BeerStyle.WHEAT].id,
         beer_style=BeerStyle.WHEAT,
-        brew_date=past_brew_date(7),
+        brew_at=brew_morning(weizen_day),
+        brew_date=weizen_day,
         status=SudStatus.FERMENTING,
         brewmaster="seed",
         style_year_number=1,
@@ -147,10 +154,12 @@ def seed(session: Session) -> None:
     def future_brew_date(days_ahead: int) -> date:
         return min(date(today.year, 12, 30), today + timedelta(days=days_ahead))
 
+    festbier_day = future_brew_date(7)
     festbier = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
         beer_style=BeerStyle.FESTBIER,
-        brew_date=future_brew_date(7),
+        brew_at=brew_morning(festbier_day),
+        brew_date=festbier_day,
         status=SudStatus.PLANNED,
         brewmaster="seed",
         style_year_number=1,
@@ -164,6 +173,7 @@ def seed(session: Session) -> None:
     festbier_partner = Sud(
         recipe_id=by_style[BeerStyle.FESTBIER].id,
         beer_style=BeerStyle.FESTBIER,
+        brew_at=brew_morning(festbier.brew_date + timedelta(days=1)),
         brew_date=festbier.brew_date + timedelta(days=1),
         status=SudStatus.PLANNED,
         brewmaster="seed",

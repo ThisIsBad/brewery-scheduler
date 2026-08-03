@@ -141,6 +141,9 @@ class Sud(Base):
         UUID(as_uuid=True), ForeignKey("recipes.id"), nullable=False
     )
     recipe_overrides: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # The brew moment. brew_date is derived from it at create time and kept
+    # because the generated brew_year / numbering constraint depend on it.
+    brew_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     brew_date: Mapped[date] = mapped_column(Date, nullable=False)
     status: Mapped[SudStatus] = mapped_column(
         _enum(SudStatus, 32), nullable=False, default=SudStatus.PLANNED

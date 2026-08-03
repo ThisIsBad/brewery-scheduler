@@ -46,7 +46,13 @@ export function ScheduleDialog({
   );
 
   const [tankId, setTankId] = useState("");
-  const [startAt, setStartAt] = useState(toLocalInputValue(new Date()));
+  // Fermentation starts Brauzeit + 8 h by default (the brewhouse day);
+  // for Sude brewed in the past the default falls back to now.
+  const defaultStart = (() => {
+    const fromBrew = new Date(new Date(sud.brew_at).getTime() + 8 * 3_600_000);
+    return fromBrew > new Date() ? fromBrew : new Date();
+  })();
+  const [startAt, setStartAt] = useState(toLocalInputValue(defaultStart));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

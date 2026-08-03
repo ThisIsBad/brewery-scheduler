@@ -81,6 +81,7 @@ const sud = (over: Partial<Sud>): Sud => ({
     storage_duration_days: 28,
     max_storage_duration_days: 70,
   },
+  brew_at: "2026-08-01T09:00:00Z",
   brew_date: "2026-08-01",
   status: "storing",
   notes: null,
