@@ -23,17 +23,27 @@ export default function App() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, l, s, r] = await Promise.all([
+      const [t, s, r] = await Promise.all([
         api.listTanks(),
-        api.listLocations(),
         api.listSude(),
         api.listRecipes(),
       ]);
       setTanks(t);
-      setLocations(l);
       setSude(s);
       setRecipes(r);
-      setError(null);
+      try {
+        setLocations(await api.listLocations());
+        setError(null);
+      } catch {
+        // Mixed state right after a code sync: the dev server already
+        // serves the new frontend while uvicorn still runs the old
+        // backend without /api/locations. Name the fix instead of
+        // failing the whole load.
+        setLocations([]);
+        setError(
+          "Backend läuft noch mit altem Stand — im Terminal ./up ausführen oder den Codespace neu starten.",
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

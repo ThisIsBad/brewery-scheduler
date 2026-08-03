@@ -90,7 +90,7 @@ test("zeigt Prozess-Warnungen aus einem Transfer als schließbares Banner", asyn
   mocked.transferSud.mockResolvedValue({
     ...lead,
     status: "in_ausschank",
-    warnings: ["Möglicherweise aktive Hefe im Ausschank: Testfall."],
+    warnings: ["Gärzeit evtl. zu kurz — Testfall."],
   });
 
   render(<App />);
@@ -106,8 +106,22 @@ test("zeigt Prozess-Warnungen aus einem Transfer als schließbares Banner", asyn
   // The banner (role=status) carries the warning; the card shows its own
   // warn note, so scope the assertions to the banner.
   const banner = await screen.findByRole("status");
-  expect(within(banner).getByText(/aktive Hefe/)).toBeInTheDocument();
+  expect(within(banner).getByText(/Gärzeit/)).toBeInTheDocument();
 
   fireEvent.click(within(banner).getByRole("button", { name: "OK" }));
   expect(screen.queryByRole("status")).toBeNull();
+});
+
+test("altes Backend ohne /api/locations: App lädt trotzdem und nennt den Fix", async () => {
+  mocked.listTanks.mockResolvedValue([STORAGE_TANK]);
+  mocked.listSude.mockResolvedValue([lead]);
+  mocked.listRecipes.mockResolvedValue([]);
+  mocked.listLocations.mockRejectedValue(new Error("Not Found"));
+
+  render(<App />);
+
+  // Kellerblick kommt trotzdem hoch …
+  expect(await screen.findByText("S-30-1")).toBeInTheDocument();
+  // … und der Banner sagt, was zu tun ist.
+  expect(screen.getByText(/\.\/up ausführen/)).toBeInTheDocument();
 });
