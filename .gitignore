@@ -14,3 +14,4 @@ build/
 *.tsbuildinfo
 *.log
 .DS_Store
+STARTUP-FEHLER.txt

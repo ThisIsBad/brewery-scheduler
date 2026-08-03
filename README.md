@@ -25,6 +25,10 @@ seeds automatically (`.devcontainer/start.sh`). When the ports notification
 appears, open **port 5173** in the browser — done. To restart the stack
 manually, a single word suffices in the terminal: `./up`
 
+If startup fails, a `STARTUP-FEHLER.txt` appears at the repository root with
+the service logs — open it from the file explorer (no terminal needed) and
+share a screenshot. A successful start removes the file again.
+
 ## Quick start — local Docker
 
 Requires Docker and Docker Compose.
