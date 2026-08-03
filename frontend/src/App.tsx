@@ -5,8 +5,8 @@ import type { Location, Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/typ
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { Rezepte } from "./components/Rezepte";
-import { ScheduleBoard } from "./components/ScheduleBoard";
 import { Tankverwaltung } from "./components/Tankverwaltung";
+import { Zeitplan } from "./components/Zeitplan";
 
 type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte";
 
@@ -193,7 +193,7 @@ export default function App() {
       {view === "zeitplan" && (
         <div className="app-board">
           {tanks.length > 0 && (
-            <ScheduleBoard tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
+            <Zeitplan tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
           )}
         </div>
       )}
