@@ -105,7 +105,12 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   {occ.end_at ? ` · bis ${formatDate(occ.end_at)}` : ""}
                   {" · "}noch {formatHl(remaining)}
                 </div>
-                <div className="muted">{ageLabel(sud, now)}</div>
+                <div className="muted">
+                  {ageLabel(sud, now)}
+                  {sud.recipe_overrides &&
+                    Object.keys(sud.recipe_overrides).length > 0 &&
+                    " · abweichende Rezeptzeiten"}
+                </div>
                 {warnings.length > 0 && (
                   <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
                 )}

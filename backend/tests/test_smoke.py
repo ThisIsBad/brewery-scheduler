@@ -1353,3 +1353,284 @@ def test_locked_tank_rejects_edits_and_removal_but_not_beer(client, session) -> 
     assert unlocked.status_code == 200
     renamed_ok = client.patch(f"/api/tanks/{tank.id}", json={"name": "S-30-3b"})
     assert renamed_ok.status_code == 200, renamed_ok.text
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: recipe versioning + per-Sud overrides
+
+
+def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> None:
+    old_kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    existing_sud = _seeded_lead(session, BeerStyle.KELLERBIER)
+
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "kellerbier",
+            "name": "Kellerbier (v2, längere Lagerung)",
+            "fermentation_duration_days": 7,
+            "open_fermentation_required": False,
+            "storage_duration_days": 28,
+            "max_storage_duration_days": 70,
+            "created_by": "test",
+            "notes": "Lagerdauer nach Brauereimeister-Session angepasst.",
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["version"] == 2
+    assert body["created_by"] == "test"
+
+    # The old version stays listed (history), the existing Sud keeps its link.
+    listed = client.get("/api/recipes").json()
+    kellerbier_versions = [
+        x["version"] for x in listed if x["beer_style"] == "kellerbier"
+    ]
+    assert sorted(kellerbier_versions) == [1, 2]
+    session.refresh(existing_sud)
+    assert existing_sud.recipe_id == old_kellerbier.id
+
+
+def test_recipe_open_fermentation_requires_duration(client) -> None:
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "wheat",
+            "name": "Weizen kaputt",
+            "fermentation_duration_days": 7,
+            "open_fermentation_required": True,
+            "storage_duration_days": 14,
+            "max_storage_duration_days": 45,
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "offenen Gärung" in r.json()["detail"]
+
+
+def test_recipe_max_storage_must_cover_storage(client) -> None:
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "special",
+            "name": "Special kaputt",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 30,
+            "max_storage_duration_days": 20,
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "Lagerdauer" in r.json()["detail"]
+
+
+def test_sud_overrides_drive_derived_dates_and_warnings(client, session) -> None:
+    # A Sud with shortened closed fermentation: the derived end date and the
+    # yeast warning must both follow the override, not the recipe.
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier.id),
+            "brew_at": _brew_at(date.today()),
+            "recipe_overrides": {"fermentation_duration_days": 3},
+            "initial_occupancy": {
+                "tank_id": str(ferm_tank.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+                # end_at omitted: must derive from the OVERRIDE (3 days).
+            },
+        },
+    )
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert body["recipe_overrides"] == {"fermentation_duration_days": 3}
+    occ_end = datetime.fromisoformat(
+        body["occupancies"][0]["end_at"].replace("Z", "+00:00")
+    )
+    assert occ_end == start + timedelta(days=3)
+
+    # After the (shortened) fermentation completed, Ausschank raises no
+    # yeast warning — the override says 3 days are enough for this batch.
+    r = client.post(
+        f"/api/sude/{body['id']}/transfer",
+        json={
+            "start_at": (start + timedelta(days=3)).isoformat(),
+            "end_at": None,
+            "allocations": [{"tank_id": str(a50.id), "volume_hl": 15.0}],
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["warnings"] == []
+
+
+def test_storage_override_drives_transfer_end_date(client, session) -> None:
+    # Transfer to storage with end_at omitted must derive from the Sud's
+    # storage override, not the recipe (review finding, night 2).
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    storage_tank = session.query(Tank).filter(Tank.name == "S-30-3").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=90)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier.id),
+            "brew_at": _brew_at(date.today()),
+            "recipe_overrides": {"storage_duration_days": 10},
+            "initial_occupancy": {
+                "tank_id": str(ferm_tank.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+                "end_at": (start + timedelta(days=7)).isoformat(),
+            },
+        },
+    ).json()
+
+    r = client.post(
+        f"/api/sude/{created['id']}/transfer",
+        json={
+            "start_at": (start + timedelta(days=7)).isoformat(),
+            "end_at": None,
+            "allocations": [{"tank_id": str(storage_tank.id)}],
+        },
+    )
+    assert r.status_code == 200, r.text
+    storage_occ = next(
+        o for o in r.json()["occupancies"] if o["stage"] == "storage"
+    )
+    end = datetime.fromisoformat(storage_occ["end_at"].replace("Z", "+00:00"))
+    assert end == start + timedelta(days=7) + timedelta(days=10)  # override, not 21
+
+
+def test_schedule_respects_overrides_and_keeps_them(client, session) -> None:
+    # PUT /schedule on an overridden Sud: warnings judge against the
+    # override, and the overrides survive the wholesale replacement.
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=120)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier.id),
+            "brew_at": _brew_at(date.today()),
+            "recipe_overrides": {"fermentation_duration_days": 3},
+        },
+    ).json()
+
+    # 3 days closed fermentation (matches the override, NOT the 7-day
+    # recipe) followed by Ausschank: no yeast warning may fire.
+    r = client.put(
+        f"/api/sude/{created['id']}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(ferm_tank.id),
+                    "stage": "fermentation_closed",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=3)).isoformat(),
+                },
+                {
+                    "tank_id": str(a50.id),
+                    "stage": "ausschank",
+                    "start_at": (start + timedelta(days=3)).isoformat(),
+                    "end_at": None,
+                },
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["warnings"] == []
+    assert r.json()["recipe_overrides"] == {"fermentation_duration_days": 3}
+
+    listed = client.get("/api/sude").json()
+    entry = next(s for s in listed if s["id"] == created["id"])
+    assert entry["recipe_overrides"] == {"fermentation_duration_days": 3}
+    assert entry["warnings"] == []
+
+
+def test_open_fermentation_override_drives_end_and_warning(client, session) -> None:
+    wheat = session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+    open_tank = session.query(Tank).filter(Tank.name == "F-OPEN-15").one()
+    closed_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    base = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=150)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(wheat.id),
+            "brew_at": _brew_at(date.today()),
+            "recipe_overrides": {"open_fermentation_duration_days": 2},
+            "initial_occupancy": {
+                "tank_id": str(open_tank.id),
+                "stage": "fermentation_open",
+                "start_at": base.isoformat(),
+                # end_at omitted: must derive 2 days from the override.
+            },
+        },
+    ).json()
+    occ_end = datetime.fromisoformat(
+        created["occupancies"][0]["end_at"].replace("Z", "+00:00")
+    )
+    assert occ_end == base + timedelta(days=2)
+
+    # After the (shortened) open fermentation the move into the closed
+    # fermenter is warning-free — 2 days satisfy this Sud's own rule.
+    r = client.post(
+        f"/api/sude/{created['id']}/transfer",
+        json={
+            "start_at": (base + timedelta(days=2)).isoformat(),
+            "end_at": None,
+            "allocations": [{"tank_id": str(closed_tank.id)}],
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["warnings"] == []
+
+
+def test_recipe_version_collision_hits_db_constraint(client, session) -> None:
+    # The read-then-insert race resolves at uq_recipes_style_version: the
+    # loser gets the structured 409, never a silent duplicate version.
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    session.add(
+        Recipe(
+            beer_style=BeerStyle.KELLERBIER,
+            version=2,
+            name="Racing v2",
+            fermentation_duration_days=7,
+            open_fermentation_required=False,
+            storage_duration_days=21,
+            max_storage_duration_days=60,
+        )
+    )
+    session.commit()
+
+    dupe = Recipe(
+        beer_style=BeerStyle.KELLERBIER,
+        version=2,
+        name="Racing v2 (loser)",
+        fermentation_duration_days=7,
+        open_fermentation_required=False,
+        storage_duration_days=21,
+        max_storage_duration_days=60,
+    )
+    session.add(dupe)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.commit()
+    session.rollback()
+    assert "uq_recipes_style_version" in str(excinfo.value)
+    assert kellerbier.version == 1

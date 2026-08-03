@@ -85,6 +85,9 @@ const sud = (over: Partial<Sud>): Sud => ({
     open_fermentation_duration_days: null,
     storage_duration_days: 28,
     max_storage_duration_days: 70,
+    created_at: "2026-01-01T00:00:00Z",
+    created_by: null,
+    notes: null,
   },
   brew_at: "2026-08-01T09:00:00Z",
   brew_date: "2026-08-01",
@@ -314,5 +317,40 @@ describe("ScheduleDialog", () => {
     const span =
       new Date(occ.end_at).getTime() - new Date(occ.start_at).getTime();
     expect(span).toBe(8 * 86_400_000);
+  });
+});
+
+describe("ScheduleDialog (Rezept-Abweichungen)", () => {
+  it("leitet das Gärende aus dem Override ab, nicht aus dem Rezept", async () => {
+    // Rezept: 8 Tage — Override: 3 Tage. Der PUT muss 3 Tage schicken.
+    const lead = sud({
+      occupancies: [],
+      recipe_overrides: { fermentation_duration_days: 3 },
+    });
+    mocked.updateSchedule.mockResolvedValue(lead);
+
+    render(
+      <ScheduleDialog
+        sud={lead}
+        tanks={[F30]}
+        sude={[lead]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/Gärdauer laut Abweichung: 3 Tage/)).toBeInTheDocument();
+    fireEvent.change(screen.getAllByRole("combobox")[0], {
+      target: { value: F30.id },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Einplanen" }));
+
+    await waitFor(() => expect(mocked.updateSchedule).toHaveBeenCalledOnce());
+    const [, payload] = mocked.updateSchedule.mock.calls[0];
+    const occ = payload.occupancies[0];
+    const days =
+      (new Date(occ.end_at).getTime() - new Date(occ.start_at).getTime()) /
+      86_400_000;
+    expect(days).toBeCloseTo(3, 5);
   });
 });

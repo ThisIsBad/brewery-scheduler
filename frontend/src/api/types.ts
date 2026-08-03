@@ -52,6 +52,9 @@ export interface Recipe {
   open_fermentation_duration_days: number | null;
   storage_duration_days: number;
   max_storage_duration_days: number;
+  created_at: string;
+  created_by: string | null;
+  notes: string | null;
 }
 
 export interface Occupancy {
@@ -88,6 +91,8 @@ export interface Sud {
    * lead's tank and carries no occupancies of its own.
    */
   merged_into_sud_id: string | null;
+  /** Per-Sud deviations from the recipe (duration fields only). */
+  recipe_overrides?: RecipeOverridesIn | null;
   occupancies: Occupancy[];
   withdrawals: Withdrawal[];
   /**
@@ -135,9 +140,28 @@ export interface SudCreateIn {
   initial_occupancy?: ScheduleOccupancyIn;
   /** Create this Sud as a merged-batch partner of the given lead Sud. */
   merge_into_sud_id?: string | null;
+  recipe_overrides?: RecipeOverridesIn;
 }
 
 export type WithdrawalKind = "keg_fill" | "ausschank";
+
+export interface RecipeCreateIn {
+  beer_style: BeerStyle;
+  name: string;
+  fermentation_duration_days: number;
+  open_fermentation_required: boolean;
+  open_fermentation_duration_days: number | null;
+  storage_duration_days: number;
+  max_storage_duration_days: number;
+  notes?: string | null;
+  created_by?: string | null;
+}
+
+export interface RecipeOverridesIn {
+  fermentation_duration_days?: number;
+  storage_duration_days?: number;
+  open_fermentation_duration_days?: number;
+}
 
 export interface Withdrawal {
   id: string;

@@ -17,6 +17,23 @@ export const STAGE_LABEL: Record<TankStage, string> = {
   ausschank: "Ausschank",
 };
 
+export const STYLE_LABEL: Record<string, string> = {
+  kellerbier: "Kellerbier",
+  wheat: "Weizen",
+  festbier: "Festbier",
+  special: "Special",
+};
+
+/** Latest recipe version per beer style — what new Sude should use. */
+export function latestRecipes(recipes: { beer_style: string; version: number }[]) {
+  const byStyle = new Map<string, (typeof recipes)[number]>();
+  for (const r of recipes) {
+    const seen = byStyle.get(r.beer_style);
+    if (!seen || r.version > seen.version) byStyle.set(r.beer_style, r);
+  }
+  return [...byStyle.values()];
+}
+
 /** Partners of a lead Sud (merged batches share the lead's tank). */
 export function partnersOf(lead: Sud, all: Sud[]): Sud[] {
   return all.filter((s) => s.merged_into_sud_id === lead.id);

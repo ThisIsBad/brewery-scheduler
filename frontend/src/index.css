@@ -213,6 +213,23 @@ button:disabled {
   margin-top: 6px;
 }
 
+/* --- Rezepte --- */
+
+.rezepte {
+  padding: 12px;
+}
+
+.rezepte h2 {
+  font-size: 15px;
+  margin: 16px 4px 8px;
+}
+
+.rezepte .card.history {
+  background: #fbfaf7;
+  border-style: dashed;
+  margin-left: 16px;
+}
+
 /* --- Tankverwaltung --- */
 
 .tankverwaltung {

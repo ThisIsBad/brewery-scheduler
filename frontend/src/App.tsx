@@ -4,10 +4,11 @@ import { api } from "./api/client";
 import type { Location, Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
+import { Rezepte } from "./components/Rezepte";
 import { ScheduleBoard } from "./components/ScheduleBoard";
 import { Tankverwaltung } from "./components/Tankverwaltung";
 
-type View = "kellerblick" | "zeitplan" | "tanks";
+type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -148,6 +149,13 @@ export default function App() {
           >
             Tanks
           </button>
+          <button
+            type="button"
+            className={view === "rezepte" ? "active" : ""}
+            onClick={() => setView("rezepte")}
+          >
+            Rezepte
+          </button>
         </nav>
         <button
           type="button"
@@ -199,6 +207,15 @@ export default function App() {
               locations={locations}
               onReload={() => void refresh()}
             />
+          )}
+        </div>
+      )}
+      {view === "rezepte" && (
+        <div className="app-scroll">
+          {loading ? (
+            <p className="empty">lade …</p>
+          ) : (
+            <Rezepte recipes={recipes} onReload={() => void refresh()} />
           )}
         </div>
       )}

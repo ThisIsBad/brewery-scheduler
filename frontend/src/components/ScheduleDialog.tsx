@@ -30,9 +30,18 @@ export function ScheduleDialog({
   const stage: TankStage = sud.recipe.open_fermentation_required
     ? "fermentation_open"
     : "fermentation_closed";
+  // Per-Sud overrides win over the recipe — the same effective view the
+  // backend applies to derived end dates and warnings.
+  const overrides = sud.recipe_overrides ?? {};
+  const hasOverride = sud.recipe.open_fermentation_required
+    ? overrides.open_fermentation_duration_days != null
+    : overrides.fermentation_duration_days != null;
   const durationDays = sud.recipe.open_fermentation_required
-    ? (sud.recipe.open_fermentation_duration_days ?? 4)
-    : sud.recipe.fermentation_duration_days;
+    ? (overrides.open_fermentation_duration_days ??
+      sud.recipe.open_fermentation_duration_days ??
+      4)
+    : (overrides.fermentation_duration_days ??
+      sud.recipe.fermentation_duration_days);
 
   // Merged batches share the lead's tank — offer only fermenters that fit
   // the combined volume, matching the server's capacity rule.
@@ -116,8 +125,8 @@ export function ScheduleDialog({
         </label>
 
         <p className="muted">
-          Gärdauer laut Rezept: {durationDays} Tage — Ende wird automatisch
-          gesetzt.
+          Gärdauer {hasOverride ? "laut Abweichung" : "laut Rezept"}:{" "}
+          {durationDays} Tage — Ende wird automatisch gesetzt.
         </p>
 
         {error && <div className="error">{error}</div>}

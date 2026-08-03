@@ -40,6 +40,9 @@ const baseSud = (over: Partial<Sud>): Sud => ({
     open_fermentation_duration_days: null,
     storage_duration_days: 21,
     max_storage_duration_days: 60,
+    created_at: "2026-01-01T00:00:00Z",
+    created_by: null,
+    notes: null,
   },
   brew_at: new Date().toISOString(),
   brew_date: new Date().toISOString().slice(0, 10),
@@ -255,5 +258,36 @@ describe("Kellerblick", () => {
     expect(screen.getByText("Geplant")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Umdrücken/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Umplanen" })).toBeInTheDocument();
+  });
+});
+
+describe("Kellerblick (Rezept-Abweichungen)", () => {
+  const runningOcc = {
+    id: "occ-ov",
+    sud_id: "sud-1",
+    tank_id: STORAGE_TANK.id,
+    stage: "storage" as const,
+    start_at: daysFromNow(-2),
+    end_at: daysFromNow(5),
+    volume_hl: null,
+  };
+
+  it("markiert Sude mit Overrides als abweichend", () => {
+    const deviating = baseSud({
+      recipe_overrides: { fermentation_duration_days: 3 },
+      occupancies: [runningOcc],
+    });
+    render(
+      <Kellerblick tanks={[STORAGE_TANK]} sude={[deviating]} onChanged={() => {}} />,
+    );
+    expect(screen.getByText(/abweichende Rezeptzeiten/)).toBeInTheDocument();
+  });
+
+  it("zeigt keine Abweichung ohne Overrides", () => {
+    const plain = baseSud({ recipe_overrides: null, occupancies: [runningOcc] });
+    render(
+      <Kellerblick tanks={[STORAGE_TANK]} sude={[plain]} onChanged={() => {}} />,
+    );
+    expect(screen.queryByText(/abweichende Rezeptzeiten/)).toBeNull();
   });
 });
