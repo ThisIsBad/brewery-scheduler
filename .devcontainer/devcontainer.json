@@ -1,9 +1,12 @@
 {
   "name": "brewery-scheduler",
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/brewery-scheduler",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
   },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "bash .devcontainer/start.sh",
   "forwardPorts": [5173, 8000],
   "portsAttributes": {

@@ -1,0 +1,35 @@
+# Codespace stack: the devcontainer itself is the app container and talks
+# to Postgres next door — no docker-in-docker, so port detection and startup
+# are reliable. Local (non-Codespace) development keeps using
+# infra/docker-compose.yml unchanged.
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/python:3.12
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/brewery-scheduler:cached
+    environment:
+      DATABASE_URL: postgresql+psycopg://brewery:brewery@db:5432/brewery
+      TEST_DATABASE_URL: postgresql+psycopg://brewery:brewery@db:5432/brewery_test
+      DB_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: brewery
+      POSTGRES_PASSWORD: brewery
+      POSTGRES_DB: brewery
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brewery"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:
