@@ -10,6 +10,56 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Pre-React safety net: a failed module load or an early crash must
+      // show its error instead of a blank page — in the cellar, on a phone,
+      // a screenshot of this text is the whole bug report.
+      (function () {
+        var painted = false;
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function paint(title, detail) {
+          var root = document.getElementById("root");
+          if (!root || root.children.length > 0 || painted) return;
+          painted = true;
+          root.innerHTML =
+            '<div style="font-family:system-ui,sans-serif;padding:24px;max-width:40rem;margin:0 auto">' +
+            '<h1 style="font-size:1.2rem">⚠️ ' + esc(title) + "</h1>" +
+            '<pre style="white-space:pre-wrap;background:#f6f2ea;padding:12px;border-radius:8px;font-size:.85rem">' +
+            esc(detail) + "</pre>" +
+            '<button onclick="location.reload()" style="padding:12px 20px;font-size:1rem">Neu laden</button>' +
+            '<p style="color:#666;font-size:.85rem">Screenshot dieser Seite genügt zur Fehlersuche.</p>' +
+            "</div>";
+        }
+        window.addEventListener(
+          "error",
+          function (e) {
+            if (e.message) {
+              paint("Die App konnte nicht starten", e.message);
+            } else if (e.target && e.target.tagName === "SCRIPT") {
+              paint(
+                "Die App konnte nicht geladen werden",
+                "Skript nicht erreichbar: " + (e.target.src || "(inline)")
+              );
+            }
+          },
+          true
+        );
+        window.addEventListener("unhandledrejection", function (e) {
+          paint(
+            "Die App konnte nicht starten",
+            String((e.reason && e.reason.message) || e.reason)
+          );
+        });
+        setTimeout(function () {
+          paint(
+            "App lädt nicht",
+            "Nach 12 Sekunden ist nichts erschienen — Verbindung prüfen und neu laden."
+          );
+        }, 12000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
