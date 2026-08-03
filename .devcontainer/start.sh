@@ -10,6 +10,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
+# The container clock runs UTC; every timestamp in STARTUP-STATUS.txt and
+# the logs is read by a human in Germany — a 2h offset reads as "stale".
+export TZ="${TZ:-Europe/Berlin}"
 DB_HOST="${DB_HOST:-db}"
 DB_PORT="${DB_PORT:-5432}"
 DB_WAIT_TRIES="${DB_WAIT_TRIES:-60}"
