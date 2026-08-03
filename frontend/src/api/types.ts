@@ -77,6 +77,12 @@ export interface Sud {
   merged_into_sud_id: string | null;
   occupancies: Occupancy[];
   withdrawals: Withdrawal[];
+  /**
+   * Non-blocking process hints from mutating endpoints (e.g. active yeast
+   * entering an Ausschank tank). Empty on plain reads; optional so cached
+   * pre-warning responses keep parsing.
+   */
+  warnings?: string[];
 }
 
 export interface ScheduleOccupancyIn {

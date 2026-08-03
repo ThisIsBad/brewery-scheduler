@@ -56,6 +56,8 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
     if payload.merge_into_sud_id is not None:
         lead = _validated_merge_lead(session, payload, recipe)
 
+    warnings: list[str] = []
+
     # The numbering bucket is the brew day as sent by the client (its
     # wall-clock date is encoded in the timestamp's offset).
     brew_date = payload.brew_at.date()
@@ -99,8 +101,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         planned = [
             SimpleNamespace(stage=occ.stage, start_at=occ.start_at, end_at=end_at)
         ]
-        _rule_wheat_open_fermentation(recipe, planned)
-        _rule_yeast_free_ausschank(recipe, planned)
+        warnings += _process_warnings(recipe, planned)
         if occ.stage != TankStage.AUSSCHANK and float(sud.volume_hl) > float(
             tank.capacity_hl
         ):
@@ -124,7 +125,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
 
     session.commit()
     session.refresh(sud)
-    return sud
+    return _with_warnings(sud, warnings)
 
 
 @router.put("/{sud_id}/schedule", response_model=SudOut)
@@ -161,6 +162,7 @@ def update_schedule(
         or 0
     ) > 0
     _, remaining_hl = _batch_volumes(session, sud)
+    warnings: list[str] = []
 
     if payload.occupancies:
         tank_ids = {occ.tank_id for occ in payload.occupancies}
@@ -205,9 +207,7 @@ def update_schedule(
                     exclude_sud_id=sud.id,
                 )
 
-        _rule_stage_order(payload.occupancies)
-        _rule_wheat_open_fermentation(sud.recipe, payload.occupancies)
-        _rule_yeast_free_ausschank(sud.recipe, payload.occupancies)
+        warnings += _process_warnings(sud.recipe, payload.occupancies)
 
     sud.occupancies.clear()
     session.flush()
@@ -225,7 +225,13 @@ def update_schedule(
 
     session.commit()
     session.refresh(sud)
-    return sud
+    return _with_warnings(sud, warnings)
+
+
+def _with_warnings(sud: Sud, warnings: list[str]) -> SudOut:
+    out = SudOut.model_validate(sud)
+    out.warnings = warnings
+    return out
 
 
 def _batch_volumes(session: Session, sud: Sud) -> tuple[float, float]:
@@ -248,13 +254,6 @@ def _batch_volumes(session: Session, sud: Sud) -> tuple[float, float]:
     return combined, combined - withdrawn
 
 
-STAGE_ORDER: dict[TankStage, int] = {
-    TankStage.FERMENTATION_OPEN: 0,
-    TankStage.FERMENTATION_CLOSED: 1,
-    TankStage.STORAGE: 2,
-    TankStage.AUSSCHANK: 3,
-}
-
 STAGE_TO_STATUS: dict[TankStage, SudStatus] = {
     TankStage.FERMENTATION_OPEN: SudStatus.FERMENTING,
     TankStage.FERMENTATION_CLOSED: SudStatus.FERMENTING,
@@ -269,12 +268,15 @@ def transfer_sud(
     payload: TransferIn,
     session: Session = Depends(get_session),
 ) -> Sud:
-    """Umdrücken: move the batch (lead + merged partners) to its next stage.
+    """Umdrücken: move the batch (lead + merged partners) to any other tank.
 
-    Before the Ausschank stage the batch stays together (exactly one target
-    tank). At the Ausschank stage it can be split across several tanks with
-    explicit volume shares, and Ausschank tanks may blend several batches —
-    guarded by the sum-of-allocations ≤ capacity rule (issue #13).
+    The usual Gärtank → Lagertank → Ausschank order is convention, not a
+    constraint. Outside the Ausschank stage the batch stays together
+    (exactly one target tank). At the Ausschank stage it can be split
+    across several tanks with explicit volume shares, and Ausschank tanks
+    may blend several batches — guarded by the sum-of-allocations ≤
+    capacity rule (issue #13). Process rules (wheat open fermentation,
+    yeast-free Ausschank) surface as warnings, they do not block.
     """
     sud = session.scalar(
         select(Sud).options(selectinload(Sud.occupancies)).where(Sud.id == sud_id)
@@ -294,12 +296,6 @@ def transfer_sud(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="This Sud has no tank occupancy yet — schedule it before transferring.",
         )
-
-    current = max(sud.occupancies, key=lambda o: o.start_at)
-    # Stage columns are plain String(32); coerce so enum comparisons and
-    # .value in messages behave regardless of how the row was loaded.
-    current_stage = TankStage(current.stage)
-    current_rank = STAGE_ORDER[current_stage]
 
     tank_ids = [a.tank_id for a in payload.allocations]
     if len(set(tank_ids)) != len(tank_ids):
@@ -324,14 +320,6 @@ def transfer_sud(
             detail="All target tanks must belong to the same stage.",
         )
     target_stage = target_stages.pop()
-    if STAGE_ORDER[target_stage] <= current_rank:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"A Sud only moves forward in the pipeline — it is currently in "
-                f"{current_stage.value} and cannot transfer to {target_stage.value}."
-            ),
-        )
 
     _, remaining_hl = _batch_volumes(session, sud)
 
@@ -409,7 +397,7 @@ def transfer_sud(
                 ),
             )
 
-    # Evaluate the pipeline rules against the future picture: the existing
+    # Evaluate the process rules against the future picture: the existing
     # occupancies as they will look after truncation, plus the new
     # allocations.
     future = [
@@ -418,8 +406,7 @@ def transfer_sud(
     ] + [
         SimpleNamespace(stage=target_stage, start_at=payload.start_at, end_at=end_at)
     ]
-    _rule_wheat_open_fermentation(sud.recipe, future)
-    _rule_yeast_free_ausschank(sud.recipe, future)
+    warnings = _process_warnings(sud.recipe, future)
 
     for occ in sud.occupancies:
         if occ.end_at is None or occ.end_at > payload.start_at:
@@ -445,7 +432,7 @@ def transfer_sud(
 
     session.commit()
     session.refresh(sud)
-    return sud
+    return _with_warnings(sud, warnings)
 
 
 @router.post("/{sud_id}/withdraw", response_model=SudOut)
@@ -570,25 +557,26 @@ def _check_ausschank_headroom(
         )
 
 
-def _rule_stage_order(occs) -> None:
-    """§2.4 rule 4: a Sud only moves forward through the pipeline."""
-    ordered = sorted(occs, key=lambda o: o.start_at)
-    ranks = [STAGE_ORDER[TankStage(o.stage)] for o in ordered]
-    if any(later < earlier for earlier, later in zip(ranks, ranks[1:])):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "A Sud only moves forward in the pipeline — the occupancies "
-                "regress to an earlier stage over time."
-            ),
-        )
+def _process_warnings(recipe: Recipe, occs) -> list[str]:
+    """§2.4 process rules, downgraded to warnings (decided 2026-08-03):
+    the brewmaster may deviate from the usual process; the tool points it
+    out but records what actually happens. Only physical limits (capacity,
+    double-booking, Ausschank headroom) still block."""
+    warnings = []
+    w = _warn_wheat_open_fermentation(recipe, occs)
+    if w is not None:
+        warnings.append(w)
+    w = _warn_yeast_free_ausschank(recipe, occs)
+    if w is not None:
+        warnings.append(w)
+    return warnings
 
 
-def _rule_wheat_open_fermentation(recipe: Recipe, occs) -> None:
-    """§2.4 rule 3: wheat beer must spend its open-fermentation days in the
-    open fermentation tank before entering a closed fermenter."""
+def _warn_wheat_open_fermentation(recipe: Recipe, occs) -> str | None:
+    """§2.4 rule 3: wheat beer should spend its open-fermentation days in
+    the open fermentation tank before entering a closed fermenter."""
     if not recipe.open_fermentation_required:
-        return
+        return None
     required = timedelta(days=float(recipe.open_fermentation_duration_days or 4))
     opens = [o for o in occs if TankStage(o.stage) == TankStage.FERMENTATION_OPEN]
     for closed in occs:
@@ -601,19 +589,18 @@ def _rule_wheat_open_fermentation(recipe: Recipe, occs) -> None:
             for o in opens
         )
         if not satisfied:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=(
-                    f"'{recipe.name}' requires {required.days} days in the open "
-                    "fermentation tank before entering a closed fermenter."
-                ),
+            return (
+                f"„{recipe.name}“ braucht üblicherweise {required.days} Tage "
+                "offene Gärung, bevor es in einen geschlossenen Gärtank kommt "
+                "— dieser Plan unterschreitet das."
             )
+    return None
 
 
-def _rule_yeast_free_ausschank(recipe: Recipe, occs) -> None:
-    """§2.4 rule 2: no beer with active yeast enters an Ausschank tank —
-    approximated as: a completed closed fermentation of at least the
-    recipe's fermentation duration must precede the Ausschank start."""
+def _warn_yeast_free_ausschank(recipe: Recipe, occs) -> str | None:
+    """§2.4 rule 2: beer should not enter an Ausschank tank with active
+    yeast — approximated as: a completed closed fermentation of at least
+    the recipe's fermentation duration before the Ausschank start."""
     ferm = timedelta(days=float(recipe.fermentation_duration_days))
     closed = [o for o in occs if TankStage(o.stage) == TankStage.FERMENTATION_CLOSED]
     for a in occs:
@@ -626,14 +613,12 @@ def _rule_yeast_free_ausschank(recipe: Recipe, occs) -> None:
             for c in closed
         )
         if not satisfied:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=(
-                    "Beer may not enter an Ausschank tank with active yeast — "
-                    f"'{recipe.name}' needs a completed closed fermentation of "
-                    f"at least {ferm.days} days before the Ausschank start."
-                ),
+            return (
+                "Möglicherweise aktive Hefe im Ausschank: "
+                f"„{recipe.name}“ hat vor dem Ausschank-Start keine "
+                f"abgeschlossene Gärzeit von {ferm.days} Tagen."
             )
+    return None
 
 
 MERGE_MAX_BREW_GAP = timedelta(days=2)

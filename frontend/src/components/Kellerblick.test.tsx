@@ -86,15 +86,14 @@ describe("Kellerblick", () => {
     expect(screen.getByText("S-30-1")).toBeInTheDocument();
     expect(screen.getByText(/noch 10 hl/)).toBeInTheDocument();
     expect(screen.getByText(/Tag 4 von 7/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Umdrücken → Ausschank/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Fass abfüllen" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Ausgeschenkt" }),
-    ).toBeInTheDocument();
+    // Tap targets in fixed order: Umdrücken — Fass abfüllen — Ausgeschenkt.
+    const actions = screen
+      .getAllByRole("button")
+      .map((b) => b.textContent)
+      .filter((t) =>
+        ["Umdrücken", "Fass abfüllen", "Ausgeschenkt"].includes(t ?? ""),
+      );
+    expect(actions).toEqual(["Umdrücken", "Fass abfüllen", "Ausgeschenkt"]);
     expect(screen.getByText(/Alter: Tag 4/)).toBeInTheDocument();
   });
 
@@ -167,6 +166,8 @@ describe("Kellerblick", () => {
     expect(screen.getByText("A-80")).toBeInTheDocument();
     expect(screen.getByText(/noch 20 hl/)).toBeInTheDocument();
     expect(screen.getByText(/noch 10 hl/)).toBeInTheDocument();
+    // Ausschank is no longer the end of the line — re-tanking stays possible.
+    expect(screen.getAllByRole("button", { name: "Umdrücken" })).toHaveLength(2);
   });
 
   it("keeps past-window Sude visible under Überfällig with a transfer action", () => {
@@ -196,7 +197,7 @@ describe("Kellerblick", () => {
     expect(screen.getByText("Überfällig")).toBeInTheDocument();
     expect(screen.getByText(/Bier steht noch im Tank/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Umdrücken → Ausschank/ }),
+      screen.getByRole("button", { name: "Umdrücken" }),
     ).toBeInTheDocument();
   });
 

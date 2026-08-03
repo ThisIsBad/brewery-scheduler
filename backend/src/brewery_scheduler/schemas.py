@@ -75,6 +75,9 @@ class SudOut(BaseModel):
     merged_into_sud_id: uuid.UUID | None
     occupancies: list[OccupancyOut] = []
     withdrawals: list[WithdrawalOut] = []
+    # Non-blocking process hints (e.g. "active yeast entering Ausschank").
+    # Mutating endpoints fill this; it is never persisted.
+    warnings: list[str] = []
 
 
 class ScheduleOccupancyIn(BaseModel):
@@ -144,8 +147,9 @@ class TransferAllocationIn(BaseModel):
 class TransferIn(BaseModel):
     """Request body for POST /api/sude/{id}/transfer (Umdrücken).
 
-    Moves the batch (lead + merged partners) forward one or more stages:
-    a single target tank before the Ausschank stage, one or more targets
+    Moves the batch (lead + merged partners) to any other tank — the usual
+    Gärtank → Lagertank → Ausschank order is convention, not a constraint.
+    A single target tank outside the Ausschank stage, one or more targets
     with explicit volume shares at the Ausschank stage (issue #13).
     """
 

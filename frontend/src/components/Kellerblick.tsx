@@ -8,7 +8,6 @@ import {
   firstFutureOccupancy,
   formatDate,
   formatHl,
-  nextStage,
   occupancyAt,
   remainingHl,
   sudNumberLabel,
@@ -84,7 +83,6 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
         {current.map(({ sud, occ }) => {
           const tank = tankById.get(occ.tank_id);
           const remaining = remainingHl(sud, sude, occ);
-          const target = nextStage(occ.stage);
           return (
             <article className="card" key={occ.id}>
               <header>
@@ -106,28 +104,11 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 <div className="muted">{ageLabel(sud, now)}</div>
               </div>
               <footer>
-                {target && (
-                  <button
-                    type="button"
-                    onClick={() => setDialog({ kind: "transfer", sud, occupancy: occ })}
-                  >
-                    Umdrücken → {STAGE_LABEL[target]}
-                  </button>
-                )}
                 <button
                   type="button"
-                  className="secondary"
-                  disabled={remaining <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "withdraw",
-                      sud,
-                      occupancy: occ,
-                      withdrawalKind: "ausschank",
-                    })
-                  }
+                  onClick={() => setDialog({ kind: "transfer", sud, occupancy: occ })}
                 >
-                  Ausgeschenkt
+                  Umdrücken
                 </button>
                 <button
                   type="button"
@@ -144,6 +125,21 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 >
                   Fass abfüllen
                 </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={remaining <= 0}
+                  onClick={() =>
+                    setDialog({
+                      kind: "withdraw",
+                      sud,
+                      occupancy: occ,
+                      withdrawalKind: "ausschank",
+                    })
+                  }
+                >
+                  Ausgeschenkt
+                </button>
               </footer>
             </article>
           );
@@ -155,7 +151,6 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
           <h2>Überfällig</h2>
           {overdue.map(({ sud, occ }) => {
             const tank = tankById.get(occ.tank_id);
-            const target = nextStage(occ.stage);
             return (
               <article className="card overdue" key={occ.id}>
                 <header>
@@ -172,16 +167,14 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   </div>
                 </div>
                 <footer>
-                  {target && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDialog({ kind: "transfer", sud, occupancy: occ })
-                      }
-                    >
-                      Umdrücken → {STAGE_LABEL[target]}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDialog({ kind: "transfer", sud, occupancy: occ })
+                    }
+                  >
+                    Umdrücken
+                  </button>
                 </footer>
               </article>
             );

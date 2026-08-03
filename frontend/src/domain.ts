@@ -17,15 +17,6 @@ export const STAGE_LABEL: Record<TankStage, string> = {
   ausschank: "Ausschank",
 };
 
-export function stageRank(stage: TankStage): number {
-  return STAGE_ORDER.indexOf(stage);
-}
-
-export function nextStage(stage: TankStage): TankStage | null {
-  const idx = stageRank(stage);
-  return idx >= 0 && idx < STAGE_ORDER.length - 1 ? STAGE_ORDER[idx + 1] : null;
-}
-
 /** Partners of a lead Sud (merged batches share the lead's tank). */
 export function partnersOf(lead: Sud, all: Sud[]): Sud[] {
   return all.filter((s) => s.merged_into_sud_id === lead.id);

@@ -130,8 +130,8 @@ describe("TransferDialog (Ausschank split)", () => {
       />,
     );
 
-    // 30 hl combined: 20 into A-100, add a row, 10 into A-80.
-    fireEvent.change(screen.getByLabelText("Ausschanktank 1"), {
+    // 30 hl combined: A-100 as target, 20 in there, add a row, 10 into A-80.
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
       target: { value: A100.id },
     });
     fireEvent.change(screen.getByLabelText("Volumen 1 (hl)"), {
@@ -169,7 +169,7 @@ describe("TransferDialog (Ausschank split)", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Ausschanktank 1"), {
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
       target: { value: A100.id },
     });
     fireEvent.change(screen.getByLabelText("Volumen 1 (hl)"), {
@@ -210,7 +210,36 @@ describe("TransferDialog (remaining volume)", () => {
     );
 
     // 15 hl brewed − 2 hl in kegs = 13 hl to distribute.
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
+      target: { value: A100.id },
+    });
     expect(screen.getByText(/von 13 hl/)).toBeInTheDocument();
+  });
+});
+
+describe("TransferDialog (free target choice)", () => {
+  it("offers any tank and sends a plain single-tank move backward", async () => {
+    const lead = sud({ occupancies: [storageOcc] });
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[F15, STORAGE_TANK, A100]}
+        sude={[lead]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    // Storage → closed fermenter: unusual direction, but offered.
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
+      target: { value: F15.id },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Umdrücken" }));
+
+    await waitFor(() => expect(mocked.transferSud).toHaveBeenCalledOnce());
+    const [, payload] = mocked.transferSud.mock.calls[0];
+    expect(payload.allocations).toEqual([{ tank_id: F15.id }]);
   });
 });
 
