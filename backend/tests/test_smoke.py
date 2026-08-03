@@ -1131,19 +1131,25 @@ def test_inverted_time_window_returns_structured_422(client, session) -> None:
 # Tank administration (Tankverwaltung)
 
 
+def _location_id(client, name: str) -> str:
+    return next(x["id"] for x in client.get("/api/locations").json() if x["name"] == name)
+
+
 def test_tank_create_and_duplicate_name(client, session) -> None:
+    haupt = _location_id(client, "Hauptkeller")
     r = client.post(
         "/api/tanks",
-        json={"name": "F-NEU-20", "cellar": "main", "stage": "fermentation_closed", "capacity_hl": 20},
+        json={"name": "F-NEU-20", "location_id": haupt, "stage": "fermentation_closed", "capacity_hl": 20},
     )
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["name"] == "F-NEU-20"
+    assert body["location_id"] == haupt
     assert body["active"] is True
 
     dup = client.post(
         "/api/tanks",
-        json={"name": "F-NEU-20", "cellar": "main", "stage": "storage", "capacity_hl": 10},
+        json={"name": "F-NEU-20", "location_id": haupt, "stage": "storage", "capacity_hl": 10},
     )
     assert dup.status_code == 409, dup.text
     assert "vergeben" in dup.json()["detail"]
@@ -1204,7 +1210,12 @@ def test_tank_delete_with_history_deactivates(client, session) -> None:
 def test_tank_delete_without_history_removes(client, session) -> None:
     created = client.post(
         "/api/tanks",
-        json={"name": "TEMP-1", "cellar": "secondary", "stage": "storage", "capacity_hl": 5},
+        json={
+            "name": "TEMP-1",
+            "location_id": _location_id(client, "Nebenkeller"),
+            "stage": "storage",
+            "capacity_hl": 5,
+        },
     ).json()
     r = client.delete(f"/api/tanks/{created['id']}")
     assert r.status_code == 204, r.text
@@ -1246,3 +1257,55 @@ def test_list_sude_exposes_persistent_process_warnings(client, session) -> None:
         if s["recipe"]["beer_style"] == "wheat" and s["merged_into_sud_id"] is None
     )
     assert weizen["warnings"] == []
+
+
+# ---------------------------------------------------------------------------
+# Standorte (locations)
+
+
+def test_locations_seeded_in_order(client) -> None:
+    body = client.get("/api/locations").json()
+    assert [x["name"] for x in body] == ["Hauptkeller", "Nebenkeller"]
+
+
+def test_location_create_rename_and_duplicate(client) -> None:
+    r = client.post("/api/locations", json={"name": "Festzelt"})
+    assert r.status_code == 201, r.text
+    created = r.json()
+    assert created["position"] == 3
+
+    dup = client.post("/api/locations", json={"name": "Festzelt"})
+    assert dup.status_code == 409
+    assert "vergeben" in dup.json()["detail"]
+
+    renamed = client.patch(
+        f"/api/locations/{created['id']}", json={"name": "Bergkirchweih"}
+    )
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["name"] == "Bergkirchweih"
+
+    # New tanks can live at the new location right away.
+    tank = client.post(
+        "/api/tanks",
+        json={
+            "name": "FEST-10",
+            "location_id": created["id"],
+            "stage": "ausschank",
+            "capacity_hl": 10,
+        },
+    )
+    assert tank.status_code == 201, tank.text
+    assert tank.json()["location_id"] == created["id"]
+
+
+def test_location_delete_only_when_empty(client) -> None:
+    haupt = _location_id(client, "Hauptkeller")
+    blocked = client.delete(f"/api/locations/{haupt}")
+    assert blocked.status_code == 409, blocked.text
+    assert "Tanks" in blocked.json()["detail"]
+
+    fresh = client.post("/api/locations", json={"name": "Leerstand"}).json()
+    gone = client.delete(f"/api/locations/{fresh['id']}")
+    assert gone.status_code == 204
+    names = [x["name"] for x in client.get("/api/locations").json()]
+    assert "Leerstand" not in names

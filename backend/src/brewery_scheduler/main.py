@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from .api import recipes, sude, tanks
+from .api import locations, recipes, sude, tanks
 from .config import settings
 
 app = FastAPI(title=settings.api_title, version="0.1.0")
 
 app.include_router(tanks.router)
+app.include_router(locations.router)
 app.include_router(recipes.router)
 app.include_router(sude.router)
 
@@ -30,6 +31,8 @@ CONSTRAINT_RESPONSES: dict[str | None, tuple[int, str]] = {
         "A Sud with this number already exists for this style and year — retry.",
     ),
     "uq_tanks_name": (409, "A tank with this name already exists."),
+    "uq_locations_name": (409, "A location with this name already exists."),
+    "fk_tanks_location": (409, "The referenced location does not exist."),
 }
 
 

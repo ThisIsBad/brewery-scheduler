@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
-from ..models import Tank, TankOccupancy, TankStage, Withdrawal
+from ..models import Location, Tank, TankOccupancy, TankStage, Withdrawal
 from ..schemas import TankCreateIn, TankOut, TankUpdateIn
 
 router = APIRouter(prefix="/api/tanks", tags=["tanks"])
@@ -26,16 +26,21 @@ def list_tanks(session: Session = Depends(get_session)) -> list[Tank]:
     would create a second materialization path for the same data and risk
     inconsistency; we'll revisit if profiling shows it matters.
     """
-    stmt = select(Tank).order_by(Tank.cellar, Tank.stage, Tank.name)
+    stmt = (
+        select(Tank)
+        .join(Location)
+        .order_by(Location.position, Location.name, Tank.stage, Tank.name)
+    )
     return list(session.scalars(stmt))
 
 
 @router.post("", response_model=TankOut, status_code=status.HTTP_201_CREATED)
 def create_tank(payload: TankCreateIn, session: Session = Depends(get_session)) -> Tank:
     _ensure_free_name(session, payload.name)
+    _ensure_location(session, payload.location_id)
     tank = Tank(
         name=payload.name,
-        cellar=payload.cellar,
+        location_id=payload.location_id,
         stage=payload.stage,
         capacity_hl=payload.capacity_hl,
     )
@@ -60,6 +65,8 @@ def update_tank(
 
     if "name" in data and data["name"] != tank.name:
         _ensure_free_name(session, data["name"])
+    if "location_id" in data:
+        _ensure_location(session, data["location_id"])
     if (
         "stage" in data
         and TankStage(data["stage"]) != TankStage(tank.stage)
@@ -140,6 +147,13 @@ def _ensure_free_name(session: Session, name: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Der Tankname „{name}“ ist bereits vergeben.",
+        )
+
+
+def _ensure_location(session: Session, location_id: uuid.UUID) -> None:
+    if session.get(Location, location_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Standort nicht gefunden."
         )
 
 

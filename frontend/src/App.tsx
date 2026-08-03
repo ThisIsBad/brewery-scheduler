@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "./api/client";
-import type { Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
+import type { Location, Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { ScheduleBoard } from "./components/ScheduleBoard";
@@ -11,6 +11,7 @@ type View = "kellerblick" | "zeitplan" | "tanks";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [sude, setSude] = useState<Sud[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -22,12 +23,14 @@ export default function App() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, s, r] = await Promise.all([
+      const [t, l, s, r] = await Promise.all([
         api.listTanks(),
+        api.listLocations(),
         api.listSude(),
         api.listRecipes(),
       ]);
       setTanks(t);
+      setLocations(l);
       setSude(s);
       setRecipes(r);
       setError(null);
@@ -181,7 +184,11 @@ export default function App() {
           {loading ? (
             <p className="empty">lade …</p>
           ) : (
-            <Tankverwaltung tanks={tanks} onReload={() => void refresh()} />
+            <Tankverwaltung
+              tanks={tanks}
+              locations={locations}
+              onReload={() => void refresh()}
+            />
           )}
         </div>
       )}

@@ -15,41 +15,43 @@ from sqlalchemy.orm import Session
 from .db import SessionLocal
 from .models import (
     BeerStyle,
+    Location,
     Recipe,
     Sud,
     SudStatus,
     Tank,
-    TankCellar,
     TankOccupancy,
     TankStage,
 )
 
+LOCATIONS: list[str] = ["Hauptkeller", "Nebenkeller"]
+
 TANKS: list[dict] = [
     # Main cellar — fermentation (180 hl total)
-    {"name": "F-30-1", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-2", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-3", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-4", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-5", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-15-1", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
-    {"name": "F-15-2", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
-    {"name": "F-OPEN-15", "cellar": TankCellar.MAIN, "stage": TankStage.FERMENTATION_OPEN, "capacity_hl": 15},
+    {"name": "F-30-1", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "F-30-2", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "F-30-3", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "F-30-4", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "F-30-5", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "F-15-1", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
+    {"name": "F-15-2", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
+    {"name": "F-OPEN-15", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_OPEN, "capacity_hl": 15},
     # Main cellar — storage (150 hl total)
-    {"name": "S-30-1", "cellar": TankCellar.MAIN, "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-2", "cellar": TankCellar.MAIN, "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-3", "cellar": TankCellar.MAIN, "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-4", "cellar": TankCellar.MAIN, "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-5", "cellar": TankCellar.MAIN, "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "S-30-1", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "S-30-2", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "S-30-3", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "S-30-4", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "S-30-5", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
     # Main cellar — Ausschank (350 hl total)
-    {"name": "A-120", "cellar": TankCellar.MAIN, "stage": TankStage.AUSSCHANK, "capacity_hl": 120},
-    {"name": "A-100", "cellar": TankCellar.MAIN, "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
-    {"name": "A-80", "cellar": TankCellar.MAIN, "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
-    {"name": "A-50", "cellar": TankCellar.MAIN, "stage": TankStage.AUSSCHANK, "capacity_hl": 50},
+    {"name": "A-120", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 120},
+    {"name": "A-100", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
+    {"name": "A-80", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    {"name": "A-50", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50},
     # Secondary cellar
-    {"name": "A2-35-1", "cellar": TankCellar.SECONDARY, "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
-    {"name": "A2-35-2", "cellar": TankCellar.SECONDARY, "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
-    {"name": "S2-10-1", "cellar": TankCellar.SECONDARY, "stage": TankStage.STORAGE, "capacity_hl": 10},
-    {"name": "S2-10-2", "cellar": TankCellar.SECONDARY, "stage": TankStage.STORAGE, "capacity_hl": 10},
+    {"name": "A2-35-1", "location": "Nebenkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
+    {"name": "A2-35-2", "location": "Nebenkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
+    {"name": "S2-10-1", "location": "Nebenkeller", "stage": TankStage.STORAGE, "capacity_hl": 10},
+    {"name": "S2-10-2", "location": "Nebenkeller", "stage": TankStage.STORAGE, "capacity_hl": 10},
 ]
 
 # Placeholder durations — TBD per ROADMAP.md §2.7. Wheat beer's 4-day open
@@ -99,7 +101,25 @@ def seed(session: Session) -> None:
         print("Database already seeded — skipping.")
         return
 
-    tanks = [Tank(**t) for t in TANKS]
+    # Locations may already exist (created by migration 0008 on a database
+    # that predates them); reuse instead of duplicating.
+    locations = {loc.name: loc for loc in session.scalars(select(Location))}
+    for position, name in enumerate(LOCATIONS, start=1):
+        if name not in locations:
+            location = Location(name=name, position=position)
+            session.add(location)
+            locations[name] = location
+    session.flush()
+
+    tanks = [
+        Tank(
+            name=t["name"],
+            location_id=locations[t["location"]].id,
+            stage=t["stage"],
+            capacity_hl=t["capacity_hl"],
+        )
+        for t in TANKS
+    ]
     session.add_all(tanks)
 
     recipes = [Recipe(**r) for r in RECIPES]

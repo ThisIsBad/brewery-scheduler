@@ -10,7 +10,7 @@ const daysFromNow = (days: number) =>
 const STORAGE_TANK: Tank = {
   id: "tank-s1",
   name: "S-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "storage",
   capacity_hl: 30,
   active: true,
@@ -19,7 +19,7 @@ const STORAGE_TANK: Tank = {
 const AUSSCHANK_TANK: Tank = {
   id: "tank-a50",
   name: "A-50",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "ausschank",
   capacity_hl: 50,
   active: true,
@@ -148,7 +148,7 @@ describe("Kellerblick", () => {
     const a80: Tank = {
       id: "tank-a80",
       name: "A-80",
-      cellar: "main",
+      location_id: "loc-1",
       stage: "ausschank",
       capacity_hl: 80,
       active: true,

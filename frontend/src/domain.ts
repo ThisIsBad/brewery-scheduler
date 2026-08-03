@@ -1,7 +1,7 @@
 // Domain helpers shared by the Kellerblick cards, the tap-flow dialogs and
 // the schedule board. All volumes in hl (1 hl = 100 l).
 
-import type { Occupancy, Sud, TankCellar, TankStage } from "./api/types";
+import type { Occupancy, Sud, TankStage } from "./api/types";
 
 export const STAGE_ORDER: TankStage[] = [
   "fermentation_open",
@@ -15,11 +15,6 @@ export const STAGE_LABEL: Record<TankStage, string> = {
   fermentation_closed: "Gärtank",
   storage: "Lagertank",
   ausschank: "Ausschank",
-};
-
-export const CELLAR_LABEL: Record<TankCellar, string> = {
-  main: "Hauptkeller",
-  secondary: "Nebenkeller",
 };
 
 /** Partners of a lead Sud (merged batches share the lead's tank). */

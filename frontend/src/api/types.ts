@@ -1,7 +1,19 @@
 // Mirror of the backend's Pydantic schemas (backend/src/brewery_scheduler/schemas.py).
 // Keep in sync manually until we generate from the OpenAPI spec.
 
-export type TankCellar = "main" | "secondary";
+export interface Location {
+  id: string;
+  name: string;
+  position: number;
+}
+
+export interface LocationCreateIn {
+  name: string;
+}
+
+export interface LocationUpdateIn {
+  name: string;
+}
 
 export type TankStage =
   | "fermentation_open"
@@ -23,7 +35,7 @@ export type SudStatus =
 export interface Tank {
   id: string;
   name: string;
-  cellar: TankCellar;
+  location_id: string;
   stage: TankStage;
   capacity_hl: number;
   active: boolean;
@@ -87,14 +99,14 @@ export interface Sud {
 
 export interface TankCreateIn {
   name: string;
-  cellar: TankCellar;
+  location_id: string;
   stage: TankStage;
   capacity_hl: number;
 }
 
 export interface TankUpdateIn {
   name?: string;
-  cellar?: TankCellar;
+  location_id?: string;
   stage?: TankStage;
   capacity_hl?: number;
   active?: boolean;

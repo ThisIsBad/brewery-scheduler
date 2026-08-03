@@ -1,4 +1,7 @@
 import type {
+  Location,
+  LocationCreateIn,
+  LocationUpdateIn,
   Recipe,
   ScheduleIn,
   Sud,
@@ -46,6 +49,19 @@ export const api = {
     }),
   deleteTank: (tankId: string) =>
     request<void>(`/api/tanks/${tankId}`, { method: "DELETE" }),
+  listLocations: () => request<Location[]>("/api/locations"),
+  createLocation: (payload: LocationCreateIn) =>
+    request<Location>("/api/locations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateLocation: (locationId: string, payload: LocationUpdateIn) =>
+    request<Location>(`/api/locations/${locationId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteLocation: (locationId: string) =>
+    request<void>(`/api/locations/${locationId}`, { method: "DELETE" }),
   listSude: () => request<Sud[]>("/api/sude"),
   listRecipes: () => request<Recipe[]>("/api/recipes"),
   createSud: (payload: SudCreateIn) =>

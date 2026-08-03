@@ -25,7 +25,7 @@ const mocked = api as unknown as {
 const STORAGE_TANK: Tank = {
   id: "tank-s1",
   name: "S-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "storage",
   capacity_hl: 30,
   active: true,
@@ -34,7 +34,7 @@ const STORAGE_TANK: Tank = {
 const A100: Tank = {
   id: "tank-a100",
   name: "A-100",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "ausschank",
   capacity_hl: 100,
   active: true,
@@ -43,7 +43,7 @@ const A100: Tank = {
 const A80: Tank = {
   id: "tank-a80",
   name: "A-80",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "ausschank",
   capacity_hl: 80,
   active: true,
@@ -52,7 +52,7 @@ const A80: Tank = {
 const F30: Tank = {
   id: "tank-f30",
   name: "F-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "fermentation_closed",
   capacity_hl: 30,
   active: true,
@@ -61,7 +61,7 @@ const F30: Tank = {
 const F15: Tank = {
   id: "tank-f15",
   name: "F-15-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "fermentation_closed",
   capacity_hl: 15,
   active: true,

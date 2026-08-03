@@ -6,6 +6,7 @@ import type { Sud, Tank } from "./api/types";
 vi.mock("./api/client", () => ({
   api: {
     listTanks: vi.fn(),
+    listLocations: vi.fn(),
     listSude: vi.fn(),
     listRecipes: vi.fn(),
     transferSud: vi.fn(),
@@ -17,6 +18,7 @@ import App from "./App";
 
 const mocked = api as unknown as {
   listTanks: ReturnType<typeof vi.fn>;
+  listLocations: ReturnType<typeof vi.fn>;
   listSude: ReturnType<typeof vi.fn>;
   listRecipes: ReturnType<typeof vi.fn>;
   transferSud: ReturnType<typeof vi.fn>;
@@ -25,7 +27,7 @@ const mocked = api as unknown as {
 const STORAGE_TANK: Tank = {
   id: "tank-s1",
   name: "S-30-1",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "storage",
   capacity_hl: 30,
   active: true,
@@ -34,7 +36,7 @@ const STORAGE_TANK: Tank = {
 const A100: Tank = {
   id: "tank-a100",
   name: "A-100",
-  cellar: "main",
+  location_id: "loc-1",
   stage: "ausschank",
   capacity_hl: 100,
   active: true,
@@ -78,6 +80,9 @@ const lead: Sud = {
 
 test("zeigt Prozess-Warnungen aus einem Transfer als schließbares Banner", async () => {
   mocked.listTanks.mockResolvedValue([STORAGE_TANK, A100]);
+  mocked.listLocations.mockResolvedValue([
+    { id: "loc-1", name: "Hauptkeller", position: 1 },
+  ]);
   mocked.listSude.mockResolvedValue([lead]);
   mocked.listRecipes.mockResolvedValue([]);
   mocked.transferSud.mockResolvedValue({
