@@ -56,6 +56,8 @@ export interface Sud {
   id: string;
   recipe_id: string;
   recipe: Recipe;
+  /** The brew moment (timestamp); brew_date is its server-derived day. */
+  brew_at: string;
   brew_date: string;
   status: SudStatus;
   notes: string | null;
@@ -91,7 +93,8 @@ export interface ScheduleIn {
 
 export interface SudCreateIn {
   recipe_id: string;
-  brew_date: string;
+  /** Brew moment with time — several Sude share a brew day. */
+  brew_at: string;
   notes?: string | null;
   brewmaster?: string | null;
   initial_occupancy?: ScheduleOccupancyIn;

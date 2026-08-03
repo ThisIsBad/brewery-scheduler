@@ -56,7 +56,10 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
     if payload.merge_into_sud_id is not None:
         lead = _validated_merge_lead(session, payload, recipe)
 
-    brew_year = payload.brew_date.year
+    # The numbering bucket is the brew day as sent by the client (its
+    # wall-clock date is encoded in the timestamp's offset).
+    brew_date = payload.brew_at.date()
+    brew_year = brew_date.year
     next_style_year_number = (
         session.scalar(
             select(func.coalesce(func.max(Sud.style_year_number), 0))
@@ -69,7 +72,8 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
 
     sud = Sud(
         recipe_id=recipe.id,
-        brew_date=payload.brew_date,
+        brew_at=payload.brew_at,
+        brew_date=brew_date,
         notes=payload.notes,
         brewmaster=payload.brewmaster,
         style_year_number=next_style_year_number,
@@ -678,7 +682,7 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
             ),
         )
 
-    gap = abs(payload.brew_date - lead.brew_date)
+    gap = abs(payload.brew_at.date() - lead.brew_date)
     if gap > MERGE_MAX_BREW_GAP:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

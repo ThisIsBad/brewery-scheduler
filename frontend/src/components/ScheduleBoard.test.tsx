@@ -37,6 +37,7 @@ const SUD: Sud = {
     storage_duration_days: 21,
     max_storage_duration_days: 60,
   },
+  brew_at: NOW.toISOString(),
   brew_date: BREW_DATE,
   status: "fermenting",
   notes: null,
