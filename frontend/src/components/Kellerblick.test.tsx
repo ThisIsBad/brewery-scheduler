@@ -260,3 +260,34 @@ describe("Kellerblick", () => {
     expect(screen.getByRole("button", { name: "Umplanen" })).toBeInTheDocument();
   });
 });
+
+describe("Kellerblick (Rezept-Abweichungen)", () => {
+  const runningOcc = {
+    id: "occ-ov",
+    sud_id: "sud-1",
+    tank_id: STORAGE_TANK.id,
+    stage: "storage" as const,
+    start_at: daysFromNow(-2),
+    end_at: daysFromNow(5),
+    volume_hl: null,
+  };
+
+  it("markiert Sude mit Overrides als abweichend", () => {
+    const deviating = baseSud({
+      recipe_overrides: { fermentation_duration_days: 3 },
+      occupancies: [runningOcc],
+    });
+    render(
+      <Kellerblick tanks={[STORAGE_TANK]} sude={[deviating]} onChanged={() => {}} />,
+    );
+    expect(screen.getByText(/abweichende Rezeptzeiten/)).toBeInTheDocument();
+  });
+
+  it("zeigt keine Abweichung ohne Overrides", () => {
+    const plain = baseSud({ recipe_overrides: null, occupancies: [runningOcc] });
+    render(
+      <Kellerblick tanks={[STORAGE_TANK]} sude={[plain]} onChanged={() => {}} />,
+    );
+    expect(screen.queryByText(/abweichende Rezeptzeiten/)).toBeNull();
+  });
+});

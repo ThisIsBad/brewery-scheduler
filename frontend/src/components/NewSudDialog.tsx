@@ -69,6 +69,15 @@ export function NewSudDialog({
     }
   }, [compatibleTanks, tankId]);
 
+  // Overrides are deviations from ONE recipe — switching the recipe must
+  // not carry another style's numbers along (or a hidden open-fermentation
+  // value the new recipe's form never showed).
+  useEffect(() => {
+    setOvFerm("");
+    setOvStorage("");
+    setOvOpen("");
+  }, [recipeId]);
+
   if (!open) return null;
 
   const canSubmit =
@@ -86,7 +95,7 @@ export function NewSudDialog({
           overrides.fermentation_duration_days = parseFloat(ovFerm);
         if (parseFloat(ovStorage) > 0)
           overrides.storage_duration_days = parseFloat(ovStorage);
-        if (parseFloat(ovOpen) > 0)
+        if (recipe?.open_fermentation_required && parseFloat(ovOpen) > 0)
           overrides.open_fermentation_duration_days = parseFloat(ovOpen);
       }
       const payload: SudCreateIn = {

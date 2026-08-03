@@ -189,3 +189,52 @@ describe("NewSudDialog (Phase 3)", () => {
     expect(body.recipe_overrides).toEqual({ fermentation_duration_days: 5 });
   });
 });
+
+describe("NewSudDialog (Override-Hygiene)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("verwirft Overrides beim Rezeptwechsel", async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ id: "sud-neu", warnings: [] }),
+    });
+
+    render(
+      <NewSudDialog
+        open
+        recipes={[KELLERBIER, WEIZEN]}
+        tanks={[CLOSED_FERM_TANK, OPEN_FERM_TANK]}
+        onClose={() => {}}
+        onCreated={() => {}}
+      />,
+    );
+    // Weizen wählen, offene-Gärung-Override eintragen …
+    fireEvent.change(screen.getByLabelText("Rezept"), {
+      target: { value: WEIZEN.id },
+    });
+    fireEvent.click(
+      screen.getByLabelText("Abweichungen vom Rezept für diesen Sud"),
+    );
+    fireEvent.change(screen.getByLabelText(/Offene Gärung \(Tage, Rezept: 4\)/), {
+      target: { value: "2" },
+    });
+    // … dann auf Kellerbier wechseln: der versteckte Wert darf NICHT mit.
+    fireEvent.change(screen.getByLabelText("Rezept"), {
+      target: { value: KELLERBIER.id },
+    });
+    fireEvent.click(screen.getByLabelText("Direkt einplanen (Gärtank + Startzeit)"));
+    fireEvent.click(screen.getByRole("button", { name: "Anlegen" }));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body);
+    expect(body.recipe_overrides).toBeUndefined();
+  });
+});
