@@ -35,7 +35,12 @@ def list_sude(session: Session = Depends(get_session)) -> list[SudOut]:
         .order_by(Sud.brew_date)
     )
     return [
-        _with_warnings(sud, _process_warnings(sud.recipe, sud.occupancies))
+        _with_warnings(
+            sud,
+            _process_warnings(
+                _effective_recipe(sud.recipe, sud.recipe_overrides), sud.occupancies
+            ),
+        )
         for sud in session.scalars(stmt)
     ]
 
@@ -66,6 +71,12 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         lead = _validated_merge_lead(session, payload, recipe)
 
     warnings: list[str] = []
+    overrides = (
+        payload.recipe_overrides.model_dump(exclude_none=True)
+        if payload.recipe_overrides
+        else None
+    ) or None
+    effective = _effective_recipe(recipe, overrides)
 
     # The numbering bucket is the brew day as sent by the client (its
     # wall-clock date is encoded in the timestamp's offset).
@@ -90,6 +101,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         style_year_number=next_style_year_number,
         beer_style=recipe.beer_style,
         merged_into_sud_id=lead.id if lead is not None else None,
+        recipe_overrides=overrides,
     )
     session.add(sud)
     session.flush()
@@ -98,7 +110,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         occ = payload.initial_occupancy
         end_at = occ.end_at
         if end_at is None:
-            duration_days = _default_duration_days(recipe, occ.stage)
+            duration_days = _default_duration_days(effective, occ.stage)
             end_at = occ.start_at + timedelta(days=float(duration_days))
 
         tank = session.get(Tank, occ.tank_id)
@@ -110,7 +122,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
         planned = [
             SimpleNamespace(stage=occ.stage, start_at=occ.start_at, end_at=end_at)
         ]
-        warnings += _process_warnings(recipe, planned)
+        warnings += _process_warnings(effective, planned)
         if occ.stage != TankStage.AUSSCHANK and float(sud.volume_hl) > float(
             tank.capacity_hl
         ):
@@ -216,7 +228,9 @@ def update_schedule(
                     exclude_sud_id=sud.id,
                 )
 
-        warnings += _process_warnings(sud.recipe, payload.occupancies)
+        warnings += _process_warnings(
+            _effective_recipe(sud.recipe, sud.recipe_overrides), payload.occupancies
+        )
 
     sud.occupancies.clear()
     session.flush()
@@ -380,7 +394,9 @@ def transfer_sud(
 
     end_at = payload.end_at
     if end_at is None and target_stage != TankStage.AUSSCHANK:
-        duration_days = _default_duration_days(sud.recipe, target_stage)
+        duration_days = _default_duration_days(
+            _effective_recipe(sud.recipe, sud.recipe_overrides), target_stage
+        )
         end_at = payload.start_at + timedelta(days=duration_days)
 
     # The beer physically leaves its current tank at the transfer start, so
@@ -415,7 +431,9 @@ def transfer_sud(
     ] + [
         SimpleNamespace(stage=target_stage, start_at=payload.start_at, end_at=end_at)
     ]
-    warnings = _process_warnings(sud.recipe, future)
+    warnings = _process_warnings(
+        _effective_recipe(sud.recipe, sud.recipe_overrides), future
+    )
 
     for occ in sud.occupancies:
         if occ.end_at is None or occ.end_at > payload.start_at:
@@ -566,7 +584,7 @@ def _check_ausschank_headroom(
         )
 
 
-def _process_warnings(recipe: Recipe, occs) -> list[str]:
+def _process_warnings(recipe, occs) -> list[str]:
     """§2.4 process rules, downgraded to warnings (decided 2026-08-03):
     the brewmaster may deviate from the usual process; the tool points it
     out but records what actually happens. Only physical limits (capacity,
@@ -581,7 +599,7 @@ def _process_warnings(recipe: Recipe, occs) -> list[str]:
     return warnings
 
 
-def _warn_wheat_open_fermentation(recipe: Recipe, occs) -> str | None:
+def _warn_wheat_open_fermentation(recipe, occs) -> str | None:
     """§2.4 rule 3: wheat beer should spend its open-fermentation days in
     the open fermentation tank before entering a closed fermenter."""
     if not recipe.open_fermentation_required:
@@ -606,7 +624,7 @@ def _warn_wheat_open_fermentation(recipe: Recipe, occs) -> str | None:
     return None
 
 
-def _warn_yeast_free_ausschank(recipe: Recipe, occs) -> str | None:
+def _warn_yeast_free_ausschank(recipe, occs) -> str | None:
     """§2.4 rule 2: beer should not enter an Ausschank tank with active
     yeast — approximated as: a completed closed fermentation of at least
     the recipe's fermentation duration before the Ausschank start."""
@@ -733,7 +751,34 @@ def _validated_merge_lead(session: Session, payload: SudCreateIn, recipe: Recipe
     return lead
 
 
-def _default_duration_days(recipe: Recipe, stage: TankStage) -> float:
+OVERRIDABLE_DURATIONS = (
+    "fermentation_duration_days",
+    "storage_duration_days",
+    "open_fermentation_duration_days",
+)
+
+
+def _effective_recipe(recipe: Recipe, overrides: dict | None) -> SimpleNamespace:
+    """Recipe values with the Sud's per-batch overrides applied (Phase 3).
+
+    Only the duration fields are overridable; everything downstream
+    (derived end dates, process warnings) reads from this view so a
+    deviating Sud is judged against its own numbers, not the recipe's.
+    """
+    effective = SimpleNamespace(
+        name=recipe.name,
+        open_fermentation_required=recipe.open_fermentation_required,
+        open_fermentation_duration_days=recipe.open_fermentation_duration_days,
+        fermentation_duration_days=recipe.fermentation_duration_days,
+        storage_duration_days=recipe.storage_duration_days,
+    )
+    for field in OVERRIDABLE_DURATIONS:
+        if overrides and overrides.get(field) is not None:
+            setattr(effective, field, float(overrides[field]))
+    return effective
+
+
+def _default_duration_days(recipe, stage: TankStage) -> float:
     if stage == TankStage.FERMENTATION_OPEN:
         if recipe.open_fermentation_duration_days is None:
             raise HTTPException(

@@ -82,6 +82,38 @@ class RecipeOut(BaseModel):
     open_fermentation_duration_days: float | None
     storage_duration_days: float
     max_storage_duration_days: float
+    created_at: datetime
+    created_by: str | None
+    notes: str | None
+
+
+class RecipeCreateIn(BaseModel):
+    """Request body for POST /api/recipes.
+
+    Recipes are versioned and immutable: this always creates a NEW version
+    for the beer style (server assigns max(version)+1). Already-scheduled
+    Sude keep their original recipe link (decided 2026-08, issue #4).
+    """
+
+    beer_style: BeerStyle
+    name: str = Field(min_length=1, max_length=128)
+    fermentation_duration_days: float = Field(gt=0)
+    open_fermentation_required: bool = False
+    open_fermentation_duration_days: float | None = Field(default=None, gt=0)
+    storage_duration_days: float = Field(gt=0)
+    max_storage_duration_days: float = Field(gt=0)
+    notes: str | None = Field(default=None, max_length=10_000)
+    created_by: str | None = Field(default=None, max_length=128)
+
+
+class RecipeOverridesIn(BaseModel):
+    """Per-Sud deviations from the recipe (Phase 3): stored on the Sud,
+    never touching the recipe table. Only duration fields are overridable —
+    they drive the derived end dates and the process warnings."""
+
+    fermentation_duration_days: float | None = Field(default=None, gt=0)
+    storage_duration_days: float | None = Field(default=None, gt=0)
+    open_fermentation_duration_days: float | None = Field(default=None, gt=0)
 
 
 class WithdrawalOut(BaseModel):
@@ -110,6 +142,7 @@ class SudOut(BaseModel):
     style_year_number: int
     volume_hl: float
     merged_into_sud_id: uuid.UUID | None
+    recipe_overrides: dict | None = None
     occupancies: list[OccupancyOut] = []
     withdrawals: list[WithdrawalOut] = []
     # Non-blocking process hints (e.g. "active yeast entering Ausschank").
@@ -150,6 +183,9 @@ class SudCreateIn(BaseModel):
     notes: str | None = Field(default=None, max_length=10_000)
     brewmaster: str | None = Field(default=None, max_length=128)
     initial_occupancy: ScheduleOccupancyIn | None = None
+    # Per-Sud deviations from the recipe (Phase 3) — recorded on the Sud,
+    # used for derived end dates and process warnings.
+    recipe_overrides: RecipeOverridesIn | None = None
 
     # Merged batches (issue #3): pass the lead Sud's id to create this Sud
     # as its partner — same recipe, brewed within 48 h, sharing the lead's

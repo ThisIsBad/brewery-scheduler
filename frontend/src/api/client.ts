@@ -3,6 +3,7 @@ import type {
   LocationCreateIn,
   LocationUpdateIn,
   Recipe,
+  RecipeCreateIn,
   ScheduleIn,
   Sud,
   SudCreateIn,
@@ -49,6 +50,11 @@ export const api = {
     }),
   deleteTank: (tankId: string) =>
     request<void>(`/api/tanks/${tankId}`, { method: "DELETE" }),
+  createRecipe: (payload: RecipeCreateIn) =>
+    request<Recipe>("/api/recipes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   listLocations: () => request<Location[]>("/api/locations"),
   createLocation: (payload: LocationCreateIn) =>
     request<Location>("/api/locations", {

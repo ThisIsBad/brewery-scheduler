@@ -32,6 +32,10 @@ CONSTRAINT_RESPONSES: dict[str | None, tuple[int, str]] = {
     ),
     "uq_tanks_name": (409, "A tank with this name already exists."),
     "uq_locations_name": (409, "A location with this name already exists."),
+    "uq_recipes_style_version": (
+        409,
+        "This recipe version already exists for the style — retry.",
+    ),
     "fk_tanks_location": (409, "The referenced location does not exist."),
 }
 

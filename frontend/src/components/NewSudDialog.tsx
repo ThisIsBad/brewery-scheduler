@@ -3,12 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type {
   Recipe,
+  RecipeOverridesIn,
   ScheduleOccupancyIn,
   Sud,
   SudCreateIn,
   Tank,
   TankStage,
 } from "../api/types";
+import { latestRecipes } from "../domain";
 
 interface NewSudDialogProps {
   open: boolean;
@@ -34,8 +36,18 @@ export function NewSudDialog({
   const [startAt, setStartAt] = useState<string>(plusHours(roundedNowLocal(), 8));
   const [startTouched, setStartTouched] = useState<boolean>(false);
   const [brewmaster, setBrewmaster] = useState<string>("");
+  // Per-Sud deviations from the recipe (Phase 3): collapsed by default,
+  // the common case follows the recipe untouched.
+  const [showOverrides, setShowOverrides] = useState<boolean>(false);
+  const [ovFerm, setOvFerm] = useState<string>("");
+  const [ovStorage, setOvStorage] = useState<string>("");
+  const [ovOpen, setOvOpen] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // New Sude always use the latest recipe version per style (issue #4);
+  // older versions stay linked to their existing Sude only.
+  const selectableRecipes = latestRecipes(recipes) as Recipe[];
 
   // Derive whether the chosen recipe needs the open fermentation tank.
   // Wheat must start in fermentation_open; everything else in
@@ -68,10 +80,21 @@ export function NewSudDialog({
     setSubmitting(true);
     setError(null);
     try {
+      const overrides: RecipeOverridesIn = {};
+      if (showOverrides) {
+        if (parseFloat(ovFerm) > 0)
+          overrides.fermentation_duration_days = parseFloat(ovFerm);
+        if (parseFloat(ovStorage) > 0)
+          overrides.storage_duration_days = parseFloat(ovStorage);
+        if (parseFloat(ovOpen) > 0)
+          overrides.open_fermentation_duration_days = parseFloat(ovOpen);
+      }
       const payload: SudCreateIn = {
         recipe_id: recipeId,
         brew_at: new Date(brewAt).toISOString(),
         brewmaster: brewmaster || undefined,
+        recipe_overrides:
+          Object.keys(overrides).length > 0 ? overrides : undefined,
       };
       if (scheduleNow) {
         const occ: ScheduleOccupancyIn = {
@@ -105,13 +128,62 @@ export function NewSudDialog({
             required
           >
             <option value="">— wählen —</option>
-            {recipes.map((r) => (
+            {selectableRecipes.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name} (v{r.version})
               </option>
             ))}
           </select>
         </label>
+
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={showOverrides}
+            onChange={(e) => setShowOverrides(e.target.checked)}
+          />
+          Abweichungen vom Rezept für diesen Sud
+        </label>
+        {showOverrides && recipe && (
+          <>
+            {recipe.open_fermentation_required && (
+              <label>
+                Offene Gärung (Tage, Rezept:{" "}
+                {recipe.open_fermentation_duration_days ?? "—"})
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  placeholder="wie Rezept"
+                  value={ovOpen}
+                  onChange={(e) => setOvOpen(e.target.value)}
+                />
+              </label>
+            )}
+            <label>
+              Gärung (Tage, Rezept: {recipe.fermentation_duration_days})
+              <input
+                type="number"
+                min="0.5"
+                step="0.5"
+                placeholder="wie Rezept"
+                value={ovFerm}
+                onChange={(e) => setOvFerm(e.target.value)}
+              />
+            </label>
+            <label>
+              Lagerung (Tage, Rezept: {recipe.storage_duration_days})
+              <input
+                type="number"
+                min="0.5"
+                step="0.5"
+                placeholder="wie Rezept"
+                value={ovStorage}
+                onChange={(e) => setOvStorage(e.target.value)}
+              />
+            </label>
+          </>
+        )}
 
         <label>
           Brauzeit (Tag + Uhrzeit)

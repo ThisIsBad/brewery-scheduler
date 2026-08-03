@@ -1353,3 +1353,118 @@ def test_locked_tank_rejects_edits_and_removal_but_not_beer(client, session) -> 
     assert unlocked.status_code == 200
     renamed_ok = client.patch(f"/api/tanks/{tank.id}", json={"name": "S-30-3b"})
     assert renamed_ok.status_code == 200, renamed_ok.text
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: recipe versioning + per-Sud overrides
+
+
+def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> None:
+    old_kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    existing_sud = _seeded_lead(session, BeerStyle.KELLERBIER)
+
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "kellerbier",
+            "name": "Kellerbier (v2, längere Lagerung)",
+            "fermentation_duration_days": 7,
+            "open_fermentation_required": False,
+            "storage_duration_days": 28,
+            "max_storage_duration_days": 70,
+            "created_by": "test",
+            "notes": "Lagerdauer nach Brauereimeister-Session angepasst.",
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["version"] == 2
+    assert body["created_by"] == "test"
+
+    # The old version stays listed (history), the existing Sud keeps its link.
+    listed = client.get("/api/recipes").json()
+    kellerbier_versions = [
+        x["version"] for x in listed if x["beer_style"] == "kellerbier"
+    ]
+    assert sorted(kellerbier_versions) == [1, 2]
+    session.refresh(existing_sud)
+    assert existing_sud.recipe_id == old_kellerbier.id
+
+
+def test_recipe_open_fermentation_requires_duration(client) -> None:
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "wheat",
+            "name": "Weizen kaputt",
+            "fermentation_duration_days": 7,
+            "open_fermentation_required": True,
+            "storage_duration_days": 14,
+            "max_storage_duration_days": 45,
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "offenen Gärung" in r.json()["detail"]
+
+
+def test_recipe_max_storage_must_cover_storage(client) -> None:
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "special",
+            "name": "Special kaputt",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 30,
+            "max_storage_duration_days": 20,
+        },
+    )
+    assert r.status_code == 422, r.text
+    assert "Lagerdauer" in r.json()["detail"]
+
+
+def test_sud_overrides_drive_derived_dates_and_warnings(client, session) -> None:
+    # A Sud with shortened closed fermentation: the derived end date and the
+    # yeast warning must both follow the override, not the recipe.
+    kellerbier = (
+        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+    )
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(kellerbier.id),
+            "brew_at": _brew_at(date.today()),
+            "recipe_overrides": {"fermentation_duration_days": 3},
+            "initial_occupancy": {
+                "tank_id": str(ferm_tank.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+                # end_at omitted: must derive from the OVERRIDE (3 days).
+            },
+        },
+    )
+    assert created.status_code == 201, created.text
+    body = created.json()
+    assert body["recipe_overrides"] == {"fermentation_duration_days": 3}
+    occ_end = datetime.fromisoformat(
+        body["occupancies"][0]["end_at"].replace("Z", "+00:00")
+    )
+    assert occ_end == start + timedelta(days=3)
+
+    # After the (shortened) fermentation completed, Ausschank raises no
+    # yeast warning — the override says 3 days are enough for this batch.
+    r = client.post(
+        f"/api/sude/{body['id']}/transfer",
+        json={
+            "start_at": (start + timedelta(days=3)).isoformat(),
+            "end_at": None,
+            "allocations": [{"tank_id": str(a50.id), "volume_hl": 15.0}],
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["warnings"] == []
