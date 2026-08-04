@@ -16,11 +16,26 @@ import type {
   WithdrawIn,
 } from "./types";
 
+import { QueuedError, enqueue, labelFor } from "./queue";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      headers: { "Content-Type": "application/json" },
+      ...init,
+    });
+  } catch (err) {
+    // Netz weg, Request hat den Server nie erreicht. Lesezugriffe bedient
+    // der Service-Worker-Cache; Buchungen landen in der Warteschlange
+    // (issue #10) und werden bei Rückkehr des Netzes nachgesendet.
+    const method = init?.method ?? "GET";
+    if (method !== "GET") {
+      enqueue(path, init ?? {});
+      throw new QueuedError(labelFor(path, method));
+    }
+    throw err;
+  }
   if (!res.ok) {
     const body = await res.text();
     // Surface the API's structured `detail` sentence instead of a raw JSON
