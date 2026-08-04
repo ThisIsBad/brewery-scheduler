@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "./api/client";
+import { replay } from "./api/queue";
 import type { Location, Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { Rezepte } from "./components/Rezepte";
 import { Tankverwaltung } from "./components/Tankverwaltung";
+import { Warteschlange } from "./components/Warteschlange";
 import { Zeitplan } from "./components/Zeitplan";
 
 type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte";
@@ -52,16 +54,29 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
+  // Queued offline mutations (issue #10) go out as soon as there is a
+  // path to the server again: on app start, on the browser's online
+  // event, and whenever the tab comes back into view — then refetch so
+  // the cards show what the server actually booked. Refetch-on-visible
+  // also covers the cellar round with the tab backgrounded in between.
+  const syncUp = useCallback(async () => {
+    await replay();
     void refresh();
-    // Refetch when the phone comes back to the app — the cellar round
-    // often happens with the tab backgrounded in between.
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refresh();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refresh]);
+
+  useEffect(() => {
+    void syncUp();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncUp();
+    };
+    const onOnline = () => void syncUp();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [syncUp]);
 
   const applySudUpdate = useCallback((updated: Sud) => {
     setSude((prev) => {
@@ -167,6 +182,7 @@ export default function App() {
         </button>
       </header>
 
+      <Warteschlange onReplayed={() => void refresh()} />
       {error && <div className="error banner">{error}</div>}
       {warnings.length > 0 && (
         <div className="warning banner" role="status">

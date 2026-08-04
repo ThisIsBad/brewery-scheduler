@@ -115,6 +115,30 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.queue.banner {
+  padding: 10px 12px;
+  background: #e8f0fe;
+  border-bottom: 1px solid #c4d7f5;
+  font-size: 13px;
+}
+
+.queue-pending,
+.queue-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.queue-pending span,
+.queue-conflict span {
+  flex: 1;
+}
+
+.queue-conflict {
+  margin-top: 6px;
+  color: #8a1f1f;
+}
+
 .empty {
   padding: 16px;
   color: #666;
