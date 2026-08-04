@@ -85,6 +85,19 @@ python3 -c "import uvicorn, alembic, psycopg" 2>/dev/null \
 [ -x frontend/node_modules/.bin/vite ] \
   || (cd frontend && npm ci --no-fund --no-audit) || true
 
+# A repo sync can change the dependency set underneath an existing
+# install; "vite exists" doesn't catch added/removed packages. Reinstall
+# whenever the lockfile/pyproject fingerprint moved (setup.sh seeds the
+# marker so a fresh Codespace doesn't install twice).
+DEPS_MARKER="$ROOT/.deps-fingerprint"
+FINGERPRINT="$(cat backend/pyproject.toml frontend/package-lock.json 2>/dev/null | md5sum | cut -d' ' -f1)"
+if [ "$(cat "$DEPS_MARKER" 2>/dev/null)" != "$FINGERPRINT" ]; then
+  echo "▸ Abhängigkeits-Stand geändert — installiere nach …"
+  python3 -m pip install -e "backend[dev]" >/dev/null 2>&1 || true
+  (cd frontend && npm ci --no-fund --no-audit) || true
+  echo "$FINGERPRINT" > "$DEPS_MARKER"
+fi
+
 phase "Warte auf Postgres (${DB_HOST})"
 db_up=0
 for i in $(seq 1 "$DB_WAIT_TRIES"); do
@@ -164,16 +177,25 @@ fi
 # (field-tested). Stefan explicitly opted in (2026-08-03) to publish the
 # app port: the test deployment serves seed data and the URL is
 # unguessable. Revisit before real production data lands here.
-if [ -n "${CODESPACE_NAME:-}" ] && command -v gh >/dev/null 2>&1; then
-  if gh codespace ports visibility 5173:public -c "$CODESPACE_NAME" >/dev/null 2>&1; then
+#
+# Field failure 2026-08-04: this silently did nothing when gh was
+# missing from the container, leaving the port private and the page
+# white. The outcome now always lands in STARTUP-STATUS.txt.
+PORT_NOTE=""
+if [ -n "${CODESPACE_NAME:-}" ]; then
+  if command -v gh >/dev/null 2>&1 \
+    && gh codespace ports visibility 5173:public -c "$CODESPACE_NAME" >/dev/null 2>&1; then
+    PORT_NOTE="Port 5173: öffentlich (Link ohne Login)"
     echo "▸ Port 5173 ist öffentlich — der App-Link funktioniert ohne GitHub-Login."
   else
-    echo "⚠ Port 5173 nicht automatisch öffentlich schaltbar — im Ports-Tab manuell auf Public stellen."
+    PORT_NOTE="⚠ Falls die App-Seite weiß bleibt: Port 5173 im Ports-Tab manuell auf Public stellen (Zeile gedrückt halten → Portsichtbarkeit)."
+    echo "⚠ Port 5173 nicht automatisch öffentlich schaltbar — ggf. im Ports-Tab manuell auf Public stellen."
   fi
 fi
 
 rm -f "$ROOT/STARTUP-FEHLER.txt"
-status_file "✅ Läuft seit $(date '+%Y-%m-%d %H:%M:%S') — Backend OK, Frontend OK"
+status_file "✅ Läuft seit $(date '+%Y-%m-%d %H:%M:%S') — Backend OK, Frontend OK${PORT_NOTE:+
+$PORT_NOTE}"
 echo
 echo "✅ Läuft — im Ports-Tab Port 5173 (Kellerblick) öffnen."
 # Explicit exit so postStart terminates even if a stray child holds fds.
