@@ -6,6 +6,7 @@ import type { Recipe } from "../api/types";
 vi.mock("../api/client", () => ({
   api: {
     createRecipe: vi.fn(),
+    setRecipeStyleActive: vi.fn(),
   },
 }));
 
@@ -14,6 +15,7 @@ import { Rezepte } from "./Rezepte";
 
 const mocked = api as unknown as {
   createRecipe: ReturnType<typeof vi.fn>;
+  setRecipeStyleActive: ReturnType<typeof vi.fn>;
 };
 
 const recipe = (over: Partial<Recipe>): Recipe => ({
@@ -34,6 +36,54 @@ const recipe = (over: Partial<Recipe>): Recipe => ({
 
 beforeEach(() => {
   mocked.createRecipe.mockReset().mockResolvedValue(recipe({ version: 2 }));
+  mocked.setRecipeStyleActive.mockReset().mockResolvedValue([]);
+});
+
+test("legt ein neues Bier als Version 1 an und reaktiviert frühere Biere", async () => {
+  const onReload = vi.fn();
+  const wit = recipe({
+    id: "r-9",
+    beer_style: "Wit",
+    name: "Wit Collab Orca",
+    active: false,
+  });
+  render(<Rezepte recipes={[recipe({}), wit]} onReload={onReload} />);
+
+  // Frühere Biere sind eingeklappt, bis man sie aufklappt.
+  expect(screen.queryByText("Wit Collab Orca")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Frühere Biere \(1\)/ }));
+  expect(screen.getByText("Wit Collab Orca")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Reaktivieren" }));
+  await waitFor(() =>
+    expect(mocked.setRecipeStyleActive).toHaveBeenCalledWith({
+      beer_style: "Wit",
+      active: true,
+    }),
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "+ Neues Bier" }));
+  const dialog = screen.getByRole("dialog", { name: "Neues Bier" });
+  fireEvent.change(within(dialog).getByLabelText("Sorte"), {
+    target: { value: "Rauchbier" },
+  });
+  fireEvent.change(within(dialog).getByLabelText("Name"), {
+    target: { value: "Rauchbier Waltraut" },
+  });
+  fireEvent.change(within(dialog).getByLabelText("Gärung (Tage)"), {
+    target: { value: "7" },
+  });
+  fireEvent.change(within(dialog).getByLabelText("Lagerung (Tage)"), {
+    target: { value: "21" },
+  });
+  fireEvent.change(within(dialog).getByLabelText("Max. Lagerung (Tage)"), {
+    target: { value: "60" },
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Bier anlegen" }));
+
+  await waitFor(() => expect(mocked.createRecipe).toHaveBeenCalledOnce());
+  const payload = mocked.createRecipe.mock.calls[0][0];
+  expect(payload.beer_style).toBe("Rauchbier");
+  expect(payload.name).toBe("Rauchbier Waltraut");
 });
 
 test("zeigt die aktuelle Version je Stil und die Historie mit Änderungen", () => {

@@ -20,6 +20,23 @@
 - **Zeitplan-Bedienung**: bleibt unverändert, bis Stefan am Handy
   getestet hat.
 
+**Nachtrag 2026-08-04 (Bierrezepte.xlsx eingearbeitet):**
+
+- Rezepte tragen jetzt den kompletten Brauzettel (Schüttung mit Mälzerei,
+  Maischplan, Wasser, Hopfengaben mit Alpha-Säure und freiem Zeitpunkt,
+  Kochzeit, Karbonisierung, Anstellhinweis). Sortennamen sind frei; die
+  **10 echten Biere aus der Excel sind als Startdaten hinterlegt** —
+  Wit und Leichtbier als „Frühere Biere" archiviert, wie in der Excel.
+- **Platzhalter, bitte prüfen (Dezember/Brauereimeister):** Die Gär- und
+  Lagerzeiten stehen NICHT in der Excel — alle 10 Rezepte tragen
+  Platzhalterwerte (in den Notizen markiert). Für den **Weizenbock** ist
+  „offene Gärung erforderlich" eine Annahme (Weizen-Familie) — bitte
+  bestätigen oder im Rezept abwählen.
+- **Brautag-Protokoll (offen):** Die Excel-Spalten „Läutern Von/Bis",
+  „Gasstand", „Sudhausausbeute", „StwG %" sind **Protokolldaten je Sud**,
+  kein Rezept. Kandidat für ein späteres „Brauprotokoll"-Feature am Sud
+  (Dezember-Planung).
+
 ---
 
 Erstellt am Ende der zweiten Nachtschicht. Die ROADMAP-Phasen 1–3 sind

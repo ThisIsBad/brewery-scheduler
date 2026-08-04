@@ -18,7 +18,6 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from brewery_scheduler.models import (
-    BeerStyle,
     Recipe,
     Sud,
     Tank,
@@ -26,19 +25,26 @@ from brewery_scheduler.models import (
     TankStage,
 )
 
+# The seeded style names (Bierrezepte.xlsx) — beer_style is a free string
+# since migration 0013.
+KELLERBIER = "Keller Hell"
+WEIZEN = "Weizen"
+FESTBIER = "Festbier"
+SPEZIALSUD = "Spezialsud"
+
 
 def test_db_rejects_duplicate_style_year_number(session) -> None:
     # The constraint from migration 0005 turns a concurrent-create race into
     # a rejected insert instead of a silently duplicated Sud-Nr.
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     existing = (
-        session.query(Sud).filter(Sud.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Sud).filter(Sud.beer_style == KELLERBIER).one()
     )
     dupe = Sud(
         recipe_id=kellerbier.id,
-        beer_style=BeerStyle.KELLERBIER,
+        beer_style=KELLERBIER,
         brew_at=existing.brew_at,
         brew_date=existing.brew_date,
         style_year_number=existing.style_year_number,
@@ -56,14 +62,19 @@ def test_orm_returns_enum_members(session) -> None:
     occ = session.query(TankOccupancy).first()
     assert isinstance(occ.stage, TankStage)
     sud = session.query(Sud).first()
-    assert isinstance(sud.beer_style, BeerStyle)
+    assert isinstance(sud.beer_style, str)
 
 
 def test_seed_creates_full_inventory(session) -> None:
     assert session.query(Tank).count() == 21
-    assert session.query(Recipe).count() == 4
+    assert session.query(Recipe).count() == 10
     assert session.query(Sud).count() == 4
     assert session.query(TankOccupancy).count() == 6
+    # The Excel's „frühere Biere" are seeded archived.
+    inactive = {
+        r.beer_style for r in session.query(Recipe).filter(Recipe.active.is_(False))
+    }
+    assert inactive == {"Wit", "Leichtbier"}
 
 
 def test_seed_assigns_sud_numbers(session) -> None:
@@ -122,7 +133,7 @@ def test_list_sude_returns_seeded_batches(client) -> None:
 def test_update_schedule_replaces_occupancies(client, session) -> None:
     # Kellerbier explicitly: a wheat Sud would trip the open-fermentation rule
     # on this bare closed-fermentation payload.
-    sud_id = str(_seeded_lead(session, BeerStyle.KELLERBIER).id)
+    sud_id = str(_seeded_lead(session, KELLERBIER).id)
     tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -150,18 +161,24 @@ def test_list_recipes_returns_seeded_recipes(client) -> None:
     r = client.get("/api/recipes")
     assert r.status_code == 200
     body = r.json()
-    assert len(body) == 4
+    assert len(body) == 10
     assert {x["beer_style"] for x in body} == {
-        "kellerbier",
-        "wheat",
-        "festbier",
-        "special",
+        "Keller Hell",
+        "Weizen",
+        "Festbier",
+        "Spezialsud",
+        "bay. Dunkel",
+        "Rauchbier",
+        "Weizenbock",
+        "Collab Widder",
+        "Wit",
+        "Leichtbier",
     }
 
 
 def test_create_sud_assigns_next_style_year_number(client, session) -> None:
     kellerbier_recipe = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     # Seed has one Kellerbier with style_year_number=1 in the current year, so
     # the next one in the same year should get 2; a different year should get 1.
@@ -196,7 +213,7 @@ def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(
     client, session
 ) -> None:
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     ferm_tank = (
         session.query(Tank).filter(Tank.name == "F-15-2").one()
@@ -254,7 +271,7 @@ def _brew_at(d: date) -> str:
     return datetime.combine(d, time(9), tzinfo=timezone.utc).isoformat()
 
 
-def _seeded_lead(session, style: BeerStyle) -> Sud:
+def _seeded_lead(session, style: str) -> Sud:
     return (
         session.query(Sud)
         .join(Recipe, Recipe.id == Sud.recipe_id)
@@ -265,7 +282,7 @@ def _seeded_lead(session, style: BeerStyle) -> Sud:
 
 def test_merge_partner_happy_path(client, session) -> None:
     # The Kellerbier lead sits in 30-hl tanks with 15 hl — room for one partner.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     r = client.post(
         "/api/sude",
         json={
@@ -285,7 +302,7 @@ def test_merge_partner_happy_path(client, session) -> None:
 
 def test_merge_rejects_when_combined_volume_exceeds_tank(client, session) -> None:
     # The seeded Festbier lead already has one partner: 30 hl in a 30-hl tank.
-    lead = _seeded_lead(session, BeerStyle.FESTBIER)
+    lead = _seeded_lead(session, FESTBIER)
     r = client.post(
         "/api/sude",
         json={
@@ -299,9 +316,9 @@ def test_merge_rejects_when_combined_volume_exceeds_tank(client, session) -> Non
 
 
 def test_merge_rejects_different_recipe(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     wheat_recipe = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+        session.query(Recipe).filter(Recipe.beer_style == WEIZEN).one()
     )
     r = client.post(
         "/api/sude",
@@ -316,7 +333,7 @@ def test_merge_rejects_different_recipe(client, session) -> None:
 
 
 def test_merge_brew_gap_boundary(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
 
     # Exactly 2 calendar days: accepted.
     r_ok = client.post(
@@ -331,7 +348,7 @@ def test_merge_brew_gap_boundary(client, session) -> None:
 
     # 3 days: rejected. (Weizen lead is untouched, so use it for the reject
     # case to keep the Kellerbier tank's volume budget out of the picture.)
-    weizen_lead = _seeded_lead(session, BeerStyle.WHEAT)
+    weizen_lead = _seeded_lead(session, WEIZEN)
     r_reject = client.post(
         "/api/sude",
         json={
@@ -362,7 +379,7 @@ def test_merge_capped_for_unscheduled_lead(client, session) -> None:
     # An unscheduled lead has no occupancies to validate against — the cap
     # against the largest fermentation tank (30 hl) must still fire.
     recipe_id = str(
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.SPECIAL).one().id
+        session.query(Recipe).filter(Recipe.beer_style == SPEZIALSUD).one().id
     )
     lead = client.post(
         "/api/sude",
@@ -394,7 +411,7 @@ def test_merge_capped_for_unscheduled_lead(client, session) -> None:
 def test_schedule_rechecks_combined_volume_for_lead(client, session) -> None:
     # The POST-time check must not be bypassable by rescheduling the lead
     # into a smaller tank afterwards.
-    lead = _seeded_lead(session, BeerStyle.FESTBIER)  # 15 + 15 hl partner
+    lead = _seeded_lead(session, FESTBIER)  # 15 + 15 hl partner
     small_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=150)
 
@@ -416,7 +433,7 @@ def test_schedule_rechecks_combined_volume_for_lead(client, session) -> None:
 
 
 def test_merge_rejects_initial_occupancy_combination(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     tank_id = str(session.query(Tank).filter(Tank.name == "F-15-2").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0)
     r = client.post(
@@ -463,7 +480,7 @@ def _transfer(client, sud_id, allocations, start, end=None, from_tank=None):
 
 def test_transfer_to_storage_happy_path(client, session) -> None:
     # Weizen sits in closed fermentation (F-15-1, ends +4d); move it on.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     target = session.query(Tank).filter(Tank.name == "S-30-3").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
 
@@ -486,7 +503,7 @@ def test_transfer_backward_move_allowed(client, session) -> None:
     # Kellerbier's latest occupancy is storage; moving back into a
     # fermentation tank is unusual but allowed (decided 2026-08-03: the
     # usual order is convention, not a constraint).
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     ferm_tank = session.query(Tank).filter(Tank.name == "F-30-3").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=30)
 
@@ -503,7 +520,7 @@ def test_transfer_backward_move_allowed(client, session) -> None:
 
 def test_transfer_same_stage_move_allowed(client, session) -> None:
     # Re-tanking within the same stage (Lagertank → anderer Lagertank).
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     other_storage = session.query(Tank).filter(Tank.name == "S-30-4").one()
     start = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -521,7 +538,7 @@ def test_transfer_same_stage_move_allowed(client, session) -> None:
 def test_transfer_to_ausschank_with_active_yeast_warns(client, session) -> None:
     # Bergkirchweih case: straight from the fermenter to an Ausschank tank.
     # Goes through, but flags the potentially active yeast.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     a_tank = session.query(Tank).filter(Tank.name == "A2-35-1").one()
     start = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -547,7 +564,7 @@ def test_transfer_rejects_partner(client, session) -> None:
 def test_transfer_split_across_storage_tanks(client, session) -> None:
     # Splitting is allowed at every stage (Stefan, 2026-08-04): the 15-hl
     # Weizen goes 8/7 into the two small Nebenkeller storage tanks.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
@@ -576,7 +593,7 @@ def test_transfer_split_across_storage_tanks(client, session) -> None:
 def test_transfer_split_share_must_fit_tank(client, session) -> None:
     # Shares sum correctly, but 12 hl cannot enter a 10-hl tank. Outside
     # the Ausschank stage capacity is per-tank, not blended headroom.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
@@ -596,7 +613,7 @@ def test_transfer_split_share_must_fit_tank(client, session) -> None:
 
 def test_withdraw_respects_split_storage_share(client, session) -> None:
     # After an 8/7 storage split, each tank only gives up its own share.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
@@ -629,7 +646,7 @@ def test_withdraw_respects_split_storage_share(client, session) -> None:
 def test_transfer_moves_only_the_source_share(client, session) -> None:
     # After an 8/7 storage split, pushing S2-10-1 onward moves its 8 hl;
     # the 7-hl sibling share stays where it is.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
@@ -674,7 +691,7 @@ def test_transfer_moves_only_the_source_share(client, session) -> None:
 def test_transfer_scoped_sum_checks_against_share(client, session) -> None:
     # Allocations of a scoped move must match the tank's share (8 hl), not
     # the batch total (15 hl).
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
@@ -706,7 +723,7 @@ def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> N
     # Ausschank tank (8 + 7). A third batch bringing 25 hl on top would
     # overflow it — the sibling share must keep counting toward headroom
     # even while its batch is mid-move.
-    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
@@ -739,7 +756,7 @@ def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> N
     )
     assert r.status_code == 200, r.text
 
-    festbier = _seeded_lead(session, BeerStyle.FESTBIER)
+    festbier = _seeded_lead(session, FESTBIER)
     r = _transfer(
         client,
         festbier.id,
@@ -755,7 +772,7 @@ def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> N
 
 def test_transfer_split_to_two_ausschank_tanks(client, session) -> None:
     # The merged Festbier batch (30 hl) splits 20/10 across two Ausschank tanks.
-    lead = _seeded_lead(session, BeerStyle.FESTBIER)
+    lead = _seeded_lead(session, FESTBIER)
     a100 = session.query(Tank).filter(Tank.name == "A-100").one()
     a80 = session.query(Tank).filter(Tank.name == "A-80").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
@@ -779,7 +796,7 @@ def test_transfer_split_to_two_ausschank_tanks(client, session) -> None:
 
 
 def test_transfer_split_volumes_must_sum_to_batch(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.FESTBIER)
+    lead = _seeded_lead(session, FESTBIER)
     a100 = session.query(Tank).filter(Tank.name == "A-100").one()
     a80 = session.query(Tank).filter(Tank.name == "A-80").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
@@ -801,7 +818,7 @@ def test_ausschank_consolidates_batches_until_capacity(client, session) -> None:
     # Two batches may share an Ausschank tank; a third that would overflow
     # the 35-hl tank is rejected. Builds its own Sude via the API.
     recipe_id = str(
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.SPECIAL).one().id
+        session.query(Recipe).filter(Recipe.beer_style == SPEZIALSUD).one().id
     )
     a35 = session.query(Tank).filter(Tank.name == "A2-35-1").one()
     ferm_tanks = ["F-30-3", "F-30-4", "F-30-5"]
@@ -852,8 +869,8 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     # The generic schedule endpoint must apply the same headroom rule. The
     # payloads keep each Sud's completed fermentation history so the
     # yeast-free rule is satisfied and headroom is the deciding factor.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
-    weizen = _seeded_lead(session, BeerStyle.WHEAT)
+    lead = _seeded_lead(session, KELLERBIER)
+    weizen = _seeded_lead(session, WEIZEN)
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=300)
 
@@ -894,7 +911,7 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
 
 
 def test_schedule_allows_stage_regression(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     ferm = session.query(Tank).filter(Tank.name == "F-30-1").one()
     storage = session.query(Tank).filter(Tank.name == "S-30-1").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
@@ -923,7 +940,7 @@ def test_schedule_allows_stage_regression(client, session) -> None:
 
 
 def test_schedule_warns_wheat_without_open_fermentation(client, session) -> None:
-    weizen = _seeded_lead(session, BeerStyle.WHEAT)
+    weizen = _seeded_lead(session, WEIZEN)
     ferm = session.query(Tank).filter(Tank.name == "F-15-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
 
@@ -945,7 +962,7 @@ def test_schedule_warns_wheat_without_open_fermentation(client, session) -> None
 
 
 def test_schedule_warns_ausschank_with_active_yeast(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
 
@@ -968,7 +985,7 @@ def test_schedule_warns_ausschank_with_active_yeast(client, session) -> None:
 
 def test_create_warns_wheat_starting_in_closed_fermenter(client, session) -> None:
     wheat_recipe = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+        session.query(Recipe).filter(Recipe.beer_style == WEIZEN).one()
     )
     ferm = session.query(Tank).filter(Tank.name == "F-15-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
@@ -991,7 +1008,7 @@ def test_create_warns_wheat_starting_in_closed_fermenter(client, session) -> Non
 
 def test_create_rejects_initial_occupancy_over_capacity(client, session) -> None:
     recipe_id = str(
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.SPECIAL).one().id
+        session.query(Recipe).filter(Recipe.beer_style == SPEZIALSUD).one().id
     )
     small_storage = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
@@ -1016,7 +1033,7 @@ def test_transfer_truncates_running_occupancy(client, session) -> None:
     # Kellerbier's storage occupancy has a planned end 14 days out; an early
     # transfer must truncate it at the transfer start — the beer physically
     # left, the tank is free again, and no overlapping two-tank state exists.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
     start = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1033,7 +1050,7 @@ def test_transfer_out_of_open_fermentation_warns_below_minimum_days(
     client, session
 ) -> None:
     wheat_recipe = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+        session.query(Recipe).filter(Recipe.beer_style == WEIZEN).one()
     )
     open_tank = session.query(Tank).filter(Tank.name == "F-OPEN-15").one()
     closed_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
@@ -1111,7 +1128,7 @@ def test_transfer_rejects_unscheduled_sud(client, session) -> None:
 
 def test_withdraw_happy_path_and_remaining_volume(client, session) -> None:
     # Kellerbier (15 hl) sits in storage tank S-30-1 right now.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1148,7 +1165,7 @@ def test_transfer_distributes_remaining_volume_after_withdrawals(
 ) -> None:
     # 2 hl went into kegs — the Ausschank split must distribute 13 hl, not
     # the brewed 15 (Stefan's field-test finding).
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     storage_tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
     a100 = session.query(Tank).filter(Tank.name == "A-100").one()
     a80 = session.query(Tank).filter(Tank.name == "A-80").one()
@@ -1191,7 +1208,7 @@ def test_transfer_distributes_remaining_volume_after_withdrawals(
 def test_withdraw_ausschank_kind_round_trips(client, session) -> None:
     # Pours are tracked separately from keg fills (beer tax) — including
     # pours straight from a fermentation tank (Bergkirchweih).
-    weizen = _seeded_lead(session, BeerStyle.WHEAT)
+    weizen = _seeded_lead(session, WEIZEN)
     ferm_tank = session.query(Tank).filter(Tank.name == "F-15-1").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1210,7 +1227,7 @@ def test_withdraw_ausschank_kind_round_trips(client, session) -> None:
 
 
 def test_withdraw_rejects_tank_not_occupied_at_time(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     wrong_tank = session.query(Tank).filter(Tank.name == "A-120").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1240,7 +1257,7 @@ def test_withdraw_rejects_partner(client, session) -> None:
 
 
 def test_withdraw_rejects_non_positive_volume(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1276,8 +1293,8 @@ def test_overlapping_occupancy_returns_structured_409(client, session) -> None:
     # Non-wheat leads only: a bare closed-fermentation payload would trip the
     # wheat open-fermentation rule before ever reaching the DB constraint.
     sude = [
-        _seeded_lead(session, BeerStyle.KELLERBIER),
-        _seeded_lead(session, BeerStyle.FESTBIER),
+        _seeded_lead(session, KELLERBIER),
+        _seeded_lead(session, FESTBIER),
     ]
     tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
@@ -1300,7 +1317,7 @@ def test_overlapping_occupancy_returns_structured_409(client, session) -> None:
 
 
 def test_inverted_time_window_returns_structured_422(client, session) -> None:
-    sud_id = str(_seeded_lead(session, BeerStyle.KELLERBIER).id)
+    sud_id = str(_seeded_lead(session, KELLERBIER).id)
     tank_id = str(session.query(Tank).filter(Tank.name == "F-30-1").one().id)
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=90)
 
@@ -1421,7 +1438,7 @@ def test_list_sude_exposes_persistent_process_warnings(client, session) -> None:
     # Park the Kellerbier in an Ausschank tank without any completed
     # fermentation — the yeast warning must survive into plain reads so the
     # Kellerblick can mark the Sud.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=400)
 
@@ -1448,7 +1465,7 @@ def test_list_sude_exposes_persistent_process_warnings(client, session) -> None:
     weizen = next(
         s
         for s in listed
-        if s["recipe"]["beer_style"] == "wheat" and s["merged_into_sud_id"] is None
+        if s["recipe"]["beer_style"] == "Weizen" and s["merged_into_sud_id"] is None
     )
     assert weizen["warnings"] == []
 
@@ -1525,7 +1542,7 @@ def test_locked_tank_rejects_edits_and_removal_but_not_beer(client, session) -> 
     assert "gesperrt" in removed.json()["detail"]
 
     # Beer keeps flowing: scheduling into a locked tank stays allowed.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=500)
     scheduled = client.put(
         f"/api/sude/{lead.id}/schedule",
@@ -1555,14 +1572,14 @@ def test_locked_tank_rejects_edits_and_removal_but_not_beer(client, session) -> 
 
 def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> None:
     old_kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
-    existing_sud = _seeded_lead(session, BeerStyle.KELLERBIER)
+    existing_sud = _seeded_lead(session, KELLERBIER)
 
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "kellerbier",
+            "beer_style": "Keller Hell",
             "name": "Kellerbier (v2, längere Lagerung)",
             "fermentation_duration_days": 7,
             "open_fermentation_required": False,
@@ -1580,7 +1597,7 @@ def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> No
     # The old version stays listed (history), the existing Sud keeps its link.
     listed = client.get("/api/recipes").json()
     kellerbier_versions = [
-        x["version"] for x in listed if x["beer_style"] == "kellerbier"
+        x["version"] for x in listed if x["beer_style"] == "Keller Hell"
     ]
     assert sorted(kellerbier_versions) == [1, 2]
     session.refresh(existing_sud)
@@ -1591,7 +1608,7 @@ def test_recipe_open_fermentation_requires_duration(client) -> None:
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "wheat",
+            "beer_style": "Weizen",
             "name": "Weizen kaputt",
             "fermentation_duration_days": 7,
             "open_fermentation_required": True,
@@ -1607,7 +1624,7 @@ def test_recipe_max_storage_must_cover_storage(client) -> None:
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "special",
+            "beer_style": "Spezialsud",
             "name": "Special kaputt",
             "fermentation_duration_days": 7,
             "storage_duration_days": 30,
@@ -1622,7 +1639,7 @@ def test_sud_overrides_drive_derived_dates_and_warnings(client, session) -> None
     # A Sud with shortened closed fermentation: the derived end date and the
     # yeast warning must both follow the override, not the recipe.
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
@@ -1668,7 +1685,7 @@ def test_storage_override_drives_transfer_end_date(client, session) -> None:
     # Transfer to storage with end_at omitted must derive from the Sud's
     # storage override, not the recipe (review finding, night 2).
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
     storage_tank = session.query(Tank).filter(Tank.name == "S-30-3").one()
@@ -1709,7 +1726,7 @@ def test_schedule_respects_overrides_and_keeps_them(client, session) -> None:
     # PUT /schedule on an overridden Sud: warnings judge against the
     # override, and the overrides survive the wholesale replacement.
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     ferm_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
     a50 = session.query(Tank).filter(Tank.name == "A-50").one()
@@ -1756,7 +1773,7 @@ def test_schedule_respects_overrides_and_keeps_them(client, session) -> None:
 
 
 def test_open_fermentation_override_drives_end_and_warning(client, session) -> None:
-    wheat = session.query(Recipe).filter(Recipe.beer_style == BeerStyle.WHEAT).one()
+    wheat = session.query(Recipe).filter(Recipe.beer_style == WEIZEN).one()
     open_tank = session.query(Tank).filter(Tank.name == "F-OPEN-15").one()
     closed_tank = session.query(Tank).filter(Tank.name == "F-15-2").one()
     base = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=150)
@@ -1798,11 +1815,11 @@ def test_recipe_version_collision_hits_db_constraint(client, session) -> None:
     # The read-then-insert race resolves at uq_recipes_style_version: the
     # loser gets the structured 409, never a silent duplicate version.
     kellerbier = (
-        session.query(Recipe).filter(Recipe.beer_style == BeerStyle.KELLERBIER).one()
+        session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
     )
     session.add(
         Recipe(
-            beer_style=BeerStyle.KELLERBIER,
+            beer_style=KELLERBIER,
             version=2,
             name="Racing v2",
             fermentation_duration_days=7,
@@ -1814,7 +1831,7 @@ def test_recipe_version_collision_hits_db_constraint(client, session) -> None:
     session.commit()
 
     dupe = Recipe(
-        beer_style=BeerStyle.KELLERBIER,
+        beer_style=KELLERBIER,
         version=2,
         name="Racing v2 (loser)",
         fermentation_duration_days=7,
@@ -1838,7 +1855,7 @@ def test_recipe_ingredients_roundtrip(client) -> None:
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "kellerbier",
+            "beer_style": "Keller Hell",
             "name": "Kellerbier (mit Schüttung)",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
@@ -1902,13 +1919,73 @@ def test_recipe_ingredients_roundtrip(client) -> None:
     assert fresh["ibu"] == 24
 
 
+def test_new_beer_style_starts_at_version_one(client) -> None:
+    # Free styles (2026-08-04): a brand-new beer name simply starts its
+    # own version history — that is how Collab beers get added.
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "Collab Zebra",
+            "name": "Collab Zebra",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 14,
+            "max_storage_duration_days": 45,
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["version"] == 1
+    assert body["active"] is True
+
+
+def test_style_active_archives_all_versions(client) -> None:
+    r = client.post(
+        "/api/recipes/style-active",
+        json={"beer_style": "Keller Hell", "active": False},
+    )
+    assert r.status_code == 200, r.text
+    assert all(x["active"] is False for x in r.json())
+
+    listed = client.get("/api/recipes").json()
+    kh = [x for x in listed if x["beer_style"] == "Keller Hell"]
+    assert kh and all(x["active"] is False for x in kh)
+
+    # A new version of an archived beer stays archived …
+    r2 = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "Keller Hell",
+            "name": "Keller Hell (Test)",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 21,
+            "max_storage_duration_days": 60,
+        },
+    )
+    assert r2.status_code == 201, r2.text
+    assert r2.json()["active"] is False
+
+    # … and reactivating brings the whole style back.
+    r3 = client.post(
+        "/api/recipes/style-active",
+        json={"beer_style": "Keller Hell", "active": True},
+    )
+    assert r3.status_code == 200
+    assert all(x["active"] is True for x in r3.json())
+
+    r4 = client.post(
+        "/api/recipes/style-active",
+        json={"beer_style": "Gibtsnicht", "active": False},
+    )
+    assert r4.status_code == 404
+
+
 def test_recipe_hop_timing_requires_text(client) -> None:
     # The timing is free text as on the paper sheet — an empty one is a
     # data-entry slip, not a valid Gabe.
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "special",
+            "beer_style": "Spezialsud",
             "name": "Gabe ohne Zeitpunkt",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
@@ -1923,7 +2000,7 @@ def test_recipe_ingredients_validation(client) -> None:
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "special",
+            "beer_style": "Spezialsud",
             "name": "Kaputte Schüttung",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
@@ -1936,7 +2013,7 @@ def test_recipe_ingredients_validation(client) -> None:
 
 def test_keg_counts_compute_volume_and_persist(client, session) -> None:
     # 2026-08-04: keg fills entered as counts per size; hl computed.
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)  # 15 hl in S-30-1
+    lead = _seeded_lead(session, KELLERBIER)  # 15 hl in S-30-1
     tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -1962,7 +2039,7 @@ def test_keg_counts_compute_volume_and_persist(client, session) -> None:
 
 
 def test_keg_counts_validation(client, session) -> None:
-    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    lead = _seeded_lead(session, KELLERBIER)
     tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
     now = datetime.now(timezone.utc).replace(microsecond=0)
 

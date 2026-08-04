@@ -52,13 +52,6 @@ def _enum(enum_cls: type[enum.Enum], length: int) -> SAEnum:
     )
 
 
-class BeerStyle(str, enum.Enum):
-    KELLERBIER = "kellerbier"
-    WHEAT = "wheat"
-    FESTBIER = "festbier"
-    SPECIAL = "special"
-
-
 class TankStage(str, enum.Enum):
     FERMENTATION_OPEN = "fermentation_open"
     FERMENTATION_CLOSED = "fermentation_closed"
@@ -85,9 +78,13 @@ class Recipe(Base):
     __table_args__ = (UniqueConstraint("beer_style", "version", name="uq_recipes_style_version"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    beer_style: Mapped[BeerStyle] = mapped_column(_enum(BeerStyle, 32), nullable=False)
+    # Free label — the brewery names its beers (Bierrezepte.xlsx 2026-08:
+    # Keller Hell, Rauchbier, Collab Widder …); Sud numbering groups by it.
+    beer_style: Mapped[str] = mapped_column(String(64), nullable=False)
     version: Mapped[int] = mapped_column(nullable=False, default=1)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
+    # Former beers („frühere Biere") stay on file but take no new Sude.
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     ingredients: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     mash_schedule: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     hop_additions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
@@ -222,7 +219,7 @@ class Sud(Base):
     # Denormalized from the recipe at create time — a Sud's style never
     # changes (recipe versions share their style); exists to back the
     # unique constraint above.
-    beer_style: Mapped[BeerStyle] = mapped_column(_enum(BeerStyle, 32), nullable=False)
+    beer_style: Mapped[str] = mapped_column(String(64), nullable=False)
     brew_year: Mapped[int] = mapped_column(
         Integer,
         Computed("(EXTRACT(YEAR FROM brew_date))::int", persisted=True),

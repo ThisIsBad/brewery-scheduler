@@ -15,23 +15,43 @@ interface RezepteProps {
   onReload: () => void;
 }
 
-const STYLES: BeerStyle[] = ["kellerbier", "wheat", "festbier", "special"];
-
 export function Rezepte({ recipes, onReload }: RezepteProps) {
   const [editing, setEditing] = useState<Recipe | null>(null);
+  const [creating, setCreating] = useState(false);
   const [historyStyle, setHistoryStyle] = useState<BeerStyle | null>(null);
+  const [showFormer, setShowFormer] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  return (
-    <div className="rezepte">
-      {STYLES.map((style) => {
-        const versions = recipes
-          .filter((r) => r.beer_style === style)
-          .sort((a, b) => b.version - a.version);
-        const current = versions[0];
-        if (!current) return null;
-        return (
-          <section key={style}>
-            <h2>{STYLE_LABEL[style]}</h2>
+  // Styles come from the data — the brewery names its beers freely.
+  // Archived styles („Frühere Biere", wie in der Excel) sit in their own
+  // collapsed section.
+  const styles = [...new Set(recipes.map((r) => r.beer_style))];
+  const latestOf = (style: BeerStyle) =>
+    recipes
+      .filter((r) => r.beer_style === style)
+      .sort((a, b) => b.version - a.version)[0];
+  const activeStyles = styles.filter((s) => latestOf(s)?.active !== false);
+  const formerStyles = styles.filter((s) => latestOf(s)?.active === false);
+
+  const setStyleActive = async (style: BeerStyle, active: boolean) => {
+    setError(null);
+    try {
+      await api.setRecipeStyleActive({ beer_style: style, active });
+      onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const renderStyle = (style: BeerStyle, former: boolean) => {
+    const versions = recipes
+      .filter((r) => r.beer_style === style)
+      .sort((a, b) => b.version - a.version);
+    const current = versions[0];
+    if (!current) return null;
+    return (
+      <section key={style}>
+        <h2>{STYLE_LABEL[style] ?? style}</h2>
             <article className="card">
               <header>
                 <strong>{current.name}</strong>
@@ -149,6 +169,13 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                       : `Historie (${versions.length} Versionen)`}
                   </button>
                 )}
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setStyleActive(style, former)}
+                >
+                  {former ? "Reaktivieren" : "Archivieren"}
+                </button>
               </footer>
             </article>
 
@@ -175,15 +202,45 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                 );
               })}
           </section>
-        );
-      })}
+    );
+  };
 
-      {editing && (
+  return (
+    <div className="rezepte">
+      <button type="button" onClick={() => setCreating(true)}>
+        + Neues Bier
+      </button>
+      {error && <div className="error">{error}</div>}
+
+      {activeStyles.map((style) => renderStyle(style, false))}
+
+      {formerStyles.length > 0 && (
+        <section>
+          <h2>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setShowFormer((v) => !v)}
+            >
+              {showFormer
+                ? "Frühere Biere ausblenden"
+                : `Frühere Biere (${formerStyles.length})`}
+            </button>
+          </h2>
+        </section>
+      )}
+      {showFormer && formerStyles.map((style) => renderStyle(style, true))}
+
+      {(editing || creating) && (
         <RecipeVersionDialog
           base={editing}
-          onClose={() => setEditing(null)}
+          onClose={() => {
+            setEditing(null);
+            setCreating(false);
+          }}
           onDone={() => {
             setEditing(null);
+            setCreating(false);
             onReload();
           }}
         />
@@ -246,28 +303,36 @@ function diffLines(older: Recipe, newer: Recipe): string[] {
 }
 
 interface RecipeVersionDialogProps {
-  base: Recipe;
+  /** null = ein ganz neues Bier anlegen (Version 1 einer neuen Sorte). */
+  base: Recipe | null;
   onClose: () => void;
   onDone: () => void;
 }
 
 function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps) {
-  const [name, setName] = useState(base.name);
-  const [ferm, setFerm] = useState(String(base.fermentation_duration_days));
-  const [openRequired, setOpenRequired] = useState(base.open_fermentation_required);
+  const [style, setStyle] = useState(base?.beer_style ?? "");
+  const [name, setName] = useState(base?.name ?? "");
+  const [ferm, setFerm] = useState(
+    base ? String(base.fermentation_duration_days) : "",
+  );
+  const [openRequired, setOpenRequired] = useState(
+    base?.open_fermentation_required ?? false,
+  );
   const [openDays, setOpenDays] = useState(
-    base.open_fermentation_duration_days !== null
+    base?.open_fermentation_duration_days != null
       ? String(base.open_fermentation_duration_days)
       : "",
   );
-  const [storage, setStorage] = useState(String(base.storage_duration_days));
+  const [storage, setStorage] = useState(
+    base ? String(base.storage_duration_days) : "",
+  );
   const [maxStorage, setMaxStorage] = useState(
-    String(base.max_storage_duration_days),
+    base ? String(base.max_storage_duration_days) : "",
   );
   const [malts, setMalts] = useState<
     { name: string; kg: string; maelzerei: string }[]
   >(
-    (base.malts ?? []).map((m) => ({
+    (base?.malts ?? []).map((m) => ({
       name: m.name,
       kg: String(m.kg),
       maelzerei: m.maelzerei ?? "",
@@ -276,7 +341,7 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
   const [gaben, setGaben] = useState<
     { name: string; gramm: string; zeitpunkt: string; alpha: string }[]
   >(
-    (base.hop_gaben ?? []).map((g) => ({
+    (base?.hop_gaben ?? []).map((g) => ({
       name: g.name,
       gramm: String(g.gramm),
       zeitpunkt: g.zeitpunkt,
@@ -286,32 +351,34 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
   const [rasten, setRasten] = useState<
     { schritt: string; temp: string; dauer: string }[]
   >(
-    (base.maischplan ?? []).map((r) => ({
+    (base?.maischplan ?? []).map((r) => ({
       schritt: r.schritt,
       temp: r.temp_c != null ? String(r.temp_c) : "",
       dauer: r.dauer_min != null ? String(r.dauer_min) : "",
     })),
   );
   const [hauptguss, setHauptguss] = useState(
-    base.wasser?.hauptguss_hl != null ? String(base.wasser.hauptguss_hl) : "",
+    base?.wasser?.hauptguss_hl != null ? String(base.wasser.hauptguss_hl) : "",
   );
   const [nachguesse, setNachguesse] = useState<string[]>(
-    (base.wasser?.nachguss_hl ?? []).map(String),
+    (base?.wasser?.nachguss_hl ?? []).map(String),
   );
   const [kochzeit, setKochzeit] = useState(
-    base.kochzeit_min != null ? String(base.kochzeit_min) : "",
+    base?.kochzeit_min != null ? String(base.kochzeit_min) : "",
   );
   const [karbo, setKarbo] = useState(
-    base.karbonisierung_g_l != null ? String(base.karbonisierung_g_l) : "",
+    base?.karbonisierung_g_l != null ? String(base.karbonisierung_g_l) : "",
   );
-  const [anstell, setAnstell] = useState(base.anstellhinweis ?? "");
-  const [yeast, setYeast] = useState(base.yeast ?? "");
+  const [anstell, setAnstell] = useState(base?.anstellhinweis ?? "");
+  const [yeast, setYeast] = useState(base?.yeast ?? "");
   const [og, setOg] = useState(
-    base.original_gravity_plato != null ? String(base.original_gravity_plato) : "",
+    base?.original_gravity_plato != null
+      ? String(base.original_gravity_plato)
+      : "",
   );
-  const [ibu, setIbu] = useState(base.ibu != null ? String(base.ibu) : "");
+  const [ibu, setIbu] = useState(base?.ibu != null ? String(base.ibu) : "");
   const [ebc, setEbc] = useState(
-    base.color_ebc != null ? String(base.color_ebc) : "",
+    base?.color_ebc != null ? String(base.color_ebc) : "",
   );
   const [notes, setNotes] = useState("");
   const [createdBy, setCreatedBy] = useState("");
@@ -329,6 +396,7 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
       (r.dauer === "" || parseFloat(r.dauer) > 0),
   );
   const canSubmit =
+    style.trim() !== "" &&
     name.trim() !== "" &&
     parseFloat(ferm) > 0 &&
     parseFloat(storage) > 0 &&
@@ -364,7 +432,7 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
         .map((n) => parseFloat(n))
         .filter((n) => n > 0);
       await api.createRecipe({
-        beer_style: base.beer_style,
+        beer_style: style.trim(),
         name: name.trim(),
         fermentation_duration_days: parseFloat(ferm),
         open_fermentation_required: openRequired,
@@ -404,11 +472,15 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
     <div
       className="dialog-backdrop"
       role="dialog"
-      aria-label="Neue Rezeptversion"
+      aria-label={base ? "Neue Rezeptversion" : "Neues Bier"}
     >
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          {STYLE_LABEL[base.beer_style]}: Version {base.version + 1}
+          {base
+            ? `${STYLE_LABEL[base.beer_style] ?? base.beer_style}: Version ${
+                base.version + 1
+              }`
+            : "Neues Bier"}
         </h2>
         <p className="muted">
           Rezepte sind unveränderlich — das Speichern erzeugt eine neue
@@ -416,12 +488,25 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
           Mengen gelten pro Standard-Sud (15 hl).
         </p>
 
+        {!base && (
+          <label>
+            Sorte
+            <input
+              value={style}
+              onChange={(e) => setStyle(e.target.value)}
+              maxLength={64}
+              placeholder="z. B. Rauchbier oder Collab Widder"
+              required
+            />
+          </label>
+        )}
         <label>
           Name
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={128}
+            placeholder={base ? undefined : "z. B. Rauchbier Waltraut"}
             required
           />
         </label>
@@ -811,7 +896,11 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
             Abbrechen
           </button>
           <button type="submit" disabled={!canSubmit || submitting}>
-            {submitting ? "Speichere …" : `Version ${base.version + 1} anlegen`}
+            {submitting
+              ? "Speichere …"
+              : base
+                ? `Version ${base.version + 1} anlegen`
+                : "Bier anlegen"}
           </button>
         </div>
       </form>
