@@ -221,5 +221,8 @@ export interface TransferAllocationIn {
 export interface TransferIn {
   start_at: string;
   end_at?: string | null;
+  /** Tank the beer is pushed out of — scopes the move to that tank's
+   * share when the batch is split across tanks. */
+  from_tank_id?: string;
   allocations: TransferAllocationIn[];
 }

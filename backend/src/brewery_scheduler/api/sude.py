@@ -292,18 +292,24 @@ def transfer_sud(
     payload: TransferIn,
     session: Session = Depends(get_session),
 ) -> Sud:
-    """Umdrücken: move the batch (lead + merged partners) to any other tank.
+    """Umdrücken: move beer (lead + merged partners) to any other tank.
 
     The usual Gärtank → Lagertank → Ausschank order is convention, not a
-    constraint. Outside the Ausschank stage the batch stays together
-    (exactly one target tank). At the Ausschank stage it can be split
-    across several tanks with explicit volume shares, and Ausschank tanks
-    may blend several batches — guarded by the sum-of-allocations ≤
-    capacity rule (issue #13). Process rules (wheat open fermentation,
-    yeast-free Ausschank) surface as warnings, they do not block.
+    constraint. The batch may split across several same-stage tanks with
+    explicit volume shares at every stage (Stefan, 2026-08-04) — e.g. one
+    30-hl fermenter into two smaller storage tanks. Once split,
+    `from_tank_id` scopes a transfer to that tank's share; the sibling
+    shares stay where they are (the Sud's status then reflects the latest
+    move). Outside the Ausschank stage each target must be free (DB
+    EXCLUDE) and fit its share; Ausschank tanks blend several batches —
+    guarded by the sum-of-allocations ≤ capacity rule (issue #13).
+    Process rules (wheat open fermentation, yeast-free Ausschank) surface
+    as warnings, they do not block.
     """
     sud = session.scalar(
-        select(Sud).options(selectinload(Sud.occupancies)).where(Sud.id == sud_id)
+        select(Sud)
+        .options(selectinload(Sud.occupancies), selectinload(Sud.withdrawals))
+        .where(Sud.id == sud_id)
     )
     if sud is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sud not found")
@@ -320,6 +326,28 @@ def transfer_sud(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="This Sud has no tank occupancy yet — schedule it before transferring.",
         )
+
+    # When the client names the tank the beer is pushed out of and the
+    # batch is split (explicit share), only that share moves; the sibling
+    # tanks stay untouched. Older clients omit from_tank_id and move the
+    # whole batch.
+    source_occ = None
+    if payload.from_tank_id is not None:
+        source_occ = next(
+            (
+                o
+                for o in sud.occupancies
+                if o.tank_id == payload.from_tank_id
+                and o.start_at <= payload.start_at
+                and (o.end_at is None or payload.start_at < o.end_at)
+            ),
+            None,
+        )
+        if source_occ is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="This Sud does not occupy that tank at the transfer start.",
+            )
 
     tank_ids = [a.tank_id for a in payload.allocations]
     if len(set(tank_ids)) != len(tank_ids):
@@ -346,51 +374,80 @@ def transfer_sud(
     target_stage = target_stages.pop()
 
     _, remaining_hl = _batch_volumes(session, sud)
+    if source_occ is not None and source_occ.volume_hl is not None:
+        # Split batch: what moves is this tank's share minus what already
+        # left it (mirrors the withdraw endpoint's per-tank remaining).
+        tank_withdrawn = sum(
+            float(w.volume_hl)
+            for w in sud.withdrawals
+            if w.tank_id == payload.from_tank_id
+        )
+        moving_hl = float(source_occ.volume_hl) - tank_withdrawn
+    else:
+        moving_hl = remaining_hl
 
-    if target_stage != TankStage.AUSSCHANK:
-        if len(payload.allocations) != 1:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=(
-                    "Batches stay together before the Ausschank stage — "
-                    "exactly one target tank is allowed."
-                ),
-            )
-        target = tanks[tank_ids[0]]
-        if remaining_hl > float(target.capacity_hl):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"Batch volume of {remaining_hl:g} hl exceeds the "
-                    f"{float(target.capacity_hl):g} hl capacity of tank {target.name}."
-                ),
-            )
+    # A single allocation without an explicit volume moves the whole batch
+    # (occupancy volume NULL = full-batch convention, outside Ausschank —
+    # a share stays explicit so its new tank keeps the right remaining).
+    # Everything else carries explicit shares that must add up to what is
+    # physically moving — kegs and pours already taken out don't move on.
+    if (
+        target_stage != TankStage.AUSSCHANK
+        and (source_occ is None or source_occ.volume_hl is None)
+        and len(payload.allocations) == 1
+        and payload.allocations[0].volume_hl is None
+    ):
         volumes: list[float | None] = [None]
     else:
         volumes = [
-            a.volume_hl if a.volume_hl is not None else remaining_hl
+            a.volume_hl if a.volume_hl is not None else moving_hl
             for a in payload.allocations
         ]
         total = sum(volumes)
-        # What must be distributed is what is physically left — kegs and
-        # pours already taken out don't move to the next tank.
-        if abs(total - remaining_hl) > 0.01:
+        if abs(total - moving_hl) > 0.01:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    f"Allocated volumes sum to {total:g} hl but the batch "
-                    f"holds {remaining_hl:g} hl."
+                    f"Allocated volumes sum to {total:g} hl but "
+                    f"{moving_hl:g} hl are being moved."
                 ),
             )
-        for allocation, volume in zip(payload.allocations, volumes):
-            tank = tanks[allocation.tank_id]
+
+    # What ends at the transfer start: the named source tank's occupancy —
+    # or, for a whole-batch move, every occupancy still running then.
+    truncating = (
+        [source_occ]
+        if source_occ is not None
+        else [
+            o
+            for o in sud.occupancies
+            if o.end_at is None or o.end_at > payload.start_at
+        ]
+    )
+    truncating_ids = {o.id for o in truncating}
+
+    for allocation, volume in zip(payload.allocations, volumes):
+        tank = tanks[allocation.tank_id]
+        share = moving_hl if volume is None else volume
+        if target_stage == TankStage.AUSSCHANK:
+            # Ausschank tanks blend batches; the headroom rule decides.
+            # Only the occupancies that end now are excluded — a sibling
+            # share already sitting in the target tank keeps counting.
             _check_ausschank_headroom(
                 session,
                 tank,
-                volume,
+                share,
                 payload.start_at,
                 payload.end_at,
-                exclude_sud_id=sud.id,
+                exclude_occupancy_ids=truncating_ids,
+            )
+        elif share > float(tank.capacity_hl):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Batch volume of {share:g} hl exceeds the "
+                    f"{float(tank.capacity_hl):g} hl capacity of tank {tank.name}."
+                ),
             )
 
     end_at = payload.end_at
@@ -400,14 +457,16 @@ def transfer_sud(
         )
         end_at = payload.start_at + timedelta(days=duration_days)
 
-    # The beer physically leaves its current tank at the transfer start, so
-    # every occupancy still running at that moment — open-ended OR with a
-    # planned future end — is truncated to it. Without this, an early
-    # transfer left the batch nominally in two tanks at once: the stale
-    # occupancy blocked the old tank, misdirected keg withdrawals, and made
-    # the wheat rule reject legitimate open→closed moves.
+    # The beer physically leaves its source tank(s) at the transfer start,
+    # so those occupancies — open-ended OR with a planned future end — are
+    # truncated to it. Without this, an early transfer left the batch
+    # nominally in two tanks at once: the stale occupancy blocked the old
+    # tank, misdirected keg withdrawals, and made the wheat rule reject
+    # legitimate open→closed moves.
     def effective_end(o: TankOccupancy):
-        if o.end_at is None or o.end_at > payload.start_at:
+        if o.id in truncating_ids and (
+            o.end_at is None or o.end_at > payload.start_at
+        ):
             return payload.start_at
         return o.end_at
 
@@ -436,9 +495,8 @@ def transfer_sud(
         _effective_recipe(sud.recipe, sud.recipe_overrides), future
     )
 
-    for occ in sud.occupancies:
-        if occ.end_at is None or occ.end_at > payload.start_at:
-            occ.end_at = payload.start_at
+    for occ in truncating:
+        occ.end_at = payload.start_at
 
     for allocation, volume in zip(payload.allocations, volumes):
         sud.occupancies.append(
@@ -530,7 +588,7 @@ def withdraw(
         )
 
     if occupancy.volume_hl is not None:
-        # Explicit allocation (Ausschank split): this tank's share minus
+        # Explicit allocation (split transfer): this tank's share minus
         # what already left it.
         tank_withdrawn = sum(
             float(w.volume_hl) for w in sud.withdrawals if w.tank_id == payload.tank_id
@@ -571,10 +629,15 @@ def _check_ausschank_headroom(
     start_at,
     end_at,
     exclude_sud_id: uuid.UUID | None = None,
+    exclude_occupancy_ids: set[uuid.UUID] | None = None,
 ) -> None:
     """Ausschank tanks blend several batches; the DB EXCLUDE constraint is
     scoped away from this stage, so the capacity rule lives here: the sum of
     time-overlapping allocations plus the new one must fit the tank.
+
+    Exclusions cover what the caller is about to replace: the whole Sud
+    when re-scheduling, or exactly the occupancies a transfer truncates —
+    a split batch's sibling share must keep counting.
     """
     stmt = (
         select(TankOccupancy)
@@ -588,6 +651,8 @@ def _check_ausschank_headroom(
         stmt = stmt.where(TankOccupancy.start_at < end_at)
     if exclude_sud_id is not None:
         stmt = stmt.where(TankOccupancy.sud_id != exclude_sud_id)
+    if exclude_occupancy_ids:
+        stmt = stmt.where(TankOccupancy.id.not_in(list(exclude_occupancy_ids)))
 
     allocated = 0.0
     for occ in session.scalars(stmt):

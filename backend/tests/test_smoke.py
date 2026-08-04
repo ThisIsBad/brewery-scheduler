@@ -449,13 +449,14 @@ def test_merge_404_on_unknown_lead(client, session) -> None:
     assert r.status_code == 404
 
 
-def _transfer(client, sud_id, allocations, start, end=None):
+def _transfer(client, sud_id, allocations, start, end=None, from_tank=None):
     return client.post(
         f"/api/sude/{sud_id}/transfer",
         json={
             "start_at": start.isoformat(),
             "end_at": end.isoformat() if end else None,
             "allocations": allocations,
+            **({"from_tank_id": str(from_tank)} if from_tank else {}),
         },
     )
 
@@ -543,20 +544,213 @@ def test_transfer_rejects_partner(client, session) -> None:
     assert "transfer the lead" in r.json()["detail"]
 
 
-def test_transfer_rejects_multi_target_before_ausschank(client, session) -> None:
+def test_transfer_split_across_storage_tanks(client, session) -> None:
+    # Splitting is allowed at every stage (Stefan, 2026-08-04): the 15-hl
+    # Weizen goes 8/7 into the two small Nebenkeller storage tanks.
     lead = _seeded_lead(session, BeerStyle.WHEAT)
-    t1 = session.query(Tank).filter(Tank.name == "S-30-4").one()
-    t2 = session.query(Tank).filter(Tank.name == "S-30-5").one()
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
 
     r = _transfer(
         client,
         lead.id,
-        [{"tank_id": str(t1.id)}, {"tank_id": str(t2.id)}],
+        [
+            {"tank_id": str(t1.id), "volume_hl": 8},
+            {"tank_id": str(t2.id), "volume_hl": 7},
+        ],
         start,
     )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "storing"
+    storage_occs = [o for o in body["occupancies"] if o["stage"] == "storage"]
+    assert sorted(o["volume_hl"] for o in storage_occs) == [7, 8]
+    # Both shares inherit the recipe-derived storage end (14 days for Weizen).
+    expected_end = start + timedelta(days=14)
+    for occ in storage_occs:
+        actual = datetime.fromisoformat(occ["end_at"].replace("Z", "+00:00"))
+        assert actual == expected_end
+
+
+def test_transfer_split_share_must_fit_tank(client, session) -> None:
+    # Shares sum correctly, but 12 hl cannot enter a 10-hl tank. Outside
+    # the Ausschank stage capacity is per-tank, not blended headroom.
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
+
+    r = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(t1.id), "volume_hl": 12},
+            {"tank_id": str(t2.id), "volume_hl": 3},
+        ],
+        start,
+    )
+    assert r.status_code == 409, r.text
+    assert "exceeds" in r.json()["detail"]
+
+
+def test_withdraw_respects_split_storage_share(client, session) -> None:
+    # After an 8/7 storage split, each tank only gives up its own share.
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
+    r = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(t1.id), "volume_hl": 8},
+            {"tank_id": str(t2.id), "volume_hl": 7},
+        ],
+        start,
+    )
+    assert r.status_code == 200, r.text
+
+    at = (start + timedelta(days=1)).isoformat()
+    over = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={"tank_id": str(t2.id), "volume_hl": 7.5, "at": at},
+    )
+    assert over.status_code == 409, over.text
+    assert "7 hl" in over.json()["detail"]
+
+    ok = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={"tank_id": str(t2.id), "volume_hl": 5, "at": at},
+    )
+    assert ok.status_code == 200, ok.text
+
+
+def test_transfer_moves_only_the_source_share(client, session) -> None:
+    # After an 8/7 storage split, pushing S2-10-1 onward moves its 8 hl;
+    # the 7-hl sibling share stays where it is.
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
+    a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
+    r = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(t1.id), "volume_hl": 8},
+            {"tank_id": str(t2.id), "volume_hl": 7},
+        ],
+        start,
+    )
+    assert r.status_code == 200, r.text
+
+    onward = start + timedelta(days=3)
+    r = _transfer(
+        client,
+        lead.id,
+        [{"tank_id": str(a35.id), "volume_hl": 8}],
+        onward,
+        from_tank=t1.id,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    occs = {(o["tank_id"], o["stage"]): o for o in body["occupancies"]}
+
+    sibling = occs[(str(t2.id), "storage")]
+    assert sibling["volume_hl"] == 7
+    sibling_end = datetime.fromisoformat(sibling["end_at"].replace("Z", "+00:00"))
+    assert sibling_end == start + timedelta(days=14)
+
+    source = occs[(str(t1.id), "storage")]
+    source_end = datetime.fromisoformat(source["end_at"].replace("Z", "+00:00"))
+    assert source_end == onward
+
+    moved = occs[(str(a35.id), "ausschank")]
+    assert moved["volume_hl"] == 8
+    assert body["status"] == "in_ausschank"
+
+
+def test_transfer_scoped_sum_checks_against_share(client, session) -> None:
+    # Allocations of a scoped move must match the tank's share (8 hl), not
+    # the batch total (15 hl).
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
+    a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
+    r = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(t1.id), "volume_hl": 8},
+            {"tank_id": str(t2.id), "volume_hl": 7},
+        ],
+        start,
+    )
+    assert r.status_code == 200, r.text
+
+    r = _transfer(
+        client,
+        lead.id,
+        [{"tank_id": str(a35.id), "volume_hl": 15}],
+        start + timedelta(days=3),
+        from_tank=t1.id,
+    )
     assert r.status_code == 422, r.text
-    assert "stay together" in r.json()["detail"]
+    assert "8 hl are being moved" in r.json()["detail"]
+
+
+def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> None:
+    # Sequential consolidation: both split shares end up in the 35-hl
+    # Ausschank tank (8 + 7). A third batch bringing 25 hl on top would
+    # overflow it — the sibling share must keep counting toward headroom
+    # even while its batch is mid-move.
+    lead = _seeded_lead(session, BeerStyle.WHEAT)
+    t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
+    t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
+    a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
+    a100 = session.query(Tank).filter(Tank.name == "A-100").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
+    r = _transfer(
+        client,
+        lead.id,
+        [
+            {"tank_id": str(t1.id), "volume_hl": 8},
+            {"tank_id": str(t2.id), "volume_hl": 7},
+        ],
+        start,
+    )
+    assert r.status_code == 200, r.text
+    r = _transfer(
+        client,
+        lead.id,
+        [{"tank_id": str(a35.id), "volume_hl": 8}],
+        start + timedelta(days=1),
+        from_tank=t1.id,
+    )
+    assert r.status_code == 200, r.text
+    r = _transfer(
+        client,
+        lead.id,
+        [{"tank_id": str(a35.id), "volume_hl": 7}],
+        start + timedelta(days=2),
+        from_tank=t2.id,
+    )
+    assert r.status_code == 200, r.text
+
+    festbier = _seeded_lead(session, BeerStyle.FESTBIER)
+    r = _transfer(
+        client,
+        festbier.id,
+        [
+            {"tank_id": str(a35.id), "volume_hl": 25},
+            {"tank_id": str(a100.id), "volume_hl": 5},
+        ],
+        start + timedelta(days=3),
+    )
+    assert r.status_code == 409, r.text
+    assert "exceeds" in r.json()["detail"]
 
 
 def test_transfer_split_to_two_ausschank_tanks(client, session) -> None:

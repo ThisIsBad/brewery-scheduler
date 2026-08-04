@@ -252,7 +252,7 @@ class WithdrawIn(BaseModel):
 
 class TransferAllocationIn(BaseModel):
     tank_id: uuid.UUID
-    # Required when splitting across several Ausschank tanks; omitted for a
+    # Required when splitting across several tanks; omitted for a
     # whole-batch move (the server uses the combined batch volume).
     volume_hl: float | None = Field(default=None, gt=0)
 
@@ -260,12 +260,16 @@ class TransferAllocationIn(BaseModel):
 class TransferIn(BaseModel):
     """Request body for POST /api/sude/{id}/transfer (Umdrücken).
 
-    Moves the batch (lead + merged partners) to any other tank — the usual
-    Gärtank → Lagertank → Ausschank order is convention, not a constraint.
-    A single target tank outside the Ausschank stage, one or more targets
-    with explicit volume shares at the Ausschank stage (issue #13).
+    Moves beer to any other tank — the usual Gärtank → Lagertank →
+    Ausschank order is convention, not a constraint. One or more same-stage
+    targets; several targets carry explicit volume shares (splitting is
+    allowed at every stage since 2026-08-04).
     """
 
     start_at: datetime
     end_at: datetime | None = None
+    # The tank the beer is pushed out of. Scopes the transfer to that
+    # tank's share when the batch is split across tanks — without it the
+    # whole batch moves (pre-split behaviour, kept for older clients).
+    from_tank_id: uuid.UUID | None = None
     allocations: list[TransferAllocationIn] = Field(min_length=1)
