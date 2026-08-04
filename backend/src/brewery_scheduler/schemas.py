@@ -291,6 +291,18 @@ class WithdrawIn(BaseModel):
     notes: str | None = Field(default=None, max_length=10_000)
 
 
+class TankWithdrawIn(BaseModel):
+    """Tank-level Ausschank booking (Blending, 2026-08-04): the volume —
+    direct or as keg counts — leaves the TANK; the server distributes it
+    proportionally across the contained Sud shares."""
+
+    volume_hl: float | None = Field(default=None, gt=0)
+    kegs: list[KegCountIn] | None = None
+    at: datetime
+    kind: WithdrawalKind = WithdrawalKind.KEG_FILL
+    notes: str | None = Field(default=None, max_length=10_000)
+
+
 class TransferAllocationIn(BaseModel):
     tank_id: uuid.UUID
     # Required when splitting across several tanks; omitted for a

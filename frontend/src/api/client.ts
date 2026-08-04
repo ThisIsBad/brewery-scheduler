@@ -6,6 +6,7 @@ import type {
   RecipeCreateIn,
   RecipeStyleActiveIn,
   ScheduleIn,
+  TankWithdrawIn,
   Sud,
   SudCreateIn,
   Tank,
@@ -93,6 +94,11 @@ export const api = {
     }),
   withdraw: (sudId: string, payload: WithdrawIn) =>
     request<Sud>(`/api/sude/${sudId}/withdraw`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  tankWithdraw: (tankId: string, payload: TankWithdrawIn) =>
+    request<Sud[]>(`/api/tanks/${tankId}/withdraw`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),

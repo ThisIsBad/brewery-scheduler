@@ -158,7 +158,7 @@ export interface SudCreateIn {
   recipe_overrides?: RecipeOverridesIn;
 }
 
-export type WithdrawalKind = "keg_fill" | "ausschank";
+export type WithdrawalKind = "keg_fill" | "ausschank" | "schwund";
 
 export interface Malz {
   name: string;
@@ -241,6 +241,16 @@ export interface Withdrawal {
 export interface WithdrawIn {
   tank_id: string;
   /** Direct volume — or omit it and send keg counts (keg fills only). */
+  volume_hl?: number;
+  kegs?: KegCount[];
+  at: string;
+  kind?: WithdrawalKind;
+  notes?: string | null;
+}
+
+/** Tank-level Ausschank booking (Blending): the server distributes the
+ * volume proportionally across the contained Sud shares. */
+export interface TankWithdrawIn {
   volume_hl?: number;
   kegs?: KegCount[];
   at: string;

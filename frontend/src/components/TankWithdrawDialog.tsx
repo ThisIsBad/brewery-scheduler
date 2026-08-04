@@ -4,20 +4,17 @@ import { api } from "../api/client";
 import type { Occupancy, Sud, Tank, WithdrawalKind } from "../api/types";
 import { formatHl, remainingHl, sudNumberLabel } from "../domain";
 
-interface WithdrawDialogProps {
-  sud: Sud;
-  occupancy: Occupancy;
-  tanks: Tank[];
+interface TankWithdrawDialogProps {
+  tank: Tank;
+  entries: { sud: Sud; occ: Occupancy }[];
   sude: Sud[];
   kind: WithdrawalKind;
   onClose: () => void;
-  onDone: (updated: Sud) => void;
+  onDone: (updated: Sud[]) => void;
 }
 
 const KEG_SIZES = [10, 20, 30, 50];
 
-// Schwund wird am Tank ausgebucht (TankWithdrawDialog); die Einträge hier
-// existieren nur für die Typ-Vollständigkeit.
 const KIND_TITLE: Record<WithdrawalKind, string> = {
   keg_fill: "Fass abfüllen",
   ausschank: "Ausschank eintragen",
@@ -30,20 +27,23 @@ const KIND_SUBMIT: Record<WithdrawalKind, string> = {
   schwund: "Ausbuchen",
 };
 
-export function WithdrawDialog({
-  sud,
-  occupancy,
-  tanks,
+/** Blending (2026-08-04): the booking happens on the TANK; the server
+ * distributes it proportionally across the contained Sud shares. */
+export function TankWithdrawDialog({
+  tank,
+  entries,
   sude,
   kind,
   onClose,
   onDone,
-}: WithdrawDialogProps) {
-  const remaining = remainingHl(sud, sude, occupancy);
-  const tank = tanks.find((t) => t.id === occupancy.tank_id);
+}: TankWithdrawDialogProps) {
+  const withRemaining = entries.map((e) => ({
+    ...e,
+    remaining: remainingHl(e.sud, sude, e.occ),
+  }));
+  const total = withRemaining.reduce((sum, e) => sum + e.remaining, 0);
+
   const [volume, setVolume] = useState("");
-  // Keg fills are entered as counts per barrel size (2026-08-04); the hl
-  // volume is computed. Pours keep the direct hl field.
   const [counts, setCounts] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -56,7 +56,7 @@ export function WithdrawDialog({
   })).filter((k) => k.count > 0);
   const kegVolume = kegs.reduce((sum, k) => sum + (k.size_l * k.count) / 100, 0);
   const parsed = isKegFill ? kegVolume : parseFloat(volume) || 0;
-  const canSubmit = parsed > 0 && parsed <= remaining + 1e-9;
+  const canSubmit = parsed > 0 && parsed <= total + 1e-9;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +64,7 @@ export function WithdrawDialog({
     setSubmitting(true);
     setError(null);
     try {
-      const updated = await api.withdraw(sud.id, {
-        tank_id: occupancy.tank_id,
+      const updated = await api.tankWithdraw(tank.id, {
         ...(isKegFill ? { kegs } : { volume_hl: parsed }),
         at: new Date().toISOString(),
         kind,
@@ -82,10 +81,18 @@ export function WithdrawDialog({
     <div className="dialog-backdrop" role="dialog" aria-label={KIND_TITLE[kind]}>
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          {KIND_TITLE[kind]}: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          {KIND_TITLE[kind]}: {tank.name}
         </h2>
         <p className="muted">
-          Aus {tank?.name ?? "?"} · noch {formatHl(remaining)} im Tank
+          {withRemaining
+            .map(
+              (e) =>
+                `${e.sud.recipe.name} ${sudNumberLabel(e.sud, sude)} ${formatHl(
+                  e.remaining,
+                )}`,
+            )
+            .join(" · ")}{" "}
+          — zusammen {formatHl(total)}
         </p>
 
         {isKegFill ? (
@@ -104,7 +111,7 @@ export function WithdrawDialog({
                 />
               </label>
             ))}
-            <p className={parsed > remaining + 1e-9 ? "error" : "muted"}>
+            <p className={parsed > total + 1e-9 ? "error" : "muted"}>
               Ergibt {formatHl(parsed)}
             </p>
           </>
@@ -114,13 +121,27 @@ export function WithdrawDialog({
             <input
               type="number"
               min="0.1"
-              max={remaining}
+              max={total}
               step="0.1"
               value={volume}
               onChange={(e) => setVolume(e.target.value)}
               required
             />
           </label>
+        )}
+
+        {entries.length > 1 && parsed > 0 && parsed <= total + 1e-9 && (
+          <p className="muted">
+            Verteilt sich:{" "}
+            {withRemaining
+              .map(
+                (e) =>
+                  `${e.sud.recipe.name} ~${formatHl(
+                    Math.round((parsed * e.remaining * 10) / total) / 10,
+                  )}`,
+              )
+              .join(" · ")}
+          </p>
         )}
 
         <label>
@@ -130,16 +151,14 @@ export function WithdrawDialog({
             value={notes}
             maxLength={200}
             placeholder={
-              kind === "keg_fill" ? "z. B. 4 Fässer Festzelt" : "z. B. Bergkirchweih"
+              kind === "schwund" ? "z. B. Geläger" : "z. B. Bergkirchweih"
             }
             onChange={(e) => setNotes(e.target.value)}
           />
         </label>
 
-        {parsed > remaining && (
-          <div className="error">
-            Nur {formatHl(remaining)} verfügbar.
-          </div>
+        {parsed > total + 1e-9 && (
+          <div className="error">Nur {formatHl(total)} im Tank.</div>
         )}
         {error && <div className="error">{error}</div>}
 

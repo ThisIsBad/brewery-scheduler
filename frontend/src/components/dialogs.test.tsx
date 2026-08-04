@@ -3,6 +3,7 @@ import { vi } from "vitest";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
 import { ScheduleDialog } from "./ScheduleDialog";
+import { TankWithdrawDialog } from "./TankWithdrawDialog";
 import { TransferDialog } from "./TransferDialog";
 import { WithdrawDialog } from "./WithdrawDialog";
 
@@ -10,6 +11,7 @@ vi.mock("../api/client", () => ({
   api: {
     transferSud: vi.fn(),
     withdraw: vi.fn(),
+    tankWithdraw: vi.fn(),
     updateSchedule: vi.fn(),
   },
 }));
@@ -19,6 +21,7 @@ import { api } from "../api/client";
 const mocked = api as unknown as {
   transferSud: ReturnType<typeof vi.fn>;
   withdraw: ReturnType<typeof vi.fn>;
+  tankWithdraw: ReturnType<typeof vi.fn>;
   updateSchedule: ReturnType<typeof vi.fn>;
 };
 
@@ -115,7 +118,88 @@ const storageOcc: Occupancy = {
 beforeEach(() => {
   mocked.transferSud.mockReset().mockResolvedValue(sud({}));
   mocked.withdraw.mockReset().mockResolvedValue(sud({}));
+  mocked.tankWithdraw.mockReset().mockResolvedValue([]);
   mocked.updateSchedule.mockReset().mockResolvedValue(sud({}));
+});
+
+describe("TankWithdrawDialog (Blending)", () => {
+  const occA: Occupancy = {
+    id: "occ-ta",
+    sud_id: "sud-1",
+    tank_id: A100.id,
+    stage: "ausschank",
+    start_at: new Date(Date.now() - 86_400_000).toISOString(),
+    end_at: null,
+    volume_hl: 20,
+  };
+  const occB: Occupancy = {
+    id: "occ-tb",
+    sud_id: "sud-2",
+    tank_id: A100.id,
+    stage: "ausschank",
+    start_at: new Date(Date.now() - 86_400_000).toISOString(),
+    end_at: null,
+    volume_hl: 10,
+  };
+
+  it("bucht am Tank, zeigt die Verteilung und meldet alle Sude zurück", async () => {
+    const erster = sud({ id: "sud-1", occupancies: [occA] });
+    const zweiter = sud({ id: "sud-2", style_year_number: 2, occupancies: [occB] });
+    const onDone = vi.fn();
+    mocked.tankWithdraw.mockResolvedValue([erster, zweiter]);
+
+    render(
+      <TankWithdrawDialog
+        tank={A100}
+        entries={[
+          { sud: erster, occ: occA },
+          { sud: zweiter, occ: occB },
+        ]}
+        sude={[erster, zweiter]}
+        kind="ausschank"
+        onClose={() => {}}
+        onDone={onDone}
+      />,
+    );
+
+    expect(screen.getByText(/zusammen 30 hl/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Menge (hl)"), {
+      target: { value: "9" },
+    });
+    // Vorschau der proportionalen Verteilung (2:1).
+    expect(screen.getByText(/Verteilt sich/)).toBeInTheDocument();
+    expect(screen.getByText(/~6 hl/)).toBeInTheDocument();
+    expect(screen.getByText(/~3 hl/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Eintragen" }));
+    await waitFor(() => expect(mocked.tankWithdraw).toHaveBeenCalledOnce());
+    const [tankId, payload] = mocked.tankWithdraw.mock.calls[0];
+    expect(tankId).toBe(A100.id);
+    expect(payload.volume_hl).toBe(9);
+    expect(payload.kind).toBe("ausschank");
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith([erster, zweiter]));
+  });
+
+  it("sperrt Buchungen über dem Tankinhalt", () => {
+    const erster = sud({ id: "sud-1", occupancies: [occA] });
+    render(
+      <TankWithdrawDialog
+        tank={A100}
+        entries={[{ sud: erster, occ: occA }]}
+        sude={[erster]}
+        kind="schwund"
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Menge (hl)"), {
+      target: { value: "25" },
+    });
+    expect(screen.getByText(/Nur 20 hl im Tank/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ausbuchen" })).toBeDisabled();
+    expect(mocked.tankWithdraw).not.toHaveBeenCalled();
+  });
 });
 
 describe("TransferDialog (Ausschank split)", () => {

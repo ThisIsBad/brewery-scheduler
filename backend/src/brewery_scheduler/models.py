@@ -245,6 +245,10 @@ class WithdrawalKind(str, enum.Enum):
     # (confirmed 2026-08). Kept as its own kind: beer-tax reporting needs
     # poured volumes separable from keg fills.
     AUSSCHANK = "ausschank"
+    # Manual write-off (Blending-Modell 2026-08-04): trub, cleaning losses,
+    # spillage — closes the gap between booked and physical volume so a Sud
+    # can actually reach zero. Separable for beer-tax reporting too.
+    SCHWUND = "schwund"
 
 
 class Withdrawal(Base):
