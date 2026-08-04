@@ -91,9 +91,18 @@ class Recipe(Base):
     ingredients: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     mash_schedule: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     hop_additions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    # Brew sheet (2026-08-04): yeast choice and target values are typed
-    # columns; malts live in ingredients["malts"], hop additions with boil
-    # minutes in hop_additions["gaben"]. Quantities are per 15-hl Sud.
+    # Brew sheet (2026-08-04, structure follows Stefans Bierrezepte.xlsx):
+    # malts (with maltster) in ingredients["malts"], hop additions with a
+    # free-text timing in hop_additions["gaben"], the mash steps in
+    # mash_schedule["rasten"], brewing water (Haupt-/Nachgüsse) in wasser.
+    # Yeast and the target values are typed columns — single values the UI
+    # diffs and future calculations read. Quantities are per 15-hl Sud.
+    wasser: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    kochzeit_min: Mapped[float | None] = mapped_column(Numeric(4, 0), nullable=True)
+    karbonisierung_g_l: Mapped[float | None] = mapped_column(
+        Numeric(3, 1), nullable=True
+    )
+    anstellhinweis: Mapped[str | None] = mapped_column(String(256), nullable=True)
     yeast: Mapped[str | None] = mapped_column(String(128), nullable=True)
     original_gravity_plato: Mapped[float | None] = mapped_column(
         Numeric(4, 1), nullable=True

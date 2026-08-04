@@ -1,7 +1,13 @@
 import { useState } from "react";
 
 import { api } from "../api/client";
-import type { BeerStyle, Hopfengabe, Malz, Recipe } from "../api/types";
+import type {
+  BeerStyle,
+  Hopfengabe,
+  Maischrast,
+  Malz,
+  Recipe,
+} from "../api/types";
 import { STYLE_LABEL, formatDate } from "../domain";
 
 interface RezepteProps {
@@ -43,22 +49,63 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                   <div className="muted">
                     Schüttung:{" "}
                     {current.malts!
-                      .map((m) => `${m.name} ${m.kg} kg`)
+                      .map(
+                        (m) =>
+                          `${m.name} ${m.kg} kg${m.maelzerei ? ` (${m.maelzerei})` : ""}`,
+                      )
                       .join(" · ")}
+                  </div>
+                )}
+                {(current.wasser?.hauptguss_hl != null ||
+                  (current.wasser?.nachguss_hl?.length ?? 0) > 0) && (
+                  <div className="muted">
+                    Wasser:{" "}
+                    {[
+                      current.wasser?.hauptguss_hl != null
+                        ? `Hauptguss ${current.wasser.hauptguss_hl} hl`
+                        : null,
+                      (current.wasser?.nachguss_hl?.length ?? 0) > 0
+                        ? `Nachgüsse ${current.wasser!.nachguss_hl!.join(" + ")} hl`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                )}
+                {(current.maischplan?.length ?? 0) > 0 && (
+                  <div className="muted">
+                    Maischen:{" "}
+                    {current.maischplan!
+                      .map(
+                        (r) =>
+                          `${r.schritt}${r.temp_c != null ? ` ${r.temp_c} °C` : ""}${
+                            r.dauer_min != null ? ` (${r.dauer_min} min)` : ""
+                          }`,
+                      )
+                      .join(" → ")}
                   </div>
                 )}
                 {(current.hop_gaben?.length ?? 0) > 0 && (
                   <div className="muted">
                     Hopfen:{" "}
                     {current.hop_gaben!
-                      .map((g) => `${g.name} ${g.gramm} g @ ${g.kochzeit_min} min`)
+                      .map(
+                        (g) =>
+                          `${g.name} ${g.gramm} g — ${g.zeitpunkt}${
+                            g.alpha_prozent != null
+                              ? ` (${g.alpha_prozent} % α)`
+                              : ""
+                          }`,
+                      )
                       .join(" · ")}
                   </div>
                 )}
                 {(current.yeast ||
                   current.original_gravity_plato != null ||
                   current.ibu != null ||
-                  current.color_ebc != null) && (
+                  current.color_ebc != null ||
+                  current.kochzeit_min != null ||
+                  current.karbonisierung_g_l != null) && (
                   <div className="muted">
                     {[
                       current.yeast ? `Hefe: ${current.yeast}` : null,
@@ -69,10 +116,19 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                       current.color_ebc != null
                         ? `${current.color_ebc} EBC`
                         : null,
+                      current.kochzeit_min != null
+                        ? `Kochzeit ${current.kochzeit_min} min`
+                        : null,
+                      current.karbonisierung_g_l != null
+                        ? `Karbonisierung ${current.karbonisierung_g_l} g/l`
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}
                   </div>
+                )}
+                {current.anstellhinweis && (
+                  <div className="muted">Anstellen: {current.anstellhinweis}</div>
                 )}
                 {current.notes && <div className="muted">{current.notes}</div>}
               </div>
@@ -153,6 +209,9 @@ function diffLines(older: Recipe, newer: Recipe): string[] {
     ["original_gravity_plato", "Stammwürze", " °P"],
     ["ibu", "Bittere", " IBU"],
     ["color_ebc", "Farbe", " EBC"],
+    ["kochzeit_min", "Kochzeit", " min"],
+    ["karbonisierung_g_l", "Karbonisierung", " g/l"],
+    ["anstellhinweis", "Anstellen", ""],
   ];
   const lines = fields
     .filter(([key]) => (older[key] ?? null) !== (newer[key] ?? null))
@@ -171,6 +230,17 @@ function diffLines(older: Recipe, newer: Recipe): string[] {
     JSON.stringify(newer.hop_gaben ?? [])
   ) {
     lines.push("Hopfengaben geändert");
+  }
+  if (
+    JSON.stringify(older.maischplan ?? []) !==
+    JSON.stringify(newer.maischplan ?? [])
+  ) {
+    lines.push("Maischplan geändert");
+  }
+  if (
+    JSON.stringify(older.wasser ?? null) !== JSON.stringify(newer.wasser ?? null)
+  ) {
+    lines.push("Wasser geändert");
   }
   return lines.length > 0 ? lines : ["Keine Wertänderung (nur Notizen)."];
 }
@@ -194,18 +264,47 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
   const [maxStorage, setMaxStorage] = useState(
     String(base.max_storage_duration_days),
   );
-  const [malts, setMalts] = useState<{ name: string; kg: string }[]>(
-    (base.malts ?? []).map((m) => ({ name: m.name, kg: String(m.kg) })),
+  const [malts, setMalts] = useState<
+    { name: string; kg: string; maelzerei: string }[]
+  >(
+    (base.malts ?? []).map((m) => ({
+      name: m.name,
+      kg: String(m.kg),
+      maelzerei: m.maelzerei ?? "",
+    })),
   );
   const [gaben, setGaben] = useState<
-    { name: string; gramm: string; min: string }[]
+    { name: string; gramm: string; zeitpunkt: string; alpha: string }[]
   >(
     (base.hop_gaben ?? []).map((g) => ({
       name: g.name,
       gramm: String(g.gramm),
-      min: String(g.kochzeit_min),
+      zeitpunkt: g.zeitpunkt,
+      alpha: g.alpha_prozent != null ? String(g.alpha_prozent) : "",
     })),
   );
+  const [rasten, setRasten] = useState<
+    { schritt: string; temp: string; dauer: string }[]
+  >(
+    (base.maischplan ?? []).map((r) => ({
+      schritt: r.schritt,
+      temp: r.temp_c != null ? String(r.temp_c) : "",
+      dauer: r.dauer_min != null ? String(r.dauer_min) : "",
+    })),
+  );
+  const [hauptguss, setHauptguss] = useState(
+    base.wasser?.hauptguss_hl != null ? String(base.wasser.hauptguss_hl) : "",
+  );
+  const [nachguesse, setNachguesse] = useState<string[]>(
+    (base.wasser?.nachguss_hl ?? []).map(String),
+  );
+  const [kochzeit, setKochzeit] = useState(
+    base.kochzeit_min != null ? String(base.kochzeit_min) : "",
+  );
+  const [karbo, setKarbo] = useState(
+    base.karbonisierung_g_l != null ? String(base.karbonisierung_g_l) : "",
+  );
+  const [anstell, setAnstell] = useState(base.anstellhinweis ?? "");
   const [yeast, setYeast] = useState(base.yeast ?? "");
   const [og, setOg] = useState(
     base.original_gravity_plato != null ? String(base.original_gravity_plato) : "",
@@ -221,7 +320,13 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
 
   const maltsValid = malts.every((m) => m.name.trim() && parseFloat(m.kg) > 0);
   const gabenValid = gaben.every(
-    (g) => g.name.trim() && parseFloat(g.gramm) > 0 && parseFloat(g.min) >= 0,
+    (g) => g.name.trim() && parseFloat(g.gramm) > 0 && g.zeitpunkt.trim(),
+  );
+  const rastenValid = rasten.every(
+    (r) =>
+      r.schritt.trim() &&
+      (r.temp === "" || parseFloat(r.temp) > 0) &&
+      (r.dauer === "" || parseFloat(r.dauer) > 0),
   );
   const canSubmit =
     name.trim() !== "" &&
@@ -230,7 +335,8 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
     parseFloat(maxStorage) > 0 &&
     (!openRequired || parseFloat(openDays) > 0) &&
     maltsValid &&
-    gabenValid;
+    gabenValid &&
+    rastenValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,12 +347,22 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
       const maltsOut: Malz[] = malts.map((m) => ({
         name: m.name.trim(),
         kg: parseFloat(m.kg),
+        maelzerei: m.maelzerei.trim() || null,
       }));
       const gabenOut: Hopfengabe[] = gaben.map((g) => ({
         name: g.name.trim(),
         gramm: parseFloat(g.gramm),
-        kochzeit_min: parseFloat(g.min),
+        zeitpunkt: g.zeitpunkt.trim(),
+        alpha_prozent: g.alpha ? parseFloat(g.alpha) : null,
       }));
+      const rastenOut: Maischrast[] = rasten.map((r) => ({
+        schritt: r.schritt.trim(),
+        temp_c: r.temp ? parseFloat(r.temp) : null,
+        dauer_min: r.dauer ? parseFloat(r.dauer) : null,
+      }));
+      const nachgussOut = nachguesse
+        .map((n) => parseFloat(n))
+        .filter((n) => n > 0);
       await api.createRecipe({
         beer_style: base.beer_style,
         name: name.trim(),
@@ -259,10 +375,21 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
         max_storage_duration_days: parseFloat(maxStorage),
         malts: maltsOut,
         hop_gaben: gabenOut,
+        maischplan: rastenOut,
+        wasser:
+          hauptguss || nachgussOut.length > 0
+            ? {
+                hauptguss_hl: hauptguss ? parseFloat(hauptguss) : null,
+                nachguss_hl: nachgussOut,
+              }
+            : null,
         yeast: yeast.trim() || null,
         original_gravity_plato: og ? parseFloat(og) : null,
         ibu: ibu ? parseFloat(ibu) : null,
         color_ebc: ebc ? parseFloat(ebc) : null,
+        kochzeit_min: kochzeit ? parseFloat(kochzeit) : null,
+        karbonisierung_g_l: karbo ? parseFloat(karbo) : null,
+        anstellhinweis: anstell.trim() || null,
         notes: notes.trim() || null,
         created_by: createdBy.trim() || null,
       });
@@ -379,6 +506,18 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
                 )
               }
             />
+            <input
+              aria-label={`Malz ${i + 1} Mälzerei`}
+              placeholder="Mälzerei"
+              value={m.maelzerei}
+              onChange={(e) =>
+                setMalts((prev) =>
+                  prev.map((x, j) =>
+                    j === i ? { ...x, maelzerei: e.target.value } : x,
+                  ),
+                )
+              }
+            />
             <button
               type="button"
               className="secondary"
@@ -391,12 +530,132 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
         <button
           type="button"
           className="secondary"
-          onClick={() => setMalts((prev) => [...prev, { name: "", kg: "" }])}
+          onClick={() =>
+            setMalts((prev) => [...prev, { name: "", kg: "", maelzerei: "" }])
+          }
         >
           + Malz
         </button>
 
-        <h3>Hopfengaben (g pro Sud, Kochzeit in Minuten)</h3>
+        <h3>Wasser (hl)</h3>
+        <label>
+          Hauptguss (hl)
+          <input
+            type="number"
+            min="0.5"
+            step="0.5"
+            value={hauptguss}
+            onChange={(e) => setHauptguss(e.target.value)}
+          />
+        </label>
+        {nachguesse.map((n, i) => (
+          <div className="allocation-row" key={i}>
+            <input
+              aria-label={`Nachguss ${i + 1} (hl)`}
+              type="number"
+              min="0.5"
+              step="0.5"
+              placeholder={`Nachguss ${i + 1} (hl)`}
+              value={n}
+              onChange={(e) =>
+                setNachguesse((prev) =>
+                  prev.map((x, j) => (j === i ? e.target.value : x)),
+                )
+              }
+            />
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                setNachguesse((prev) => prev.filter((_, j) => j !== i))
+              }
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setNachguesse((prev) => [...prev, ""])}
+        >
+          + Nachguss
+        </button>
+
+        <h3>Maischplan</h3>
+        {rasten.map((r, i) => (
+          <div className="allocation-row" key={i}>
+            <input
+              aria-label={`Rast ${i + 1} Schritt`}
+              placeholder="Einmaischen / Rast / Abmaischen"
+              value={r.schritt}
+              onChange={(e) =>
+                setRasten((prev) =>
+                  prev.map((x, j) =>
+                    j === i ? { ...x, schritt: e.target.value } : x,
+                  ),
+                )
+              }
+            />
+            <input
+              aria-label={`Rast ${i + 1} °C`}
+              type="number"
+              min="1"
+              step="0.5"
+              placeholder="°C"
+              value={r.temp}
+              onChange={(e) =>
+                setRasten((prev) =>
+                  prev.map((x, j) => (j === i ? { ...x, temp: e.target.value } : x)),
+                )
+              }
+            />
+            <input
+              aria-label={`Rast ${i + 1} min`}
+              type="number"
+              min="1"
+              step="1"
+              placeholder="min"
+              value={r.dauer}
+              onChange={(e) =>
+                setRasten((prev) =>
+                  prev.map((x, j) =>
+                    j === i ? { ...x, dauer: e.target.value } : x,
+                  ),
+                )
+              }
+            />
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setRasten((prev) => prev.filter((_, j) => j !== i))}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="secondary"
+          onClick={() =>
+            setRasten((prev) => [...prev, { schritt: "", temp: "", dauer: "" }])
+          }
+        >
+          + Rast
+        </button>
+
+        <label>
+          Kochzeit (min)
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={kochzeit}
+            onChange={(e) => setKochzeit(e.target.value)}
+          />
+        </label>
+
+        <h3>Hopfengaben (g pro Sud)</h3>
         {gaben.map((g, i) => (
           <div className="allocation-row" key={i}>
             <input
@@ -423,15 +682,27 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
               }
             />
             <input
-              aria-label={`Hopfen ${i + 1} min`}
+              aria-label={`Hopfen ${i + 1} % α`}
               type="number"
               min="0"
-              step="1"
-              placeholder="min"
-              value={g.min}
+              step="0.1"
+              placeholder="% α"
+              value={g.alpha}
               onChange={(e) =>
                 setGaben((prev) =>
-                  prev.map((x, j) => (j === i ? { ...x, min: e.target.value } : x)),
+                  prev.map((x, j) => (j === i ? { ...x, alpha: e.target.value } : x)),
+                )
+              }
+            />
+            <input
+              aria-label={`Hopfen ${i + 1} Zeitpunkt`}
+              placeholder="Kochbeginn / nach 55 min / Whirlpool"
+              value={g.zeitpunkt}
+              onChange={(e) =>
+                setGaben((prev) =>
+                  prev.map((x, j) =>
+                    j === i ? { ...x, zeitpunkt: e.target.value } : x,
+                  ),
                 )
               }
             />
@@ -448,7 +719,10 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
           type="button"
           className="secondary"
           onClick={() =>
-            setGaben((prev) => [...prev, { name: "", gramm: "", min: "" }])
+            setGaben((prev) => [
+              ...prev,
+              { name: "", gramm: "", zeitpunkt: "", alpha: "" },
+            ])
           }
         >
           + Hopfengabe
@@ -460,7 +734,26 @@ function RecipeVersionDialog({ base, onClose, onDone }: RecipeVersionDialogProps
             value={yeast}
             onChange={(e) => setYeast(e.target.value)}
             maxLength={128}
-            placeholder="z. B. W-34/70"
+            placeholder="z. B. 3470 Wagner"
+          />
+        </label>
+        <label>
+          Anstellen / Gärführung
+          <input
+            value={anstell}
+            onChange={(e) => setAnstell(e.target.value)}
+            maxLength={256}
+            placeholder="z. B. bei 9,5 Grad anstellen"
+          />
+        </label>
+        <label>
+          Karbonisierung (g/l)
+          <input
+            type="number"
+            min="0.5"
+            step="0.1"
+            value={karbo}
+            onChange={(e) => setKarbo(e.target.value)}
           />
         </label>
         <label>

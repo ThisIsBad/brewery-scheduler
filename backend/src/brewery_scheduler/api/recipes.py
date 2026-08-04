@@ -4,17 +4,35 @@ from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..models import Recipe
-from ..schemas import RecipeCreateIn, RecipeOut
+from ..schemas import (
+    HopfengabeIn,
+    MaischrastIn,
+    MalzIn,
+    RecipeCreateIn,
+    RecipeOut,
+    WasserIn,
+)
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 
 
 def _recipe_out(recipe: Recipe) -> RecipeOut:
-    """Serialize a recipe incl. the JSONB-backed grain bill and hop
-    additions (ingredients["malts"] / hop_additions["gaben"])."""
+    """Serialize a recipe incl. the JSONB-backed brew sheet: grain bill
+    (ingredients["malts"]), hop additions (hop_additions["gaben"]), mash
+    steps (mash_schedule["rasten"]) and brewing water (wasser)."""
     out = RecipeOut.model_validate(recipe)
-    out.malts = (recipe.ingredients or {}).get("malts", [])
-    out.hop_gaben = (recipe.hop_additions or {}).get("gaben", [])
+    out.malts = [
+        MalzIn.model_validate(m) for m in (recipe.ingredients or {}).get("malts", [])
+    ]
+    out.hop_gaben = [
+        HopfengabeIn.model_validate(g)
+        for g in (recipe.hop_additions or {}).get("gaben", [])
+    ]
+    out.maischplan = [
+        MaischrastIn.model_validate(r)
+        for r in (recipe.mash_schedule or {}).get("rasten", [])
+    ]
+    out.wasser = WasserIn.model_validate(recipe.wasser) if recipe.wasser else None
     return out
 
 
@@ -78,10 +96,15 @@ def create_recipe_version(
         created_by=payload.created_by,
         ingredients={"malts": [m.model_dump() for m in payload.malts]},
         hop_additions={"gaben": [g.model_dump() for g in payload.hop_gaben]},
+        mash_schedule={"rasten": [r.model_dump() for r in payload.maischplan]},
+        wasser=payload.wasser.model_dump() if payload.wasser else None,
         yeast=payload.yeast,
         original_gravity_plato=payload.original_gravity_plato,
         ibu=payload.ibu,
         color_ebc=payload.color_ebc,
+        kochzeit_min=payload.kochzeit_min,
+        karbonisierung_g_l=payload.karbonisierung_g_l,
+        anstellhinweis=payload.anstellhinweis,
     )
     session.add(recipe)
     session.commit()

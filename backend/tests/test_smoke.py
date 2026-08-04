@@ -1831,8 +1831,10 @@ def test_recipe_version_collision_hits_db_constraint(client, session) -> None:
 
 
 def test_recipe_ingredients_roundtrip(client) -> None:
-    # Brew sheet (2026-08-04): malts + hop additions (boil minutes) + yeast
-    # + target values persist through create and list.
+    # Brew sheet aligned with Bierrezepte.xlsx (2026-08-04): malts with
+    # maltster, hop additions with free-text timing and alpha acid, mash
+    # steps, brewing water, boil time, carbonation and pitching notes all
+    # persist through create and list.
     r = client.post(
         "/api/recipes",
         json={
@@ -1842,31 +1844,79 @@ def test_recipe_ingredients_roundtrip(client) -> None:
             "storage_duration_days": 21,
             "max_storage_duration_days": 60,
             "malts": [
-                {"name": "Pilsner Malz", "kg": 250},
+                {"name": "Pilsner Malz", "kg": 250, "maelzerei": "BM"},
                 {"name": "Münchner Malz", "kg": 60},
             ],
             "hop_gaben": [
-                {"name": "Perle", "gramm": 1800, "kochzeit_min": 60},
-                {"name": "Tettnanger", "gramm": 600, "kochzeit_min": 10},
+                {
+                    "name": "Perle",
+                    "gramm": 1800,
+                    "zeitpunkt": "Kochbeginn",
+                    "alpha_prozent": 6.5,
+                },
+                {"name": "Tettnanger", "gramm": 600, "zeitpunkt": "nach 50 min"},
             ],
-            "yeast": "W-34/70",
+            "maischplan": [
+                {"schritt": "Einmaischen", "temp_c": 61.5, "dauer_min": 10},
+                {"schritt": "Rast", "temp_c": 62.5, "dauer_min": 45},
+                {"schritt": "Rast", "temp_c": 72, "dauer_min": 20},
+                {"schritt": "Abmaischen", "temp_c": 78, "dauer_min": 10},
+            ],
+            "wasser": {"hauptguss_hl": 11, "nachguss_hl": [5.5, 3]},
+            "yeast": "3470 Wagner",
             "original_gravity_plato": 12.5,
             "ibu": 24,
             "color_ebc": 11,
+            "kochzeit_min": 70,
+            "karbonisierung_g_l": 4.5,
+            "anstellhinweis": "bei 9,5 Grad anstellen",
         },
     )
     assert r.status_code == 201, r.text
     body = r.json()
-    assert body["malts"][0] == {"name": "Pilsner Malz", "kg": 250}
-    assert body["hop_gaben"][1]["kochzeit_min"] == 10
-    assert body["yeast"] == "W-34/70"
+    assert body["malts"][0] == {
+        "name": "Pilsner Malz",
+        "kg": 250,
+        "maelzerei": "BM",
+    }
+    assert body["hop_gaben"][0]["alpha_prozent"] == 6.5
+    assert body["hop_gaben"][1]["zeitpunkt"] == "nach 50 min"
+    assert body["yeast"] == "3470 Wagner"
     assert body["original_gravity_plato"] == 12.5
 
     listed = client.get("/api/recipes").json()
     fresh = next(x for x in listed if x["id"] == body["id"])
     assert len(fresh["malts"]) == 2
     assert len(fresh["hop_gaben"]) == 2
+    assert [r["schritt"] for r in fresh["maischplan"]] == [
+        "Einmaischen",
+        "Rast",
+        "Rast",
+        "Abmaischen",
+    ]
+    assert fresh["maischplan"][1]["temp_c"] == 62.5
+    assert fresh["wasser"] == {"hauptguss_hl": 11, "nachguss_hl": [5.5, 3]}
+    assert fresh["kochzeit_min"] == 70
+    assert fresh["karbonisierung_g_l"] == 4.5
+    assert fresh["anstellhinweis"] == "bei 9,5 Grad anstellen"
     assert fresh["ibu"] == 24
+
+
+def test_recipe_hop_timing_requires_text(client) -> None:
+    # The timing is free text as on the paper sheet — an empty one is a
+    # data-entry slip, not a valid Gabe.
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "special",
+            "name": "Gabe ohne Zeitpunkt",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 21,
+            "max_storage_duration_days": 60,
+            "hop_gaben": [{"name": "Perle", "gramm": 500, "zeitpunkt": ""}],
+        },
+    )
+    assert r.status_code == 422
 
 
 def test_recipe_ingredients_validation(client) -> None:

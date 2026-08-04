@@ -57,10 +57,15 @@ export interface Recipe {
   notes: string | null;
   malts?: Malz[];
   hop_gaben?: Hopfengabe[];
+  maischplan?: Maischrast[];
+  wasser?: Wasser | null;
   yeast?: string | null;
   original_gravity_plato?: number | null;
   ibu?: number | null;
   color_ebc?: number | null;
+  kochzeit_min?: number | null;
+  karbonisierung_g_l?: number | null;
+  anstellhinweis?: string | null;
 }
 
 export interface Occupancy {
@@ -154,13 +159,29 @@ export type WithdrawalKind = "keg_fill" | "ausschank";
 export interface Malz {
   name: string;
   kg: number;
+  /** Mälzerei (BM, Weyermann, Steinbach …) wie auf dem Brauzettel. */
+  maelzerei?: string | null;
 }
 
 export interface Hopfengabe {
   name: string;
   gramm: number;
-  /** Kochzeit in Minuten (60 = 60 min vor Kochende, 0 = Whirlpool). */
-  kochzeit_min: number;
+  /** Freitext wie auf dem Brauzettel: „Kochbeginn", „nach 55 min",
+   * „Vorderwürze", „Whirlpool", „Kalthopfung Tag 2". */
+  zeitpunkt: string;
+  alpha_prozent?: number | null;
+}
+
+export interface Maischrast {
+  /** Einmaischen, Rast, Abmaischen … */
+  schritt: string;
+  temp_c?: number | null;
+  dauer_min?: number | null;
+}
+
+export interface Wasser {
+  hauptguss_hl?: number | null;
+  nachguss_hl?: number[];
 }
 
 export interface RecipeCreateIn {
@@ -175,10 +196,15 @@ export interface RecipeCreateIn {
   created_by?: string | null;
   malts?: Malz[];
   hop_gaben?: Hopfengabe[];
+  maischplan?: Maischrast[];
+  wasser?: Wasser | null;
   yeast?: string | null;
   original_gravity_plato?: number | null;
   ibu?: number | null;
   color_ebc?: number | null;
+  kochzeit_min?: number | null;
+  karbonisierung_g_l?: number | null;
+  anstellhinweis?: string | null;
 }
 
 export interface RecipeOverridesIn {
