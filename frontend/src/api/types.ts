@@ -55,6 +55,12 @@ export interface Recipe {
   created_at: string;
   created_by: string | null;
   notes: string | null;
+  malts?: Malz[];
+  hop_gaben?: Hopfengabe[];
+  yeast?: string | null;
+  original_gravity_plato?: number | null;
+  ibu?: number | null;
+  color_ebc?: number | null;
 }
 
 export interface Occupancy {
@@ -145,6 +151,18 @@ export interface SudCreateIn {
 
 export type WithdrawalKind = "keg_fill" | "ausschank";
 
+export interface Malz {
+  name: string;
+  kg: number;
+}
+
+export interface Hopfengabe {
+  name: string;
+  gramm: number;
+  /** Kochzeit in Minuten (60 = 60 min vor Kochende, 0 = Whirlpool). */
+  kochzeit_min: number;
+}
+
 export interface RecipeCreateIn {
   beer_style: BeerStyle;
   name: string;
@@ -155,6 +173,12 @@ export interface RecipeCreateIn {
   max_storage_duration_days: number;
   notes?: string | null;
   created_by?: string | null;
+  malts?: Malz[];
+  hop_gaben?: Hopfengabe[];
+  yeast?: string | null;
+  original_gravity_plato?: number | null;
+  ibu?: number | null;
+  color_ebc?: number | null;
 }
 
 export interface RecipeOverridesIn {

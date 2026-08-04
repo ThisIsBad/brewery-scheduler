@@ -70,6 +70,22 @@ class TankUpdateIn(BaseModel):
     locked: bool | None = None
 
 
+class MalzIn(BaseModel):
+    """One grain-bill line; kg per 15-hl standard Sud (decided 2026-08-04)."""
+
+    name: str = Field(min_length=1, max_length=128)
+    kg: float = Field(gt=0)
+
+
+class HopfengabeIn(BaseModel):
+    """One hop addition; grams per 15-hl Sud, timing as boil minutes
+    (60 = at 60 min before end of boil, 0 = flame-out/whirlpool)."""
+
+    name: str = Field(min_length=1, max_length=128)
+    gramm: float = Field(gt=0)
+    kochzeit_min: float = Field(ge=0)
+
+
 class RecipeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -85,6 +101,12 @@ class RecipeOut(BaseModel):
     created_at: datetime
     created_by: str | None
     notes: str | None
+    malts: list[MalzIn] = []
+    hop_gaben: list[HopfengabeIn] = []
+    yeast: str | None = None
+    original_gravity_plato: float | None = None
+    ibu: float | None = None
+    color_ebc: float | None = None
 
 
 class RecipeCreateIn(BaseModel):
@@ -104,6 +126,12 @@ class RecipeCreateIn(BaseModel):
     max_storage_duration_days: float = Field(gt=0)
     notes: str | None = Field(default=None, max_length=10_000)
     created_by: str | None = Field(default=None, max_length=128)
+    malts: list[MalzIn] = []
+    hop_gaben: list[HopfengabeIn] = []
+    yeast: str | None = Field(default=None, max_length=128)
+    original_gravity_plato: float | None = Field(default=None, gt=0)
+    ibu: float | None = Field(default=None, ge=0)
+    color_ebc: float | None = Field(default=None, ge=0)
 
 
 class RecipeOverridesIn(BaseModel):
