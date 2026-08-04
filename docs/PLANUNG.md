@@ -1,4 +1,26 @@
-# Planungsdokument — Stand 2026-08-04, Fragen an Stefan
+# Planungsdokument — Stand 2026-08-04 (nach Fragerunde mit Stefan)
+
+**Entscheidungen aus der Fragerunde (2026-08-04):**
+
+- Echte Daten erst **nächste Saison**; große Planung **im Dezember**.
+- Hosting-Tendenz: **Hetzner** (kleiner Cloud-Server + Storage Box für
+  nächtliche pg_dump-Backups, zusammen ~€8/Monat) statt Azure; die App
+  bleibt **PWA** (keine native App). Final im Dezember.
+- **Nächste Bauschritte in dieser Reihenfolge:** (1) Rezeptfelder — Malz,
+  Hopfen (Gaben in Minuten), Hefe, Brauwerte (Stammwürze/IBU/Farbe) als
+  Zielwerte, Mengen pro Standard-Sud 15 hl, Berechnungen später;
+  (2) Fassabfüllung mit Stückzahlen je Größe (10/20/30/50 l), hl-Menge
+  wird errechnet; (3) Blending-Modell (unten).
+- **Blending/Sud-Ende (Vorschlag, noch nicht bestätigt):** Ausschank-
+  Buchungen buchen auf den Tank und werden proportional auf die
+  enthaltenen Sud-Anteile verteilt; ein Sud ist abgeschlossen, wenn sein
+  Anteil überall 0 ist (auto-Archiv, Restschwund manuell ausbuchbar).
+- **Biersteuer-Export**: vertagt (mehrere zu extrahierende Werte) →
+  Dezember-Planung.
+- **Zeitplan-Bedienung**: bleibt unverändert, bis Stefan am Handy
+  getestet hat.
+
+---
 
 Erstellt am Ende der zweiten Nachtschicht. Die ROADMAP-Phasen 1–3 sind
 umgesetzt (Details unten); dieses Dokument sammelt, **was noch fehlt** und
