@@ -187,6 +187,11 @@ export interface RecipeOverridesIn {
   open_fermentation_duration_days?: number;
 }
 
+export interface KegCount {
+  size_l: number;
+  count: number;
+}
+
 export interface Withdrawal {
   id: string;
   sud_id: string;
@@ -194,12 +199,15 @@ export interface Withdrawal {
   volume_hl: number;
   at: string;
   kind: WithdrawalKind;
+  keg_counts?: KegCount[] | null;
   notes: string | null;
 }
 
 export interface WithdrawIn {
   tank_id: string;
-  volume_hl: number;
+  /** Direct volume — or omit it and send keg counts (keg fills only). */
+  volume_hl?: number;
+  kegs?: KegCount[];
   at: string;
   kind?: WithdrawalKind;
   notes?: string | null;
