@@ -46,8 +46,11 @@ export function NewSudDialog({
   const [error, setError] = useState<string | null>(null);
 
   // New Sude always use the latest recipe version per style (issue #4);
-  // older versions stay linked to their existing Sude only.
-  const selectableRecipes = latestRecipes(recipes) as Recipe[];
+  // older versions stay linked to their existing Sude only. Archived
+  // beers („Frühere Biere") are not offered.
+  const selectableRecipes = latestRecipes(
+    recipes.filter((r) => r.active !== false),
+  ) as Recipe[];
 
   // Derive whether the chosen recipe needs the open fermentation tank.
   // Wheat must start in fermentation_open; everything else in

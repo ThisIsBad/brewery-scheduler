@@ -10,6 +10,7 @@ from ..schemas import (
     MalzIn,
     RecipeCreateIn,
     RecipeOut,
+    RecipeStyleActiveIn,
     WasserIn,
 )
 
@@ -83,9 +84,17 @@ def create_recipe_version(
         )
         or 0
     ) + 1
+    # A new version keeps the style's archive state; a brand-new beer
+    # (version 1 of an unseen style) starts active.
+    style_active = session.scalar(
+        select(Recipe.active)
+        .where(Recipe.beer_style == payload.beer_style)
+        .limit(1)
+    )
     recipe = Recipe(
         beer_style=payload.beer_style,
         version=next_version,
+        active=style_active if style_active is not None else True,
         name=payload.name,
         fermentation_duration_days=payload.fermentation_duration_days,
         open_fermentation_required=payload.open_fermentation_required,
@@ -110,3 +119,27 @@ def create_recipe_version(
     session.commit()
     session.refresh(recipe)
     return _recipe_out(recipe)
+
+
+@router.post("/style-active", response_model=list[RecipeOut])
+def set_style_active(
+    payload: RecipeStyleActiveIn, session: Session = Depends(get_session)
+) -> list[RecipeOut]:
+    """Archive or reactivate a beer (all versions of the style).
+
+    Mirrors the Excel's „aktuelle" vs. „frühere Biere": archived beers
+    keep their history and their Sude, but the new-Sud flow no longer
+    offers them.
+    """
+    recipes = list(
+        session.scalars(select(Recipe).where(Recipe.beer_style == payload.beer_style))
+    )
+    if not recipes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No recipe with style {payload.beer_style!r}.",
+        )
+    for recipe in recipes:
+        recipe.active = payload.active
+    session.commit()
+    return [_recipe_out(r) for r in recipes]

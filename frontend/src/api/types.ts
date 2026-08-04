@@ -21,7 +21,9 @@ export type TankStage =
   | "storage"
   | "ausschank";
 
-export type BeerStyle = "kellerbier" | "wheat" | "festbier" | "special";
+/** Free label since migration 0013 — the brewery names its beers
+ * (Keller Hell, Rauchbier Waltraut, Collab Widder …). */
+export type BeerStyle = string;
 
 export type SudStatus =
   | "planned"
@@ -47,6 +49,8 @@ export interface Recipe {
   beer_style: BeerStyle;
   version: number;
   name: string;
+  /** false = „Frühere Biere": bleibt archiviert, nimmt keine neuen Sude. */
+  active?: boolean;
   fermentation_duration_days: number;
   open_fermentation_required: boolean;
   open_fermentation_duration_days: number | null;
@@ -205,6 +209,11 @@ export interface RecipeCreateIn {
   kochzeit_min?: number | null;
   karbonisierung_g_l?: number | null;
   anstellhinweis?: string | null;
+}
+
+export interface RecipeStyleActiveIn {
+  beer_style: string;
+  active: boolean;
 }
 
 export interface RecipeOverridesIn {

@@ -4,6 +4,7 @@ import type {
   LocationUpdateIn,
   Recipe,
   RecipeCreateIn,
+  RecipeStyleActiveIn,
   ScheduleIn,
   Sud,
   SudCreateIn,
@@ -52,6 +53,11 @@ export const api = {
     request<void>(`/api/tanks/${tankId}`, { method: "DELETE" }),
   createRecipe: (payload: RecipeCreateIn) =>
     request<Recipe>("/api/recipes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  setRecipeStyleActive: (payload: RecipeStyleActiveIn) =>
+    request<Recipe[]>("/api/recipes/style-active", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

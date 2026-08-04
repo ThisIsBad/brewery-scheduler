@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .models import BeerStyle, SudStatus, TankStage, WithdrawalKind
+from .models import SudStatus, TankStage, WithdrawalKind
 
 
 class LocationOut(BaseModel):
@@ -112,9 +112,10 @@ class RecipeOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    beer_style: BeerStyle
+    beer_style: str
     version: int
     name: str
+    active: bool = True
     fermentation_duration_days: float
     open_fermentation_required: bool
     open_fermentation_duration_days: float | None
@@ -144,7 +145,7 @@ class RecipeCreateIn(BaseModel):
     Sude keep their original recipe link (decided 2026-08, issue #4).
     """
 
-    beer_style: BeerStyle
+    beer_style: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)
     fermentation_duration_days: float = Field(gt=0)
     open_fermentation_required: bool = False
@@ -164,6 +165,14 @@ class RecipeCreateIn(BaseModel):
     kochzeit_min: float | None = Field(default=None, gt=0)
     karbonisierung_g_l: float | None = Field(default=None, gt=0)
     anstellhinweis: str | None = Field(default=None, max_length=256)
+
+
+class RecipeStyleActiveIn(BaseModel):
+    """Archive or reactivate a beer — applies to all versions of the
+    style. Archived beers move to „Frühere Biere" and take no new Sude."""
+
+    beer_style: str = Field(min_length=1, max_length=64)
+    active: bool
 
 
 class RecipeOverridesIn(BaseModel):
