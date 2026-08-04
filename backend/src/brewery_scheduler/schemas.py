@@ -71,19 +71,41 @@ class TankUpdateIn(BaseModel):
 
 
 class MalzIn(BaseModel):
-    """One grain-bill line; kg per 15-hl standard Sud (decided 2026-08-04)."""
+    """One grain-bill line; kg per 15-hl standard Sud (decided 2026-08-04).
+    The maltster (BM, Weyermann, Steinbach …) rides along as on the paper
+    brew sheet."""
 
     name: str = Field(min_length=1, max_length=128)
     kg: float = Field(gt=0)
+    maelzerei: str | None = Field(default=None, max_length=128)
 
 
 class HopfengabeIn(BaseModel):
-    """One hop addition; grams per 15-hl Sud, timing as boil minutes
-    (60 = at 60 min before end of boil, 0 = flame-out/whirlpool)."""
+    """One hop addition; grams per 15-hl Sud. Timing is free text exactly
+    as on the brew sheet — „Kochbeginn", „nach 55 min", „Vorderwürze",
+    „Whirlpool", „Kalthopfung 2 Tage nach Gärbeginn" (Bierrezepte.xlsx,
+    2026-08-04). Alpha acid rides along for bitterness math later."""
 
     name: str = Field(min_length=1, max_length=128)
     gramm: float = Field(gt=0)
-    kochzeit_min: float = Field(ge=0)
+    zeitpunkt: str = Field(min_length=1, max_length=128)
+    alpha_prozent: float | None = Field(default=None, ge=0)
+
+
+class MaischrastIn(BaseModel):
+    """One mash step (Einmaischen, Rast, Abmaischen …): target temperature
+    and how long it is held. Heating ramps carry no duration."""
+
+    schritt: str = Field(min_length=1, max_length=64)
+    temp_c: float | None = Field(default=None, gt=0)
+    dauer_min: float | None = Field(default=None, gt=0)
+
+
+class WasserIn(BaseModel):
+    """Brewing water in hl: the Hauptguss plus the Nachgüsse in order."""
+
+    hauptguss_hl: float | None = Field(default=None, gt=0)
+    nachguss_hl: list[float] = []
 
 
 class RecipeOut(BaseModel):
@@ -103,10 +125,15 @@ class RecipeOut(BaseModel):
     notes: str | None
     malts: list[MalzIn] = []
     hop_gaben: list[HopfengabeIn] = []
+    maischplan: list[MaischrastIn] = []
+    wasser: WasserIn | None = None
     yeast: str | None = None
     original_gravity_plato: float | None = None
     ibu: float | None = None
     color_ebc: float | None = None
+    kochzeit_min: float | None = None
+    karbonisierung_g_l: float | None = None
+    anstellhinweis: str | None = None
 
 
 class RecipeCreateIn(BaseModel):
@@ -128,10 +155,15 @@ class RecipeCreateIn(BaseModel):
     created_by: str | None = Field(default=None, max_length=128)
     malts: list[MalzIn] = []
     hop_gaben: list[HopfengabeIn] = []
+    maischplan: list[MaischrastIn] = []
+    wasser: WasserIn | None = None
     yeast: str | None = Field(default=None, max_length=128)
     original_gravity_plato: float | None = Field(default=None, gt=0)
     ibu: float | None = Field(default=None, ge=0)
     color_ebc: float | None = Field(default=None, ge=0)
+    kochzeit_min: float | None = Field(default=None, gt=0)
+    karbonisierung_g_l: float | None = Field(default=None, gt=0)
+    anstellhinweis: str | None = Field(default=None, max_length=256)
 
 
 class RecipeOverridesIn(BaseModel):
