@@ -1688,3 +1688,86 @@ def test_recipe_ingredients_validation(client) -> None:
         },
     )
     assert r.status_code == 422
+
+
+def test_keg_counts_compute_volume_and_persist(client, session) -> None:
+    # 2026-08-04: keg fills entered as counts per size; hl computed.
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)  # 15 hl in S-30-1
+    tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    r = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "at": now.isoformat(),
+            "kind": "keg_fill",
+            "kegs": [
+                {"size_l": 50, "count": 4},
+                {"size_l": 30, "count": 2},
+            ],
+        },
+    )
+    assert r.status_code == 200, r.text
+    w = r.json()["withdrawals"][-1]
+    assert w["volume_hl"] == 2.6  # (4*50 + 2*30) / 100
+    assert w["keg_counts"] == [
+        {"size_l": 50, "count": 4},
+        {"size_l": 30, "count": 2},
+    ]
+
+
+def test_keg_counts_validation(client, session) -> None:
+    lead = _seeded_lead(session, BeerStyle.KELLERBIER)
+    tank = session.query(Tank).filter(Tank.name == "S-30-1").one()
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    # Kegs on a pour are rejected …
+    r1 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "at": now.isoformat(),
+            "kind": "ausschank",
+            "kegs": [{"size_l": 50, "count": 1}],
+        },
+    )
+    assert r1.status_code == 422, r1.text
+    assert "Fassabfüllungen" in r1.json()["detail"]
+
+    # … as is giving both a volume and counts …
+    r2 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "at": now.isoformat(),
+            "kind": "keg_fill",
+            "volume_hl": 2,
+            "kegs": [{"size_l": 50, "count": 1}],
+        },
+    )
+    assert r2.status_code == 422, r2.text
+    assert "nicht beides" in r2.json()["detail"]
+
+    # … and neither.
+    r3 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "at": now.isoformat(),
+            "kind": "keg_fill",
+        },
+    )
+    assert r3.status_code == 422, r3.text
+
+    # Overdraw via kegs hits the remaining-volume rule (15 hl remain).
+    r4 = client.post(
+        f"/api/sude/{lead.id}/withdraw",
+        json={
+            "tank_id": str(tank.id),
+            "at": now.isoformat(),
+            "kind": "keg_fill",
+            "kegs": [{"size_l": 50, "count": 40}],
+        },
+    )
+    assert r4.status_code == 409, r4.text

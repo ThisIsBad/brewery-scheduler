@@ -14,6 +14,8 @@ interface WithdrawDialogProps {
   onDone: (updated: Sud) => void;
 }
 
+const KEG_SIZES = [10, 20, 30, 50];
+
 const KIND_TITLE: Record<WithdrawalKind, string> = {
   keg_fill: "Fass abfüllen",
   ausschank: "Ausschank eintragen",
@@ -36,12 +38,21 @@ export function WithdrawDialog({
   const remaining = remainingHl(sud, sude, occupancy);
   const tank = tanks.find((t) => t.id === occupancy.tank_id);
   const [volume, setVolume] = useState("");
+  // Keg fills are entered as counts per barrel size (2026-08-04); the hl
+  // volume is computed. Pours keep the direct hl field.
+  const [counts, setCounts] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parsed = parseFloat(volume) || 0;
-  const canSubmit = parsed > 0 && parsed <= remaining;
+  const isKegFill = kind === "keg_fill";
+  const kegs = KEG_SIZES.map((size) => ({
+    size_l: size,
+    count: parseInt(counts[size] || "0", 10) || 0,
+  })).filter((k) => k.count > 0);
+  const kegVolume = kegs.reduce((sum, k) => sum + (k.size_l * k.count) / 100, 0);
+  const parsed = isKegFill ? kegVolume : parseFloat(volume) || 0;
+  const canSubmit = parsed > 0 && parsed <= remaining + 1e-9;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +62,7 @@ export function WithdrawDialog({
     try {
       const updated = await api.withdraw(sud.id, {
         tank_id: occupancy.tank_id,
-        volume_hl: parsed,
+        ...(isKegFill ? { kegs } : { volume_hl: parsed }),
         at: new Date().toISOString(),
         kind,
         notes: notes || undefined,
@@ -73,18 +84,40 @@ export function WithdrawDialog({
           Aus {tank?.name ?? "?"} · noch {formatHl(remaining)} im Tank
         </p>
 
-        <label>
-          Menge (hl)
-          <input
-            type="number"
-            min="0.1"
-            max={remaining}
-            step="0.1"
-            value={volume}
-            onChange={(e) => setVolume(e.target.value)}
-            required
-          />
-        </label>
+        {isKegFill ? (
+          <>
+            {KEG_SIZES.map((size) => (
+              <label key={size}>
+                Fässer {size} l (Stück)
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={counts[size] ?? ""}
+                  onChange={(e) =>
+                    setCounts((prev) => ({ ...prev, [size]: e.target.value }))
+                  }
+                />
+              </label>
+            ))}
+            <p className={parsed > remaining + 1e-9 ? "error" : "muted"}>
+              Ergibt {formatHl(parsed)}
+            </p>
+          </>
+        ) : (
+          <label>
+            Menge (hl)
+            <input
+              type="number"
+              min="0.1"
+              max={remaining}
+              step="0.1"
+              value={volume}
+              onChange={(e) => setVolume(e.target.value)}
+              required
+            />
+          </label>
+        )}
 
         <label>
           Notiz (optional)

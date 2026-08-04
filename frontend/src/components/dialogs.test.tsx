@@ -260,7 +260,7 @@ describe("WithdrawDialog", () => {
         occupancy={storageOcc}
         tanks={[STORAGE_TANK]}
         sude={[lead]}
-        kind="keg_fill"
+        kind="ausschank"
         onClose={() => {}}
         onDone={() => {}}
       />,
@@ -268,16 +268,16 @@ describe("WithdrawDialog", () => {
 
     const input = screen.getByLabelText("Menge (hl)");
     fireEvent.change(input, { target: { value: "20" } });
-    expect(screen.getByRole("button", { name: "Abfüllen" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Eintragen" })).toBeDisabled();
 
     fireEvent.change(input, { target: { value: "5" } });
-    fireEvent.click(screen.getByRole("button", { name: "Abfüllen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eintragen" }));
 
     await waitFor(() => expect(mocked.withdraw).toHaveBeenCalledOnce());
     const [, payload] = mocked.withdraw.mock.calls[0];
     expect(payload.tank_id).toBe(STORAGE_TANK.id);
     expect(payload.volume_hl).toBe(5);
-    expect(payload.kind).toBe("keg_fill");
+    expect(payload.kind).toBe("ausschank");
     expect(typeof payload.at).toBe("string");
   });
 });
@@ -352,5 +352,76 @@ describe("ScheduleDialog (Rezept-Abweichungen)", () => {
       (new Date(occ.end_at).getTime() - new Date(occ.start_at).getTime()) /
       86_400_000;
     expect(days).toBeCloseTo(3, 5);
+  });
+});
+
+describe("WithdrawDialog (Fass-Stückzahlen)", () => {
+  it("rechnet Stückzahlen in hl um und schickt kegs statt volume_hl", async () => {
+    const lead = sud({ occupancies: [storageOcc] });
+    mocked.withdraw.mockResolvedValue(lead);
+    render(
+      <WithdrawDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK]}
+        sude={[lead]}
+        kind="keg_fill"
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Fässer 50 l (Stück)"), {
+      target: { value: "4" },
+    });
+    fireEvent.change(screen.getByLabelText("Fässer 30 l (Stück)"), {
+      target: { value: "2" },
+    });
+    expect(screen.getByText(/Ergibt 2.6 hl/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Abfüllen" }));
+    await waitFor(() => expect(mocked.withdraw).toHaveBeenCalledOnce());
+    const [, payload] = mocked.withdraw.mock.calls[0];
+    expect(payload.kegs).toEqual([
+      { size_l: 30, count: 2 },
+      { size_l: 50, count: 4 },
+    ]);
+    expect(payload.volume_hl).toBeUndefined();
+  });
+
+  it("sperrt bei Überziehung über die Restmenge", () => {
+    const lead = sud({ occupancies: [storageOcc] });  // 15 hl remain
+    render(
+      <WithdrawDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK]}
+        sude={[lead]}
+        kind="keg_fill"
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Fässer 50 l (Stück)"), {
+      target: { value: "40" },  // 20 hl > 15 hl
+    });
+    expect(screen.getByRole("button", { name: "Abfüllen" })).toBeDisabled();
+  });
+
+  it("Ausschank behält das direkte hl-Feld", () => {
+    const lead = sud({ occupancies: [storageOcc] });
+    render(
+      <WithdrawDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK]}
+        sude={[lead]}
+        kind="ausschank"
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText("Menge (hl)")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Fässer 50 l (Stück)")).toBeNull();
   });
 });

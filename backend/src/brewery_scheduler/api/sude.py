@@ -15,6 +15,7 @@ from ..models import (
     TankOccupancy,
     TankStage,
     Withdrawal,
+    WithdrawalKind,
 )
 from ..schemas import ScheduleIn, SudCreateIn, SudOut, TransferIn, WithdrawIn
 
@@ -490,6 +491,28 @@ def withdraw(
             ),
         )
 
+    # Keg fills arrive as counts per barrel size (2026-08-04); the volume
+    # is computed from them. Direct volumes stay for pours (Ausschank).
+    if payload.kegs:
+        if payload.kind != WithdrawalKind.KEG_FILL:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Fass-Stückzahlen gelten nur für Fassabfüllungen.",
+            )
+        if payload.volume_hl is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Entweder Menge (hl) oder Fass-Stückzahlen angeben — nicht beides.",
+            )
+        volume_hl = sum(k.size_l * k.count for k in payload.kegs) / 100.0
+    elif payload.volume_hl is not None:
+        volume_hl = payload.volume_hl
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Menge (hl) oder Fass-Stückzahlen angeben.",
+        )
+
     occupancy = next(
         (
             o
@@ -517,21 +540,22 @@ def withdraw(
         # Whole batch in one tank: everything withdrawn anywhere in its
         # lifetime is gone from it.
         _, remaining_hl = _batch_volumes(session, sud)
-    if payload.volume_hl > remaining_hl + 1e-9:
+    if volume_hl > remaining_hl + 1e-9:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
                 f"Only {remaining_hl:g} hl of this batch remain in the tank — "
-                f"cannot withdraw {payload.volume_hl:g} hl."
+                f"cannot withdraw {volume_hl:g} hl."
             ),
         )
 
     sud.withdrawals.append(
         Withdrawal(
             tank_id=payload.tank_id,
-            volume_hl=payload.volume_hl,
+            volume_hl=volume_hl,
             at=payload.at,
             kind=payload.kind,
+            keg_counts=[k.model_dump() for k in payload.kegs] if payload.kegs else None,
             notes=payload.notes,
         )
     )

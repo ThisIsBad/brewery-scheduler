@@ -144,6 +144,14 @@ class RecipeOverridesIn(BaseModel):
     open_fermentation_duration_days: float | None = Field(default=None, gt=0)
 
 
+class KegCountIn(BaseModel):
+    """Barrels of one size in a keg fill; the hl volume is computed as
+    size_l x count / 100 (decided 2026-08-04)."""
+
+    size_l: float = Field(gt=0)
+    count: int = Field(gt=0)
+
+
 class WithdrawalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -153,6 +161,7 @@ class WithdrawalOut(BaseModel):
     volume_hl: float
     at: datetime
     kind: WithdrawalKind
+    keg_counts: list[KegCountIn] | None = None
     notes: str | None
 
 
@@ -232,7 +241,10 @@ class WithdrawIn(BaseModel):
     """
 
     tank_id: uuid.UUID
-    volume_hl: float = Field(gt=0)
+    # Either a direct volume OR keg counts (keg fills only) — the server
+    # computes the volume from the counts when they are given.
+    volume_hl: float | None = Field(default=None, gt=0)
+    kegs: list[KegCountIn] | None = None
     at: datetime
     kind: WithdrawalKind = WithdrawalKind.KEG_FILL
     notes: str | None = Field(default=None, max_length=10_000)
