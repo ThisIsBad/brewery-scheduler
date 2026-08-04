@@ -14,6 +14,7 @@ import {
 } from "../domain";
 import { ReplanDialog } from "./ReplanDialog";
 import { ScheduleDialog } from "./ScheduleDialog";
+import { TankWithdrawDialog } from "./TankWithdrawDialog";
 import { TransferDialog } from "./TransferDialog";
 import { WithdrawDialog } from "./WithdrawDialog";
 
@@ -26,6 +27,12 @@ interface KellerblickProps {
 type DialogState =
   | { kind: "transfer"; sud: Sud; occupancy: Occupancy }
   | { kind: "withdraw"; sud: Sud; occupancy: Occupancy; withdrawalKind: WithdrawalKind }
+  | {
+      kind: "tankWithdraw";
+      tank: Tank;
+      entries: { sud: Sud; occ: Occupancy }[];
+      withdrawalKind: WithdrawalKind;
+    }
   | { kind: "replan"; sud: Sud; occupancy: Occupancy }
   | { kind: "schedule"; sud: Sud }
   | null;
@@ -61,10 +68,14 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
   const unplanned = leads.filter((sud) => sud.occupancies.length === 0);
   // Past their planned window with nothing active or upcoming: exactly when
   // the Umdrücken is due, so these must stay visible and actionable.
+  // Finished batches (auto-completed at share 0, or discarded) are done —
+  // they leave the Kellerblick instead of nagging as overdue.
   const overdue = leads
     .filter(
       (sud) =>
         sud.occupancies.length > 0 &&
+        sud.status !== "served" &&
+        sud.status !== "discarded" &&
         occupancyAt(sud, now) === null &&
         firstFutureOccupancy(sud, now) === null,
     )
@@ -75,12 +86,116 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
       ),
     }));
 
+  // Blending (2026-08-04): an Ausschank tank mixes batches, so it gets ONE
+  // card listing its contents; kegs, pours and Schwund are booked on the
+  // tank and distributed server-side. Other stages keep per-Sud cards.
+  const ausschankByTank = new Map<string, { sud: Sud; occ: Occupancy }[]>();
+  for (const entry of current) {
+    if (entry.occ.stage !== "ausschank") continue;
+    const list = ausschankByTank.get(entry.occ.tank_id) ?? [];
+    list.push(entry);
+    ausschankByTank.set(entry.occ.tank_id, list);
+  }
+
   return (
     <div className="kellerblick">
       <section>
         <h2>Jetzt im Keller</h2>
         {current.length === 0 && <p className="empty">Kein Tank belegt.</p>}
-        {current.map(({ sud, occ }) => {
+        {[...ausschankByTank.entries()].map(([tankId, entries]) => {
+          const tank = tankById.get(tankId);
+          const withRemaining = entries.map((e) => ({
+            ...e,
+            remaining: remainingHl(e.sud, sude, e.occ),
+          }));
+          const total = withRemaining.reduce((sum, e) => sum + e.remaining, 0);
+          const warnings = [
+            ...new Set(entries.flatMap(({ sud }) => sud.warnings ?? [])),
+          ];
+          return (
+            <article
+              className={warnings.length > 0 ? "card warn" : "card"}
+              key={tankId}
+            >
+              <header>
+                <strong>{tank?.name ?? "?"}</strong>
+                <span className="muted">
+                  {tank ? formatHl(tank.capacity_hl) : ""} · Ausschank
+                </span>
+              </header>
+              <div className="card-body">
+                {withRemaining.map(({ sud, occ, remaining }) => (
+                  <div className="beer" key={occ.id}>
+                    {sud.recipe.name} {sudNumberLabel(sud, sude)} · noch{" "}
+                    {formatHl(remaining)}{" "}
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() =>
+                        setDialog({ kind: "transfer", sud, occupancy: occ })
+                      }
+                    >
+                      Umdrücken
+                    </button>
+                  </div>
+                ))}
+                {entries.length > 1 && (
+                  <div className="muted">Zusammen noch {formatHl(total)}</div>
+                )}
+                {warnings.length > 0 && (
+                  <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
+                )}
+              </div>
+              <footer>
+                <button
+                  type="button"
+                  disabled={total <= 0}
+                  onClick={() =>
+                    setDialog({
+                      kind: "tankWithdraw",
+                      tank: tank!,
+                      entries,
+                      withdrawalKind: "keg_fill",
+                    })
+                  }
+                >
+                  Fass abfüllen
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={total <= 0}
+                  onClick={() =>
+                    setDialog({
+                      kind: "tankWithdraw",
+                      tank: tank!,
+                      entries,
+                      withdrawalKind: "ausschank",
+                    })
+                  }
+                >
+                  Ausgeschenkt
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={total <= 0}
+                  onClick={() =>
+                    setDialog({
+                      kind: "tankWithdraw",
+                      tank: tank!,
+                      entries,
+                      withdrawalKind: "schwund",
+                    })
+                  }
+                >
+                  Schwund
+                </button>
+              </footer>
+            </article>
+          );
+        })}
+        {current.filter(({ occ }) => occ.stage !== "ausschank").map(({ sud, occ }) => {
           const tank = tankById.get(occ.tank_id);
           const remaining = remainingHl(sud, sude, occ);
           const warnings = sud.warnings ?? [];
@@ -290,6 +405,19 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
           onClose={() => setDialog(null)}
           onDone={(updated) => {
             onChanged(updated);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.kind === "tankWithdraw" && (
+        <TankWithdrawDialog
+          tank={dialog.tank}
+          entries={dialog.entries}
+          sude={sude}
+          kind={dialog.withdrawalKind}
+          onClose={() => setDialog(null)}
+          onDone={(updated) => {
+            updated.forEach(onChanged);
             setDialog(null);
           }}
         />

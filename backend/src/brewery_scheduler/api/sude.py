@@ -17,7 +17,14 @@ from ..models import (
     Withdrawal,
     WithdrawalKind,
 )
-from ..schemas import ScheduleIn, SudCreateIn, SudOut, TransferIn, WithdrawIn
+from ..schemas import (
+    ScheduleIn,
+    SudCreateIn,
+    SudOut,
+    TankWithdrawIn,
+    TransferIn,
+    WithdrawIn,
+)
 
 router = APIRouter(prefix="/api/sude", tags=["sude"])
 
@@ -521,6 +528,30 @@ def transfer_sud(
     return _with_warnings(sud, warnings)
 
 
+def _resolve_withdraw_volume(payload: WithdrawIn | TankWithdrawIn) -> float:
+    """Direct volume — or, for keg fills, the volume computed from the
+    counts per barrel size (2026-08-04). Shared by the per-Sud and the
+    tank-level (Blending) withdraw endpoints."""
+    if payload.kegs:
+        if payload.kind != WithdrawalKind.KEG_FILL:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Fass-Stückzahlen gelten nur für Fassabfüllungen.",
+            )
+        if payload.volume_hl is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Entweder Menge (hl) oder Fass-Stückzahlen angeben — nicht beides.",
+            )
+        return sum(k.size_l * k.count for k in payload.kegs) / 100.0
+    if payload.volume_hl is not None:
+        return payload.volume_hl
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail="Menge (hl) oder Fass-Stückzahlen angeben.",
+    )
+
+
 @router.post("/{sud_id}/withdraw", response_model=SudOut)
 def withdraw(
     sud_id: uuid.UUID,
@@ -549,27 +580,7 @@ def withdraw(
             ),
         )
 
-    # Keg fills arrive as counts per barrel size (2026-08-04); the volume
-    # is computed from them. Direct volumes stay for pours (Ausschank).
-    if payload.kegs:
-        if payload.kind != WithdrawalKind.KEG_FILL:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Fass-Stückzahlen gelten nur für Fassabfüllungen.",
-            )
-        if payload.volume_hl is not None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Entweder Menge (hl) oder Fass-Stückzahlen angeben — nicht beides.",
-            )
-        volume_hl = sum(k.size_l * k.count for k in payload.kegs) / 100.0
-    elif payload.volume_hl is not None:
-        volume_hl = payload.volume_hl
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Menge (hl) oder Fass-Stückzahlen angeben.",
-        )
+    volume_hl = _resolve_withdraw_volume(payload)
 
     occupancy = next(
         (

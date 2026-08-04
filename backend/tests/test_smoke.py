@@ -1919,6 +1919,123 @@ def test_recipe_ingredients_roundtrip(client) -> None:
     assert fresh["ibu"] == 24
 
 
+def test_tank_withdraw_distributes_proportionally(client, session) -> None:
+    # Blending (2026-08-04): Weizen (15 hl) und der Festbier-Doppelsud
+    # (30 hl) teilen sich A-120; eine Tankbuchung über 9 hl verteilt sich
+    # im Verhältnis 1:2 auf die enthaltenen Anteile.
+    weizen = _seeded_lead(session, WEIZEN)
+    festbier = _seeded_lead(session, FESTBIER)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    r = _transfer(client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start)
+    assert r.status_code == 200, r.text
+    r = _transfer(
+        client, festbier.id, [{"tank_id": str(a120.id), "volume_hl": 30}], start
+    )
+    assert r.status_code == 200, r.text
+
+    at = (start + timedelta(days=1)).isoformat()
+    r = client.post(
+        f"/api/tanks/{a120.id}/withdraw",
+        json={"volume_hl": 9, "at": at, "kind": "ausschank"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    per_sud = {s["id"]: s["withdrawals"][-1]["volume_hl"] for s in body}
+    assert per_sud[str(weizen.id)] == 3
+    assert per_sud[str(festbier.id)] == 6
+    assert all(s["withdrawals"][-1]["kind"] == "ausschank" for s in body)
+
+
+def test_tank_withdraw_finishes_emptied_sude(client, session) -> None:
+    # Auto-Abschluss: Ausschank 25 hl + Schwund 5 hl leeren den
+    # Festbier-Doppelsud — Lead UND Partner stehen auf `served`, die
+    # Belegung endet.
+    festbier = _seeded_lead(session, FESTBIER)
+    a100 = session.query(Tank).filter(Tank.name == "A-100").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    r = _transfer(
+        client, festbier.id, [{"tank_id": str(a100.id), "volume_hl": 30}], start
+    )
+    assert r.status_code == 200, r.text
+
+    at = (start + timedelta(days=1)).isoformat()
+    r = client.post(
+        f"/api/tanks/{a100.id}/withdraw",
+        json={"volume_hl": 25, "at": at, "kind": "ausschank"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()[0]["status"] == "in_ausschank"
+
+    r = client.post(
+        f"/api/tanks/{a100.id}/withdraw",
+        json={"volume_hl": 5, "at": at, "kind": "schwund"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()[0]
+    assert body["status"] == "served"
+    ausschank_occ = next(o for o in body["occupancies"] if o["stage"] == "ausschank")
+    assert ausschank_occ["end_at"] is not None
+
+    partner = session.query(Sud).filter(Sud.merged_into_sud_id == festbier.id).one()
+    session.refresh(partner)
+    assert partner.status.value == "served"
+
+
+def test_tank_withdraw_validation(client, session) -> None:
+    weizen = _seeded_lead(session, WEIZEN)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    a50 = session.query(Tank).filter(Tank.name == "A-50").one()
+    storage = session.query(Tank).filter(Tank.name == "S-30-3").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    r = _transfer(client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start)
+    assert r.status_code == 200, r.text
+    at = (start + timedelta(days=1)).isoformat()
+
+    over = client.post(
+        f"/api/tanks/{a120.id}/withdraw",
+        json={"volume_hl": 16, "at": at, "kind": "ausschank"},
+    )
+    assert over.status_code == 409, over.text
+    assert "nur 15 hl" in over.json()["detail"]
+
+    empty = client.post(
+        f"/api/tanks/{a50.id}/withdraw",
+        json={"volume_hl": 1, "at": at, "kind": "ausschank"},
+    )
+    assert empty.status_code == 422, empty.text
+
+    wrong_stage = client.post(
+        f"/api/tanks/{storage.id}/withdraw",
+        json={"volume_hl": 1, "at": at, "kind": "ausschank"},
+    )
+    assert wrong_stage.status_code == 422, wrong_stage.text
+    assert "Ausschanktank" in wrong_stage.json()["detail"]
+
+
+def test_tank_withdraw_kegs_stay_summable(client, session) -> None:
+    # Fassabfüllung am Tank: hl aus Stückzahlen, die Stückzahlen hängen an
+    # genau EINER Teilbuchung, damit Summen über alle Buchungen stimmen.
+    weizen = _seeded_lead(session, WEIZEN)
+    festbier = _seeded_lead(session, FESTBIER)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    _transfer(client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start)
+    _transfer(client, festbier.id, [{"tank_id": str(a120.id), "volume_hl": 30}], start)
+
+    at = (start + timedelta(days=1)).isoformat()
+    r = client.post(
+        f"/api/tanks/{a120.id}/withdraw",
+        json={"at": at, "kind": "keg_fill", "kegs": [{"size_l": 50, "count": 6}]},
+    )
+    assert r.status_code == 200, r.text
+    rows = [s["withdrawals"][-1] for s in r.json()]
+    assert sum(w["volume_hl"] for w in rows) == 3.0
+    keg_rows = [w for w in rows if w["keg_counts"]]
+    assert len(keg_rows) == 1
+    assert keg_rows[0]["keg_counts"] == [{"size_l": 50, "count": 6}]
+
+
 def test_new_beer_style_starts_at_version_one(client) -> None:
     # Free styles (2026-08-04): a brand-new beer name simply starts its
     # own version history — that is how Collab beers get added.

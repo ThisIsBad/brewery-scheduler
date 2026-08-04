@@ -8,8 +8,16 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
-from ..models import Location, Tank, TankOccupancy, TankStage, Withdrawal
-from ..schemas import TankCreateIn, TankOut, TankUpdateIn
+from ..models import (
+    Location,
+    Sud,
+    SudStatus,
+    Tank,
+    TankOccupancy,
+    TankStage,
+    Withdrawal,
+)
+from ..schemas import SudOut, TankCreateIn, TankOut, TankUpdateIn, TankWithdrawIn
 
 router = APIRouter(prefix="/api/tanks", tags=["tanks"])
 
@@ -235,3 +243,148 @@ def _max_load_hl(session: Session, tank: Tank) -> float:
         sum(volumes[other.id] for other in occs if overlaps(occ, other))
         for occ in occs
     )
+
+
+@router.post("/{tank_id}/withdraw", response_model=list[SudOut])
+def tank_withdraw(
+    tank_id: uuid.UUID,
+    payload: TankWithdrawIn,
+    session: Session = Depends(get_session),
+) -> list[Sud]:
+    """Blending (2026-08-04): Ausschank tanks mix several batches, so kegs,
+    pours and Schwund are booked on the TANK and distributed proportionally
+    across the contained Sud shares. A Sud whose batch thereby reaches zero
+    is finished — status `served`, its running occupancies end.
+    """
+    from .sude import _batch_volumes, _resolve_withdraw_volume
+
+    tank = session.get(Tank, tank_id)
+    if tank is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tank not found")
+    if TankStage(tank.stage) != TankStage.AUSSCHANK:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Tank-Buchungen gibt es nur am Ausschanktank — "
+                "vorher wird am Sud gebucht."
+            ),
+        )
+    volume_hl = _resolve_withdraw_volume(payload)
+
+    occs = list(
+        session.scalars(
+            select(TankOccupancy)
+            .options(selectinload(TankOccupancy.sud))
+            .where(
+                TankOccupancy.tank_id == tank.id,
+                TankOccupancy.start_at <= payload.at,
+                TankOccupancy.end_at.is_(None) | (TankOccupancy.end_at > payload.at),
+            )
+        )
+    )
+    if not occs:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Zu diesem Zeitpunkt liegt kein Sud in diesem Tank.",
+        )
+
+    # What each batch still holds IN THIS TANK: explicit shares (summed —
+    # sequential consolidation can leave several rows) minus this tank's
+    # withdrawals; a NULL share means the whole batch sits here and its
+    # batch remaining already accounts for every withdrawal.
+    suds: dict[uuid.UUID, Sud] = {}
+    shares: dict[uuid.UUID, float] = {}
+    whole_batch: set[uuid.UUID] = set()
+    for occ in occs:
+        suds[occ.sud_id] = occ.sud
+        if occ.volume_hl is None:
+            whole_batch.add(occ.sud_id)
+        else:
+            shares[occ.sud_id] = shares.get(occ.sud_id, 0.0) + float(occ.volume_hl)
+
+    remaining: dict[uuid.UUID, float] = {}
+    for sud_id, sud in suds.items():
+        if sud_id in whole_batch:
+            _, rem = _batch_volumes(session, sud)
+        else:
+            withdrawn = sum(
+                float(v)
+                for v in session.scalars(
+                    select(Withdrawal.volume_hl).where(
+                        Withdrawal.sud_id == sud_id,
+                        Withdrawal.tank_id == tank.id,
+                    )
+                )
+            )
+            rem = shares[sud_id] - withdrawn
+        remaining[sud_id] = max(rem, 0.0)
+
+    total = sum(remaining.values())
+    if volume_hl > total + 1e-9:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Im Tank {tank.name} sind nur {total:g} hl — "
+                f"{volume_hl:g} hl können nicht gebucht werden."
+            ),
+        )
+
+    # Largest share first: it absorbs the rounding residual and carries the
+    # keg counts (they belong to the tank booking as a whole; keeping them
+    # on one row keeps totals summable).
+    order = sorted(remaining, key=lambda sid: remaining[sid], reverse=True)
+    allocated: dict[uuid.UUID, float] = {}
+    for sud_id in order[1:]:
+        allocated[sud_id] = round(volume_hl * remaining[sud_id] / total, 4)
+    allocated[order[0]] = round(volume_hl - sum(allocated.values()), 4)
+
+    affected: list[Sud] = []
+    for sud_id in order:
+        share = allocated[sud_id]
+        if share <= 1e-9:
+            continue
+        sud = suds[sud_id]
+        sud.withdrawals.append(
+            Withdrawal(
+                tank_id=tank.id,
+                volume_hl=share,
+                at=payload.at,
+                kind=payload.kind,
+                keg_counts=(
+                    [k.model_dump() for k in payload.kegs]
+                    if payload.kegs and sud_id == order[0]
+                    else None
+                ),
+                notes=payload.notes,
+            )
+        )
+        affected.append(sud)
+
+    # Auto-complete (Blending decision): a batch with nothing left anywhere
+    # is done — no manual archiving in the cellar. The session runs with
+    # autoflush=False, so the fresh withdrawals must be flushed before
+    # _batch_volumes can see them.
+    session.flush()
+    for sud in affected:
+        _, rem = _batch_volumes(session, sud)
+        if rem <= 0.01:
+            sud.status = SudStatus.SERVED
+            for occ in sud.occupancies:
+                if occ.end_at is None or occ.end_at > payload.at:
+                    occ.end_at = payload.at
+            for partner in session.scalars(
+                select(Sud).where(Sud.merged_into_sud_id == sud.id)
+            ):
+                partner.status = SudStatus.SERVED
+
+    session.commit()
+    ids = [s.id for s in affected]
+    by_id = {
+        s.id: s
+        for s in session.scalars(
+            select(Sud)
+            .options(selectinload(Sud.occupancies), selectinload(Sud.withdrawals))
+            .where(Sud.id.in_(ids))
+        )
+    }
+    return [by_id[i] for i in ids]

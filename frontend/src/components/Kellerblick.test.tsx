@@ -176,6 +176,59 @@ describe("Kellerblick", () => {
     expect(screen.getAllByRole("button", { name: "Umdrücken" })).toHaveLength(2);
   });
 
+  it("bündelt gemischte Ausschanktanks in einer Karte mit Tank-Aktionen", () => {
+    const erster = baseSud({
+      id: "sud-7",
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-k",
+          sud_id: "sud-7",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 20,
+        },
+      ],
+    });
+    const zweiter = baseSud({
+      id: "sud-8",
+      status: "in_ausschank",
+      style_year_number: 2,
+      occupancies: [
+        {
+          id: "occ-w",
+          sud_id: "sud-8",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 10,
+        },
+      ],
+    });
+
+    render(
+      <Kellerblick
+        tanks={[AUSSCHANK_TANK]}
+        sude={[erster, zweiter]}
+        onChanged={() => {}}
+      />,
+    );
+
+    // EIN Tank, EINE Karte — beide Biere als Zeilen, Buchungen am Tank.
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getByText(/Zusammen noch 30 hl/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Fass abfüllen" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ausgeschenkt" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Schwund" })).toBeInTheDocument();
+  });
+
   it("keeps past-window Sude visible under Überfällig with a transfer action", () => {
     const overdue = baseSud({
       id: "sud-6",
