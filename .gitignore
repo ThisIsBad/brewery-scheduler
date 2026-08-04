@@ -16,3 +16,4 @@ build/
 .DS_Store
 STARTUP-FEHLER.txt
 STARTUP-STATUS.txt
+.deps-fingerprint

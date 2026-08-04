@@ -14,4 +14,9 @@ echo "▸ Frontend-Abhängigkeiten …"
 (cd frontend && npm ci --no-fund --no-audit) \
   || echo "⚠ npm ci fehlgeschlagen — start.sh repariert das beim Start."
 
+# Seed the dependency fingerprint so start.sh skips the reinstall check
+# on a fresh Codespace (it re-runs only when the lockfile moves).
+cat backend/pyproject.toml frontend/package-lock.json 2>/dev/null \
+  | md5sum | cut -d' ' -f1 > .deps-fingerprint || true
+
 exit 0
