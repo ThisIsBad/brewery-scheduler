@@ -138,15 +138,15 @@ describe("TransferDialog (Ausschank split)", () => {
       />,
     );
 
-    // 30 hl combined: A-100 as target, 20 in there, add a row, 10 into A-80.
+    // 30 hl combined: A-100 as target, split, 20 in there, 10 into A-80.
     fireEvent.change(screen.getByLabelText("Zieltank"), {
       target: { value: A100.id },
     });
+    fireEvent.click(screen.getByRole("button", { name: "+ Tank aufteilen" }));
     fireEvent.change(screen.getByLabelText("Volumen 1 (hl)"), {
       target: { value: "20" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "+ Tank aufteilen" }));
-    fireEvent.change(screen.getByLabelText("Ausschanktank 2"), {
+    fireEvent.change(screen.getByLabelText("Zieltank 2"), {
       target: { value: A80.id },
     });
     fireEvent.change(screen.getByLabelText("Volumen 2 (hl)"), {
@@ -170,22 +170,121 @@ describe("TransferDialog (Ausschank split)", () => {
       <TransferDialog
         sud={lead}
         occupancy={storageOcc}
-        tanks={[A100]}
+        tanks={[A100, A80]}
         sude={[lead]}
         onClose={() => {}}
         onDone={() => {}}
       />,
     );
 
+    // 15 hl batch, but only 9 + 3 = 12 hl distributed.
     fireEvent.change(screen.getByLabelText("Zieltank"), {
       target: { value: A100.id },
     });
+    fireEvent.click(screen.getByRole("button", { name: "+ Tank aufteilen" }));
     fireEvent.change(screen.getByLabelText("Volumen 1 (hl)"), {
       target: { value: "9" },
+    });
+    fireEvent.change(screen.getByLabelText("Zieltank 2"), {
+      target: { value: A80.id },
+    });
+    fireEvent.change(screen.getByLabelText("Volumen 2 (hl)"), {
+      target: { value: "3" },
     });
 
     expect(screen.getByRole("button", { name: "Umdrücken" })).toBeDisabled();
     expect(mocked.transferSud).not.toHaveBeenCalled();
+  });
+});
+
+describe("TransferDialog (split at any stage)", () => {
+  const S10A: Tank = {
+    id: "tank-s10a",
+    name: "S2-10-1",
+    location_id: "loc-2",
+    stage: "storage",
+    capacity_hl: 10,
+    active: true,
+    locked: false,
+  };
+  const S10B: Tank = {
+    id: "tank-s10b",
+    name: "S2-10-2",
+    location_id: "loc-2",
+    stage: "storage",
+    capacity_hl: 10,
+    active: true,
+    locked: false,
+  };
+
+  it("splits into two storage tanks and flags a share over capacity", async () => {
+    const lead = sud({ occupancies: [storageOcc] });
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK, S10A, S10B]}
+        sude={[lead]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    // 15 hl into a 10-hl tank: blocked, with the hint to split further.
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
+      target: { value: S10A.id },
+    });
+    expect(screen.getByText(/fasst nur 10 hl/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Umdrücken" })).toBeDisabled();
+
+    // 8/7 across the two small tanks works and sends explicit shares.
+    fireEvent.click(screen.getByRole("button", { name: "+ Tank aufteilen" }));
+    fireEvent.change(screen.getByLabelText("Volumen 1 (hl)"), {
+      target: { value: "8" },
+    });
+    fireEvent.change(screen.getByLabelText("Zieltank 2"), {
+      target: { value: S10B.id },
+    });
+    fireEvent.change(screen.getByLabelText("Volumen 2 (hl)"), {
+      target: { value: "7" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Umdrücken" }));
+
+    await waitFor(() => expect(mocked.transferSud).toHaveBeenCalledOnce());
+    const [, payload] = mocked.transferSud.mock.calls[0];
+    expect(payload.from_tank_id).toBe(STORAGE_TANK.id);
+    expect(payload.allocations).toEqual([
+      { tank_id: S10A.id, volume_hl: 8 },
+      { tank_id: S10B.id, volume_hl: 7 },
+    ]);
+  });
+
+  it("moves only the tapped tank's share of a split batch", async () => {
+    // The batch was split earlier; this occupancy holds an 8-hl share of
+    // the 15-hl Sud. The dialog must offer the share, not the batch.
+    const shareOcc: Occupancy = { ...storageOcc, volume_hl: 8 };
+    const lead = sud({ occupancies: [shareOcc] });
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={shareOcc}
+        tanks={[STORAGE_TANK, S10A]}
+        sude={[lead]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/8 hl aus S-30-1/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Zieltank"), {
+      target: { value: S10A.id },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Umdrücken" }));
+
+    await waitFor(() => expect(mocked.transferSud).toHaveBeenCalledOnce());
+    const [, payload] = mocked.transferSud.mock.calls[0];
+    expect(payload.from_tank_id).toBe(STORAGE_TANK.id);
+    expect(payload.allocations).toEqual([{ tank_id: S10A.id }]);
   });
 });
 
