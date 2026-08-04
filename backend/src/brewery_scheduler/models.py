@@ -91,6 +91,15 @@ class Recipe(Base):
     ingredients: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     mash_schedule: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     hop_additions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    # Brew sheet (2026-08-04): yeast choice and target values are typed
+    # columns; malts live in ingredients["malts"], hop additions with boil
+    # minutes in hop_additions["gaben"]. Quantities are per 15-hl Sud.
+    yeast: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    original_gravity_plato: Mapped[float | None] = mapped_column(
+        Numeric(4, 1), nullable=True
+    )
+    ibu: Mapped[float | None] = mapped_column(Numeric(5, 1), nullable=True)
+    color_ebc: Mapped[float | None] = mapped_column(Numeric(5, 1), nullable=True)
     fermentation_temp_c: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     fermentation_duration_days: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     open_fermentation_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

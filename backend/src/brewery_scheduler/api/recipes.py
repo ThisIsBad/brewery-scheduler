@@ -9,8 +9,17 @@ from ..schemas import RecipeCreateIn, RecipeOut
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 
 
+def _recipe_out(recipe: Recipe) -> RecipeOut:
+    """Serialize a recipe incl. the JSONB-backed grain bill and hop
+    additions (ingredients["malts"] / hop_additions["gaben"])."""
+    out = RecipeOut.model_validate(recipe)
+    out.malts = (recipe.ingredients or {}).get("malts", [])
+    out.hop_gaben = (recipe.hop_additions or {}).get("gaben", [])
+    return out
+
+
 @router.get("", response_model=list[RecipeOut])
-def list_recipes(session: Session = Depends(get_session)) -> list[Recipe]:
+def list_recipes(session: Session = Depends(get_session)) -> list[RecipeOut]:
     """List all recipe versions, latest version per beer_style first.
 
     The full history is returned on purpose: the Rezepte tab renders the
@@ -18,7 +27,7 @@ def list_recipes(session: Session = Depends(get_session)) -> list[Recipe]:
     version per style client-side.
     """
     stmt = select(Recipe).order_by(Recipe.beer_style, Recipe.version.desc())
-    return list(session.scalars(stmt))
+    return [_recipe_out(r) for r in session.scalars(stmt)]
 
 
 @router.post("", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
@@ -67,8 +76,14 @@ def create_recipe_version(
         max_storage_duration_days=payload.max_storage_duration_days,
         notes=payload.notes,
         created_by=payload.created_by,
+        ingredients={"malts": [m.model_dump() for m in payload.malts]},
+        hop_additions={"gaben": [g.model_dump() for g in payload.hop_gaben]},
+        yeast=payload.yeast,
+        original_gravity_plato=payload.original_gravity_plato,
+        ibu=payload.ibu,
+        color_ebc=payload.color_ebc,
     )
     session.add(recipe)
     session.commit()
     session.refresh(recipe)
-    return recipe
+    return _recipe_out(recipe)

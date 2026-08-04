@@ -1634,3 +1634,57 @@ def test_recipe_version_collision_hits_db_constraint(client, session) -> None:
     session.rollback()
     assert "uq_recipes_style_version" in str(excinfo.value)
     assert kellerbier.version == 1
+
+
+def test_recipe_ingredients_roundtrip(client) -> None:
+    # Brew sheet (2026-08-04): malts + hop additions (boil minutes) + yeast
+    # + target values persist through create and list.
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "kellerbier",
+            "name": "Kellerbier (mit Schüttung)",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 21,
+            "max_storage_duration_days": 60,
+            "malts": [
+                {"name": "Pilsner Malz", "kg": 250},
+                {"name": "Münchner Malz", "kg": 60},
+            ],
+            "hop_gaben": [
+                {"name": "Perle", "gramm": 1800, "kochzeit_min": 60},
+                {"name": "Tettnanger", "gramm": 600, "kochzeit_min": 10},
+            ],
+            "yeast": "W-34/70",
+            "original_gravity_plato": 12.5,
+            "ibu": 24,
+            "color_ebc": 11,
+        },
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["malts"][0] == {"name": "Pilsner Malz", "kg": 250}
+    assert body["hop_gaben"][1]["kochzeit_min"] == 10
+    assert body["yeast"] == "W-34/70"
+    assert body["original_gravity_plato"] == 12.5
+
+    listed = client.get("/api/recipes").json()
+    fresh = next(x for x in listed if x["id"] == body["id"])
+    assert len(fresh["malts"]) == 2
+    assert len(fresh["hop_gaben"]) == 2
+    assert fresh["ibu"] == 24
+
+
+def test_recipe_ingredients_validation(client) -> None:
+    r = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "special",
+            "name": "Kaputte Schüttung",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 21,
+            "max_storage_duration_days": 60,
+            "malts": [{"name": "Pilsner", "kg": 0}],
+        },
+    )
+    assert r.status_code == 422
