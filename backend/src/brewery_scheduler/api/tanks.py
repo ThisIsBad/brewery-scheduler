@@ -331,12 +331,14 @@ def tank_withdraw(
 
     # Largest share first: it absorbs the rounding residual and carries the
     # keg counts (they belong to the tank booking as a whole; keeping them
-    # on one row keeps totals summable).
+    # on one row keeps totals summable). Shares round to 0.1 hl — the grid
+    # every input in the app uses; finer residues would make the remaining
+    # volumes un-splittable in the transfer dialog.
     order = sorted(remaining, key=lambda sid: remaining[sid], reverse=True)
     allocated: dict[uuid.UUID, float] = {}
     for sud_id in order[1:]:
-        allocated[sud_id] = round(volume_hl * remaining[sud_id] / total, 4)
-    allocated[order[0]] = round(volume_hl - sum(allocated.values()), 4)
+        allocated[sud_id] = round(volume_hl * remaining[sud_id] / total, 1)
+    allocated[order[0]] = round(volume_hl - sum(allocated.values()), 1)
 
     affected: list[Sud] = []
     for sud_id in order:
@@ -359,6 +361,17 @@ def tank_withdraw(
             )
         )
         affected.append(sud)
+
+    # A share poured empty frees ITS tank immediately — an open zero-volume
+    # occupancy would keep blocking the tank (sortenrein!) although it is
+    # physically empty.
+    for sud in affected:
+        if remaining[sud.id] - allocated[sud.id] <= 0.01:
+            for occ in occs:
+                if occ.sud_id == sud.id and (
+                    occ.end_at is None or occ.end_at > payload.at
+                ):
+                    occ.end_at = payload.at
 
     # Auto-complete (Blending decision): a batch with nothing left anywhere
     # is done — no manual archiving in the cellar. The session runs with

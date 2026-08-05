@@ -940,6 +940,143 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     assert "capacity" in r2.json()["detail"]
 
 
+def test_occupancy_stage_must_match_tank_stage(client, session) -> None:
+    # A stage label contradicting the tank would dodge every stage-scoped
+    # rule (EXCLUDE, sortenrein, headroom) — both occupancy-creating
+    # endpoints reject it.
+    keller = _seeded_lead(session, KELLERBIER)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=300)
+
+    spoofed = client.put(
+        f"/api/sude/{keller.id}/schedule",
+        json={
+            "occupancies": _existing_occupancies_payload(keller)
+            + [
+                {
+                    "tank_id": str(a120.id),
+                    "stage": "storage",
+                    "start_at": start.isoformat(),
+                    "end_at": (start + timedelta(days=7)).isoformat(),
+                }
+            ]
+        },
+    )
+    assert spoofed.status_code == 422, spoofed.text
+    assert "passt nicht" in spoofed.json()["detail"]
+
+    recipe = session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(recipe.id),
+            "brew_at": _brew_at(date.today()),
+            "initial_occupancy": {
+                "tank_id": str(a120.id),
+                "stage": "storage",
+                "start_at": start.isoformat(),
+                "end_at": (start + timedelta(days=7)).isoformat(),
+            },
+        },
+    )
+    assert created.status_code == 422, created.text
+    assert "passt nicht" in created.json()["detail"]
+
+
+def test_create_sud_ausschank_occupancy_respects_sortenrein(client, session) -> None:
+    # POST /api/sude is the third occupancy-creating endpoint — the
+    # sortenrein rule must hold there too.
+    weizen = _seeded_lead(session, WEIZEN)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    r = _transfer(
+        client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start
+    )
+    assert r.status_code == 200, r.text
+
+    keller_recipe = session.query(Recipe).filter(Recipe.beer_style == KELLERBIER).one()
+    blocked = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(keller_recipe.id),
+            "brew_at": _brew_at(date.today()),
+            "initial_occupancy": {
+                "tank_id": str(a120.id),
+                "stage": "ausschank",
+                "start_at": (start + timedelta(days=1)).isoformat(),
+                "end_at": (start + timedelta(days=30)).isoformat(),
+            },
+        },
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert "nicht gemischt" in blocked.json()["detail"]
+
+
+def test_emptied_share_frees_tank_for_other_styles(client, session) -> None:
+    # Eine leergezapfte Teilmenge gibt IHREN Tank sofort frei — sonst
+    # blockiert eine offene Null-Belegung den Tank für andere Sorten,
+    # obwohl er physisch leer ist.
+    weizen = _seeded_lead(session, WEIZEN)
+    keller = _seeded_lead(session, KELLERBIER)
+    a1 = session.query(Tank).filter(Tank.name == "A2-35-1").one()
+    a2 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(hours=1)
+    r = _transfer(
+        client,
+        weizen.id,
+        [
+            {"tank_id": str(a1.id), "volume_hl": 10},
+            {"tank_id": str(a2.id), "volume_hl": 5},
+        ],
+        start,
+    )
+    assert r.status_code == 200, r.text
+
+    at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    r = client.post(
+        f"/api/tanks/{a2.id}/withdraw",
+        json={"volume_hl": 5, "at": at, "kind": "ausschank"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()[0]
+    a2_occ = next(o for o in body["occupancies"] if o["tank_id"] == str(a2.id))
+    assert a2_occ["end_at"] is not None
+    # Der Sud lebt weiter (10 hl in A2-35-1) …
+    assert body["status"] == "in_ausschank"
+
+    # … aber der geleerte Tank nimmt jetzt eine andere Sorte an.
+    r = _transfer(
+        client,
+        keller.id,
+        [{"tank_id": str(a2.id), "volume_hl": 15}],
+        datetime.now(timezone.utc).replace(microsecond=0) + timedelta(hours=1),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_sud_withdraw_empties_share_and_completes_batch(client, session) -> None:
+    # Auch die Sud-Ebene beendet leergezapfte Belegungen und schließt den
+    # Sud ab, wenn nichts mehr übrig ist (Parität zum Tank-Endpoint).
+    weizen = _seeded_lead(session, WEIZEN)
+    a1 = session.query(Tank).filter(Tank.name == "A2-35-1").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) - timedelta(hours=1)
+    r = _transfer(
+        client, weizen.id, [{"tank_id": str(a1.id), "volume_hl": 15}], start
+    )
+    assert r.status_code == 200, r.text
+
+    at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    r = client.post(
+        f"/api/sude/{weizen.id}/withdraw",
+        json={"tank_id": str(a1.id), "volume_hl": 15, "at": at, "kind": "ausschank"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "served"
+    a1_occ = next(o for o in body["occupancies"] if o["tank_id"] == str(a1.id))
+    assert a1_occ["end_at"] is not None
+
+
 def test_ausschank_rejects_style_mix(client, session) -> None:
     # Sorten werden nie gemischt (Stefan, 2026-08-05): sobald ein
     # Ausschanktank eine Sorte enthält, blockt jede andere — beim

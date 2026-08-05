@@ -127,6 +127,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tank {occ.tank_id} not found",
             )
+        _ensure_stage_matches_tank(occ.stage, tank)
         planned = [
             SimpleNamespace(stage=occ.stage, start_at=occ.start_at, end_at=end_at)
         ]
@@ -140,6 +141,18 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
                     f"Batch volume of {float(sud.volume_hl):g} hl exceeds the "
                     f"{float(tank.capacity_hl):g} hl capacity of tank {tank.name}."
                 ),
+            )
+        if occ.stage == TankStage.AUSSCHANK:
+            # Same rules as transfer and schedule — the sortenrein and
+            # headroom checks must hold at EVERY occupancy-creating
+            # endpoint, or the invariant has a back door.
+            _check_ausschank_headroom(
+                session,
+                tank,
+                float(occ.volume_hl) if occ.volume_hl is not None else float(sud.volume_hl),
+                occ.start_at,
+                end_at,
+                beer_style=sud.beer_style,
             )
 
         sud.occupancies.append(
@@ -203,6 +216,10 @@ def update_schedule(
             tank = tanks.get(occ.tank_id)
             if tank is None:
                 continue
+            # A stage label that contradicts the tank would silently dodge
+            # the stage-scoped rules (EXCLUDE constraint, sortenrein,
+            # headroom) — reject it outright.
+            _ensure_stage_matches_tank(occ.stage, tank)
             # The physically remaining batch volume (lead + merged partners
             # minus withdrawals) must fit every non-Ausschank tank in the
             # new schedule.
@@ -531,6 +548,17 @@ def transfer_sud(
     return _with_warnings(sud, warnings)
 
 
+def _ensure_stage_matches_tank(stage, tank: Tank) -> None:
+    if TankStage(stage) != TankStage(tank.stage):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Belegung als {TankStage(stage).value} passt nicht zu Tank "
+                f"{tank.name} ({TankStage(tank.stage).value})."
+            ),
+        )
+
+
 def _resolve_withdraw_volume(payload: WithdrawIn | TankWithdrawIn) -> float:
     """Direct volume — or, for keg fills, the volume computed from the
     counts per barrel size (2026-08-04). Shared by the per-Sud and the
@@ -631,6 +659,27 @@ def withdraw(
             notes=payload.notes,
         )
     )
+
+    # An emptied occupancy frees its tank immediately — an open zero-volume
+    # occupancy would keep blocking the tank (sortenrein, EXCLUDE) although
+    # it is physically empty. An emptied BATCH is finished outright,
+    # mirroring the tank-level endpoint.
+    if volume_hl >= remaining_hl - 0.01 and (
+        occupancy.end_at is None or occupancy.end_at > payload.at
+    ):
+        occupancy.end_at = payload.at
+    session.flush()
+    _, batch_remaining = _batch_volumes(session, sud)
+    if batch_remaining <= 0.01:
+        sud.status = SudStatus.SERVED
+        for occ in sud.occupancies:
+            if occ.end_at is None or occ.end_at > payload.at:
+                occ.end_at = payload.at
+        for partner in session.scalars(
+            select(Sud).where(Sud.merged_into_sud_id == sud.id)
+        ):
+            partner.status = SudStatus.SERVED
+
     session.commit()
     session.refresh(sud)
     return sud

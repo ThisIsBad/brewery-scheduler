@@ -6,7 +6,6 @@ import {
   STAGE_LABEL,
   STAGE_ORDER,
   formatHl,
-  occupancyAt,
   remainingHl,
   sudNumberLabel,
 } from "../domain";
@@ -43,19 +42,30 @@ export function TransferDialog({
   // same-style ones are offered; the headroom rule decides server-side.
   const now = useMemo(() => new Date(), []);
   const candidates = useMemo(() => {
+    // Occupancy checks run per row, not via occupancyAt: a split batch
+    // occupies several tanks at once and occupancyAt only ever returns
+    // the first of them. For Ausschank tanks planned FUTURE occupancies
+    // count too — the booking window starts now and stays open, so a
+    // foreign style planned for next week would already collide.
+    const activeNow = (o: Occupancy) =>
+      new Date(o.start_at) <= now &&
+      (o.end_at === null || new Date(o.end_at) > now);
+    const openFromNow = (o: Occupancy) =>
+      o.end_at === null || new Date(o.end_at) > now;
     return tanks.filter((t) => {
       if (!t.active || t.id === occupancy.tank_id) return false;
-      const occupants = sude.filter((s) =>
-        s.occupancies.some(
-          (o) => o.tank_id === t.id && occupancyAt(s, now)?.id === o.id,
-        ),
-      );
       if (t.stage === "ausschank") {
+        const occupants = sude.filter((s) =>
+          s.occupancies.some((o) => o.tank_id === t.id && openFromNow(o)),
+        );
         return occupants.every(
           (s) => s.recipe.beer_style === sud.recipe.beer_style,
         );
       }
-      return occupants.length === 0;
+      const occupiedNow = sude.some((s) =>
+        s.occupancies.some((o) => o.tank_id === t.id && activeNow(o)),
+      );
+      return !occupiedNow;
     });
   }, [tanks, sude, now, occupancy.tank_id, sud.recipe.beer_style]);
 
@@ -80,8 +90,11 @@ export function TransferDialog({
   const changeTank = (index: number, id: string) => {
     const tank = tanks.find((t) => t.id === id);
     setAllocations((prev) => {
-      // Switching the first row to another stage invalidates the split —
-      // back to a plain whole-volume move into the chosen tank.
+      // Clearing or re-staging the first row invalidates the split — back
+      // to a single row; the first row defines the stage for the rest.
+      if (index === 0 && id === "") {
+        return [{ tank_id: "", volume: "" }];
+      }
       if (index === 0 && tank && tank.stage !== targetTank?.stage) {
         return [{ tank_id: id, volume: String(combined) }];
       }
@@ -174,7 +187,7 @@ export function TransferDialog({
         {allocations.map((a, i) => (
           <div className="allocation-row" key={i}>
             <select
-              aria-label={i === 0 ? "Zieltank" : `Zieltank ${i + 1}`}
+              aria-label={i === 0 ? (split ? "Zieltank 1" : "Zieltank") : `Zieltank ${i + 1}`}
               value={a.tank_id}
               onChange={(e) => changeTank(i, e.target.value)}
               required
