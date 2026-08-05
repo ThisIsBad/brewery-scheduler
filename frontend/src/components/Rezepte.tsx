@@ -67,11 +67,16 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                 </div>
                 {(current.malts?.length ?? 0) > 0 && (
                   <div className="muted">
-                    Schüttung:{" "}
+                    Schüttung ({fmtKg(schuettungSumme(current.malts!))}):{" "}
                     {current.malts!
                       .map(
                         (m) =>
-                          `${m.name} ${m.kg} kg${m.maelzerei ? ` (${m.maelzerei})` : ""}`,
+                          `${m.name} ${m.kg} kg (${[
+                            m.maelzerei,
+                            anteilProzent(m.kg, current.malts!),
+                          ]
+                            .filter(Boolean)
+                            .join(", ")})`,
                       )
                       .join(" · ")}
                   </div>
@@ -252,6 +257,21 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
 function fmtDays(value: number | null): string {
   if (value === null) return "—";
   return `${value % 1 === 0 ? value : value.toFixed(1)} Tage`;
+}
+
+function schuettungSumme(malts: Malz[]): number {
+  return malts.reduce((sum, m) => sum + m.kg, 0);
+}
+
+function fmtKg(kg: number): string {
+  return `${kg % 1 === 0 ? kg : kg.toFixed(1)} kg`;
+}
+
+/** Anteil an der Gesamtschüttung — die „Anteil in %“-Spalte der Excel. */
+function anteilProzent(kg: number, malts: Malz[]): string {
+  const total = schuettungSumme(malts);
+  if (total <= 0) return "";
+  return `${Math.round((kg / total) * 100)} %`;
 }
 
 /** What changed from `older` to `newer` — the per-version history line. */
