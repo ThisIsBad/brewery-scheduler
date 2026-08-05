@@ -557,16 +557,19 @@ describe("WithdrawDialog (Fass-Stückzahlen)", () => {
     fireEvent.change(screen.getByLabelText("Fässer 50 l (Stück)"), {
       target: { value: "4" },
     });
-    fireEvent.change(screen.getByLabelText("Fässer 30 l (Stück)"), {
-      target: { value: "2" },
+    fireEvent.change(screen.getByLabelText("Fässer 20 l (Stück)"), {
+      target: { value: "3" },
     });
     expect(screen.getByText(/Ergibt 2.6 hl/)).toBeInTheDocument();
+
+    // 30-l-Fässer sind vorerst nicht im Angebot (2026-08-05).
+    expect(screen.queryByLabelText("Fässer 30 l (Stück)")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Abfüllen" }));
     await waitFor(() => expect(mocked.withdraw).toHaveBeenCalledOnce());
     const [, payload] = mocked.withdraw.mock.calls[0];
     expect(payload.kegs).toEqual([
-      { size_l: 30, count: 2 },
+      { size_l: 20, count: 3 },
       { size_l: 50, count: 4 },
     ]);
     expect(payload.volume_hl).toBeUndefined();

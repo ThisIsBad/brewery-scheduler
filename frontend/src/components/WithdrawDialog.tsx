@@ -14,7 +14,10 @@ interface WithdrawDialogProps {
   onDone: (updated: Sud) => void;
 }
 
-const KEG_SIZES = [10, 20, 30, 50];
+// 30-l-Fässer sind vorerst raus — werden kaum verwendet (Stefan,
+// 2026-08-05). Die API rechnet weiter mit beliebigen Größen; alte
+// Buchungen mit 30 l bleiben gültig.
+const KEG_SIZES = [10, 20, 50];
 
 // Schwund wird am Tank ausgebucht (TankWithdrawDialog); die Einträge hier
 // existieren nur für die Typ-Vollständigkeit.
