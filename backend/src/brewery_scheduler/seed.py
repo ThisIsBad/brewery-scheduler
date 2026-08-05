@@ -77,6 +77,7 @@ _ZEITEN_NOTE = (
 RECIPES: list[dict] = [
     {
         "beer_style": "Keller Hell",
+        "farbe": "#e0a92e",
         "name": "Keller Hell Brudi-Sven",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -104,6 +105,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Weizen",
+        "farbe": "#d98e2b",
         "name": "Weizen Fritz",
         "fermentation_duration_days": 7,
         "open_fermentation_required": True,
@@ -133,6 +135,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Festbier",
+        "farbe": "#b06c1a",
         "name": "Festbier Gisela",
         "fermentation_duration_days": 8,
         "open_fermentation_required": False,
@@ -170,6 +173,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Spezialsud",
+        "farbe": "#8e5ba6",
         "name": "Spezialsud Schwesti",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -202,6 +206,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "bay. Dunkel",
+        "farbe": "#6b4226",
         "name": "bay. Dunkel Enno",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -234,6 +239,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Rauchbier",
+        "farbe": "#4a2f1d",
         "name": "Rauchbier Waltraut",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -266,6 +272,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Weizenbock",
+        "farbe": "#a05c17",
         "name": "Weizenbock Justus",
         "fermentation_duration_days": 7,
         # Wheat-family assumption — offene Gärung wie beim Weizen; vom
@@ -299,6 +306,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Collab Widder",
+        "farbe": "#2e8b8b",
         "name": "Collab Widder",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -332,6 +340,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Wit",
+        "farbe": "#cfc06a",
         "name": "Wit Collab Orca",
         "active": False,
         "fermentation_duration_days": 7,
@@ -363,6 +372,7 @@ RECIPES: list[dict] = [
     },
     {
         "beer_style": "Leichtbier",
+        "farbe": "#c0392b",
         "name": "Leichtbier Werner",
         "active": False,
         "fermentation_duration_days": 7,

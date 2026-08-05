@@ -67,6 +67,21 @@ const sud: Sud = {
   withdrawals: [],
 };
 
+describe("Zeitplan (Bierfarbe)", () => {
+  it("färbt den Sud-Block mit der Rezeptfarbe und wählt lesbaren Text", () => {
+    const gefaerbt: Sud = {
+      ...sud,
+      recipe: { ...sud.recipe, farbe: "#c0392b" },
+    };
+    render(
+      <Zeitplan tanks={[F30]} sude={[gefaerbt]} onMoveOccupancy={() => {}} />,
+    );
+    const block = screen.getByRole("button", { name: /Nr\. 1\// });
+    expect(block.style.background).toBe("rgb(192, 57, 43)");
+    expect(block.style.color).toBe("rgb(255, 255, 255)");
+  });
+});
+
 describe("Zeitplan (Touch-Timeline)", () => {
   it("rendert Tankzeilen und Sud-Blöcke", () => {
     render(

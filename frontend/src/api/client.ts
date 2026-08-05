@@ -5,6 +5,7 @@ import type {
   Recipe,
   RecipeCreateIn,
   RecipeStyleActiveIn,
+  RecipeStyleFarbeIn,
   ScheduleIn,
   TankWithdrawIn,
   Sud,
@@ -74,6 +75,11 @@ export const api = {
     }),
   setRecipeStyleActive: (payload: RecipeStyleActiveIn) =>
     request<Recipe[]>("/api/recipes/style-active", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  setRecipeStyleFarbe: (payload: RecipeStyleFarbeIn) =>
+    request<Recipe[]>("/api/recipes/style-farbe", {
       method: "POST",
       body: JSON.stringify(payload),
     }),

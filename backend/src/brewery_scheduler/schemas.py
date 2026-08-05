@@ -116,6 +116,7 @@ class RecipeOut(BaseModel):
     version: int
     name: str
     active: bool = True
+    farbe: str | None = None
     fermentation_duration_days: float
     open_fermentation_required: bool
     open_fermentation_duration_days: float | None
@@ -173,6 +174,14 @@ class RecipeStyleActiveIn(BaseModel):
 
     beer_style: str = Field(min_length=1, max_length=64)
     active: bool
+
+
+class RecipeStyleFarbeIn(BaseModel):
+    """Display color of a beer (hex), style-wide like the archive flag —
+    paints the Sude in the Zeitplan."""
+
+    beer_style: str = Field(min_length=1, max_length=64)
+    farbe: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
 
 
 class RecipeOverridesIn(BaseModel):
