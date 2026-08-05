@@ -50,6 +50,7 @@ const baseSud = (over: Partial<Sud>): Sud => ({
   notes: null,
   brewmaster: "seed",
   style_year_number: 1,
+  global_number: 210,
   volume_hl: 15,
   merged_into_sud_id: null,
   withdrawals: [],
@@ -107,6 +108,7 @@ describe("Kellerblick", () => {
     const partner = baseSud({
       id: "sud-3",
       style_year_number: 2,
+      global_number: 211,
       merged_into_sud_id: "sud-2",
     });
 
@@ -120,6 +122,8 @@ describe("Kellerblick", () => {
 
     // The unplanned lead folds the partner number into its label (Sorte n+m/Jahr)...
     expect(screen.getByText(/kellerbier 1\+2\//)).toBeInTheDocument();
+    // ...and the global Sudnummer covers both brews of the pair.
+    expect(screen.getByText("(Sud 210+211)")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Einplanen" })).toBeInTheDocument();
     // ...and the partner gets no card of its own.
     expect(screen.getAllByRole("article")).toHaveLength(1);
@@ -196,6 +200,7 @@ describe("Kellerblick", () => {
       id: "sud-8",
       status: "in_ausschank",
       style_year_number: 2,
+      global_number: 211,
       occupancies: [
         {
           id: "occ-w",

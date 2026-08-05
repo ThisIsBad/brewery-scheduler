@@ -100,9 +100,10 @@ def test_seed_partner_has_no_occupancies(session) -> None:
 def test_list_sude_exposes_style_year_number(client) -> None:
     body = client.get("/api/sude").json()
     assert all("style_year_number" in s for s in body)
-    assert all("global_number" not in s for s in body), (
-        "global_number is internal-only; do not leak it to the frontend"
-    )
+    # Vincenz' jahresübergreifende Zählung ist Teil der Sud-Identität
+    # (Stefan, 2026-08-05) und wird pro Sud mit ausgeliefert.
+    assert all(isinstance(s["global_number"], int) for s in body)
+    assert len({s["global_number"] for s in body}) == len(body)
 
 
 def test_health_endpoint(client) -> None:
@@ -238,6 +239,8 @@ def test_create_sud_assigns_next_style_year_number(client, session) -> None:
     )
     assert r2.status_code == 201, r2.text
     assert r2.json()["style_year_number"] == 1
+    # Die globale Sudnummer zählt unabhängig von Sorte und Jahr weiter.
+    assert r2.json()["global_number"] == r1.json()["global_number"] + 1
 
 
 def test_create_sud_with_initial_occupancy_uses_recipe_default_duration(

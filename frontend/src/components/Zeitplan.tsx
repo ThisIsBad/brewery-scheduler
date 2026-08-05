@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
-import { STAGE_LABEL, sudNumberLabel } from "../domain";
+import { STAGE_LABEL, globalSudLabel, sudNumberLabel } from "../domain";
 
 interface ZeitplanProps {
   tanks: Tank[];
@@ -297,6 +297,7 @@ export function Zeitplan({
               {sudNumberLabel(selected.sud, sude)} · {selected.sud.recipe.name}
             </strong>
             <span className="muted">
+              {globalSudLabel(selected.sud, sude)} ·{" "}
               {STAGE_LABEL[selected.occ.stage]} ·{" "}
               {new Date(selected.occ.start_at).toLocaleDateString("de-DE")}
               {selected.occ.end_at
