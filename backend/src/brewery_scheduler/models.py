@@ -204,7 +204,8 @@ class Sud(Base):
         index=True,
     )
 
-    # Sequential across all years and styles. Internal-only — the brewmaster
+    # Sequential across all years and styles — Vincenz' Sudnummer
+    # ("Sud 285"), exposed via the API since 2026-08-05. The brewmaster
     # sets the go-live offset via the set_global_seq CLI; subsequent values
     # come from the sud_global_seq Postgres sequence.
     global_number: Mapped[int] = mapped_column(

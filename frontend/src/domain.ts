@@ -60,6 +60,16 @@ export function sudNumberLabel(lead: Sud, all: Sud[]): string {
   return `${lead.recipe.beer_style} ${numbers.join("+")}/${year}`;
 }
 
+/** "Sud 285", beim Doppelsud "Sud 285+286" — Vincenz' jahresübergreifende
+ * Zählung, zusätzlich zur Sorten-Nummer (Stefan, 2026-08-05). */
+export function globalSudLabel(lead: Sud, all: Sud[]): string {
+  const numbers = [
+    lead.global_number,
+    ...partnersOf(lead, all).map((p) => p.global_number),
+  ].sort((a, b) => a - b);
+  return `Sud ${numbers.join("+")}`;
+}
+
 export function occupancyAt(sud: Sud, when: Date): Occupancy | null {
   const t = when.getTime();
   return (

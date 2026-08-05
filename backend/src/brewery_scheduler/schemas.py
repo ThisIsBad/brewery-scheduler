@@ -227,6 +227,9 @@ class SudOut(BaseModel):
     notes: str | None
     brewmaster: str | None
     style_year_number: int
+    # Vincenz' jahresübergreifende Zählung ("Sud 285"); eindeutig über alle
+    # Sorten und Jahre.
+    global_number: int
     volume_hl: float
     merged_into_sud_id: uuid.UUID | None
     recipe_overrides: dict | None = None

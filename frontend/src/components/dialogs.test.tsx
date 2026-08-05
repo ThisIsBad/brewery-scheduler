@@ -98,6 +98,7 @@ const sud = (over: Partial<Sud>): Sud => ({
   notes: null,
   brewmaster: null,
   style_year_number: 1,
+  global_number: 210,
   volume_hl: 15,
   merged_into_sud_id: null,
   withdrawals: [],
@@ -144,7 +145,7 @@ describe("TankWithdrawDialog (Blending)", () => {
 
   it("bucht am Tank, zeigt die Verteilung und meldet alle Sude zurück", async () => {
     const erster = sud({ id: "sud-1", occupancies: [occA] });
-    const zweiter = sud({ id: "sud-2", style_year_number: 2, occupancies: [occB] });
+    const zweiter = sud({ id: "sud-2", style_year_number: 2, global_number: 211, occupancies: [occB] });
     const onDone = vi.fn();
     mocked.tankWithdraw.mockResolvedValue([erster, zweiter]);
 
@@ -242,6 +243,7 @@ describe("TransferDialog (Ausschank split)", () => {
     const partner = sud({
       id: "sud-2",
       style_year_number: 2,
+      global_number: 211,
       merged_into_sud_id: "sud-1",
     });
 
@@ -621,6 +623,7 @@ describe("ScheduleDialog", () => {
     const partner = sud({
       id: "sud-2",
       style_year_number: 2,
+      global_number: 211,
       merged_into_sud_id: "sud-1",
     });
 

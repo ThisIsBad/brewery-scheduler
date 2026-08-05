@@ -67,6 +67,7 @@ const lead: Sud = {
   notes: null,
   brewmaster: null,
   style_year_number: 1,
+  global_number: 210,
   volume_hl: 15,
   merged_into_sud_id: null,
   occupancies: [

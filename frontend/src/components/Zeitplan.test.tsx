@@ -51,6 +51,7 @@ const sud: Sud = {
   notes: null,
   brewmaster: null,
   style_year_number: 1,
+  global_number: 285,
   volume_hl: 15,
   merged_into_sud_id: null,
   occupancies: [
@@ -100,6 +101,8 @@ describe("Zeitplan (Touch-Timeline)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
     const bar = screen.getByRole("toolbar", { name: "Sud verschieben" });
+    // Die Aktionsleiste nennt die globale Sudnummer.
+    expect(within(bar).getByText(/Sud 285/)).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("button", { name: "Start +1 Tag" }));
 
     expect(onMove).toHaveBeenCalledWith(

@@ -98,10 +98,13 @@ export interface Sud {
   /**
    * Sequential per (beer_style, year(brew_date)). Displayed on the Gantt
    * as the brewmaster-facing Sud-Nr (e.g. "Kellerbier 17/2026").
-   *
-   * The internal global_number is intentionally not exposed to the API.
    */
   style_year_number: number;
+  /**
+   * Vincenz' jahresübergreifende Sudnummer ("Sud 285") — eindeutig über
+   * alle Sorten und Jahre (Stefan, 2026-08-05).
+   */
+  global_number: number;
   volume_hl: number;
   /**
    * Merged batches (issue #3): when set, this Sud is a partner sharing its

@@ -40,6 +40,7 @@ const sudAm = (id: string, tag: string, recipeId = "r-1", nr = 1): Sud => ({
   notes: null,
   brewmaster: null,
   style_year_number: nr,
+  global_number: 200 + nr,
   volume_hl: 15,
   merged_into_sud_id: null,
   withdrawals: [],

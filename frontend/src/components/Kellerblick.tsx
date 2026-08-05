@@ -10,6 +10,7 @@ import {
   formatHl,
   occupancyAt,
   remainingHl,
+  globalSudLabel,
   sudNumberLabel,
 } from "../domain";
 import { ReplanDialog } from "./ReplanDialog";
@@ -26,7 +27,12 @@ interface KellerblickProps {
 
 type DialogState =
   | { kind: "transfer"; sud: Sud; occupancy: Occupancy }
-  | { kind: "withdraw"; sud: Sud; occupancy: Occupancy; withdrawalKind: WithdrawalKind }
+  | {
+      kind: "withdraw";
+      sud: Sud;
+      occupancy: Occupancy;
+      withdrawalKind: WithdrawalKind;
+    }
   | {
       kind: "tankWithdraw";
       tank: Tank;
@@ -126,8 +132,9 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
               <div className="card-body">
                 {withRemaining.map(({ sud, occ, remaining }) => (
                   <div className="beer" key={occ.id}>
-                    {sudNumberLabel(sud, sude)} · {sud.recipe.name} · noch{" "}
-                    {formatHl(remaining)}{" "}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                    <span className="muted">({globalSudLabel(sud, sude)})</span>{" "}
+                    · noch {formatHl(remaining)}{" "}
                     <button
                       type="button"
                       className="secondary"
@@ -195,82 +202,87 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
             </article>
           );
         })}
-        {current.filter(({ occ }) => occ.stage !== "ausschank").map(({ sud, occ }) => {
-          const tank = tankById.get(occ.tank_id);
-          const remaining = remainingHl(sud, sude, occ);
-          const warnings = sud.warnings ?? [];
-          return (
-            <article
-              className={warnings.length > 0 ? "card warn" : "card"}
-              key={occ.id}
-            >
-              <header>
-                <strong>{tank?.name ?? "?"}</strong>
-                <span className="muted">
-                  {tank ? formatHl(tank.capacity_hl) : ""} ·{" "}
-                  {STAGE_LABEL[occ.stage]}
-                </span>
-              </header>
-              <div className="card-body">
-                <div className="beer">
-                  {sudNumberLabel(sud, sude)} · {sud.recipe.name}
+        {current
+          .filter(({ occ }) => occ.stage !== "ausschank")
+          .map(({ sud, occ }) => {
+            const tank = tankById.get(occ.tank_id);
+            const remaining = remainingHl(sud, sude, occ);
+            const warnings = sud.warnings ?? [];
+            return (
+              <article
+                className={warnings.length > 0 ? "card warn" : "card"}
+                key={occ.id}
+              >
+                <header>
+                  <strong>{tank?.name ?? "?"}</strong>
+                  <span className="muted">
+                    {tank ? formatHl(tank.capacity_hl) : ""} ·{" "}
+                    {STAGE_LABEL[occ.stage]}
+                  </span>
+                </header>
+                <div className="card-body">
+                  <div className="beer">
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                    <span className="muted">({globalSudLabel(sud, sude)})</span>
+                  </div>
+                  <div className="muted">
+                    {dayProgressLabel(occ, now)} im Tank
+                    {occ.end_at ? ` · bis ${formatDate(occ.end_at)}` : ""}
+                    {" · "}noch {formatHl(remaining)}
+                  </div>
+                  <div className="muted">
+                    {ageLabel(sud, now)}
+                    {sud.recipe_overrides &&
+                      Object.keys(sud.recipe_overrides).length > 0 &&
+                      " · abweichende Rezeptzeiten"}
+                  </div>
+                  {warnings.length > 0 && (
+                    <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
+                  )}
                 </div>
-                <div className="muted">
-                  {dayProgressLabel(occ, now)} im Tank
-                  {occ.end_at ? ` · bis ${formatDate(occ.end_at)}` : ""}
-                  {" · "}noch {formatHl(remaining)}
-                </div>
-                <div className="muted">
-                  {ageLabel(sud, now)}
-                  {sud.recipe_overrides &&
-                    Object.keys(sud.recipe_overrides).length > 0 &&
-                    " · abweichende Rezeptzeiten"}
-                </div>
-                {warnings.length > 0 && (
-                  <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
-                )}
-              </div>
-              <footer>
-                <button
-                  type="button"
-                  onClick={() => setDialog({ kind: "transfer", sud, occupancy: occ })}
-                >
-                  Umdrücken
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={remaining <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "withdraw",
-                      sud,
-                      occupancy: occ,
-                      withdrawalKind: "keg_fill",
-                    })
-                  }
-                >
-                  Fass abfüllen
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={remaining <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "withdraw",
-                      sud,
-                      occupancy: occ,
-                      withdrawalKind: "ausschank",
-                    })
-                  }
-                >
-                  Ausgeschenkt
-                </button>
-              </footer>
-            </article>
-          );
-        })}
+                <footer>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDialog({ kind: "transfer", sud, occupancy: occ })
+                    }
+                  >
+                    Umdrücken
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={remaining <= 0}
+                    onClick={() =>
+                      setDialog({
+                        kind: "withdraw",
+                        sud,
+                        occupancy: occ,
+                        withdrawalKind: "keg_fill",
+                      })
+                    }
+                  >
+                    Fass abfüllen
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={remaining <= 0}
+                    onClick={() =>
+                      setDialog({
+                        kind: "withdraw",
+                        sud,
+                        occupancy: occ,
+                        withdrawalKind: "ausschank",
+                      })
+                    }
+                  >
+                    Ausgeschenkt
+                  </button>
+                </footer>
+              </article>
+            );
+          })}
       </section>
 
       {overdue.length > 0 && (
@@ -292,11 +304,12 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 </header>
                 <div className="card-body">
                   <div className="beer">
-                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                    <span className="muted">({globalSudLabel(sud, sude)})</span>
                   </div>
                   <div className="muted">
-                    geplantes Ende {occ.end_at ? formatDate(occ.end_at) : "—"} ist
-                    vorbei — Bier steht noch im Tank
+                    geplantes Ende {occ.end_at ? formatDate(occ.end_at) : "—"}{" "}
+                    ist vorbei — Bier steht noch im Tank
                   </div>
                   {warnings.length > 0 && (
                     <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
@@ -333,7 +346,8 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
               >
                 <div className="card-body">
                   <div className="beer">
-                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                    <span className="muted">({globalSudLabel(sud, sude)})</span>
                   </div>
                   <div className="muted">
                     ab {formatDate(occ.start_at)} in {tank?.name ?? "?"} (
@@ -347,7 +361,9 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => setDialog({ kind: "replan", sud, occupancy: occ })}
+                    onClick={() =>
+                      setDialog({ kind: "replan", sud, occupancy: occ })
+                    }
                   >
                     Umplanen
                   </button>
@@ -365,7 +381,8 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
             <article className="card unplanned" key={sud.id}>
               <div className="card-body">
                 <div className="beer">
-                  {sudNumberLabel(sud, sude)} · {sud.recipe.name}
+                  {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                  <span className="muted">({globalSudLabel(sud, sude)})</span>
                 </div>
                 <div className="muted">Sudtag {formatDate(sud.brew_date)}</div>
               </div>
