@@ -54,26 +54,42 @@ export function TransferDialog({
     });
   }, [tanks, sude, now, occupancy.tank_id]);
 
+  // The split rows ARE the interface (Stefan, 2026-08-05): one row is a
+  // plain move, „+ Tank aufteilen“ adds more. No separate target picker —
+  // it only duplicated the first row.
   const [allocations, setAllocations] = useState<
     { tank_id: string; volume: string }[]
-  >([]);
+  >([{ tank_id: "", volume: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const targetTank = tanks.find((t) => t.id === allocations[0]?.tank_id) ?? null;
   const isAusschank = targetTank?.stage === "ausschank";
   const split = allocations.length > 1;
-  // All targets of one Umdrücken share a stage (backend rule) — the split
+  // All targets of one Umdrücken share a stage (backend rule) — the later
   // rows only offer tanks matching the first pick.
   const sameStageTanks = candidates.filter(
     (t) => t.stage === targetTank?.stage,
   );
 
-  const selectTarget = (id: string) => {
-    // Whole batch into the chosen tank; „+ Tank aufteilen“ turns this
-    // into an explicit split. Changing the target resets any split — the
-    // stage may have changed.
-    setAllocations(id === "" ? [] : [{ tank_id: id, volume: String(combined) }]);
+  const changeTank = (index: number, id: string) => {
+    const tank = tanks.find((t) => t.id === id);
+    setAllocations((prev) => {
+      // Switching the first row to another stage invalidates the split —
+      // back to a plain whole-volume move into the chosen tank.
+      if (index === 0 && tank && tank.stage !== targetTank?.stage) {
+        return [{ tank_id: id, volume: String(combined) }];
+      }
+      return prev.map((x, j) =>
+        j === index
+          ? {
+              ...x,
+              tank_id: id,
+              volume: prev.length === 1 ? String(combined) : x.volume,
+            }
+          : x,
+      );
+    });
   };
 
   const allocationSum = allocations.reduce(
@@ -93,7 +109,6 @@ export function TransferDialog({
     })
     .filter((t): t is Tank => t !== null);
   const canSubmit =
-    allocations.length > 0 &&
     allocations.every((a) => a.tank_id && parseFloat(a.volume) > 0) &&
     Math.abs(allocationSum - combined) < 0.01 &&
     overfilled.length === 0;
@@ -127,6 +142,15 @@ export function TransferDialog({
     }
   };
 
+  const optionsFor = (index: number) => {
+    const pool = index === 0 ? candidates : sameStageTanks;
+    return pool.filter(
+      (t) =>
+        t.id === allocations[index].tank_id ||
+        !allocations.some((other) => other.tank_id === t.id),
+    );
+  };
+
   return (
     <div className="dialog-backdrop" role="dialog" aria-label="Umdrücken">
       <form className="dialog" onSubmit={handleSubmit}>
@@ -142,122 +166,103 @@ export function TransferDialog({
             : " — Ziel wählen"}
         </p>
 
-        <label>
-          Zieltank
-          <select
-            value={allocations[0]?.tank_id ?? ""}
-            onChange={(e) => selectTarget(e.target.value)}
-            required
-          >
-            <option value="">— wählen —</option>
-            {STAGE_ORDER.map((stage) => {
-              const group = candidates.filter((t) => t.stage === stage);
-              if (group.length === 0) return null;
-              return (
-                <optgroup key={stage} label={STAGE_LABEL[stage]}>
-                  {group.map((t) => (
+        {allocations.map((a, i) => (
+          <div className="allocation-row" key={i}>
+            <select
+              aria-label={i === 0 ? "Zieltank" : `Zieltank ${i + 1}`}
+              value={a.tank_id}
+              onChange={(e) => changeTank(i, e.target.value)}
+              required
+            >
+              <option value="">— wählen —</option>
+              {i === 0
+                ? STAGE_ORDER.map((stage) => {
+                    const group = optionsFor(i).filter(
+                      (t) => t.stage === stage,
+                    );
+                    if (group.length === 0) return null;
+                    return (
+                      <optgroup key={stage} label={STAGE_LABEL[stage]}>
+                        {group.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({formatHl(t.capacity_hl)})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })
+                : optionsFor(i).map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name} ({formatHl(t.capacity_hl)})
                     </option>
                   ))}
-                </optgroup>
-              );
-            })}
-          </select>
-        </label>
-
-        {targetTank && (
-          <>
-            {split &&
-              allocations.map((a, i) => (
-                <div className="allocation-row" key={i}>
-                  <select
-                    aria-label={`Zieltank ${i + 1}`}
-                    value={a.tank_id}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setAllocations((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, tank_id: value } : x,
-                        ),
-                      );
-                    }}
-                    required
-                  >
-                    <option value="">— Tank —</option>
-                    {sameStageTanks
-                      .filter(
-                        (t) =>
-                          t.id === a.tank_id ||
-                          !allocations.some((other) => other.tank_id === t.id),
-                      )
-                      .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name} ({formatHl(t.capacity_hl)})
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    aria-label={`Volumen ${i + 1} (hl)`}
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    value={a.volume}
-                    onChange={(e) =>
-                      setAllocations((prev) =>
-                        prev.map((x, j) =>
-                          j === i ? { ...x, volume: e.target.value } : x,
-                        ),
-                      )
-                    }
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="secondary"
-                    aria-label={`Zeile ${i + 1} entfernen`}
-                    onClick={() =>
-                      setAllocations((prev) =>
-                        prev.length === 2
-                          ? // Back to a plain single-tank move: the whole
-                            // batch again goes into the remaining tank.
-                            prev
-                              .filter((_, j) => j !== i)
-                              .map((x) => ({ ...x, volume: String(combined) }))
-                          : prev.filter((_, j) => j !== i),
-                      )
-                    }
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            {sameStageTanks.length > allocations.length && (
+            </select>
+            {split && (
+              <input
+                aria-label={`Volumen ${i + 1} (hl)`}
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={a.volume}
+                onChange={(e) =>
+                  setAllocations((prev) =>
+                    prev.map((x, j) =>
+                      j === i ? { ...x, volume: e.target.value } : x,
+                    ),
+                  )
+                }
+                required
+              />
+            )}
+            {split && (
               <button
                 type="button"
                 className="secondary"
+                aria-label={`Zeile ${i + 1} entfernen`}
                 onClick={() =>
-                  setAllocations((prev) => [...prev, { tank_id: "", volume: "" }])
+                  setAllocations((prev) =>
+                    prev.length === 2
+                      ? // Back to a plain single-tank move: the whole
+                        // volume again goes into the remaining tank.
+                        prev
+                          .filter((_, j) => j !== i)
+                          .map((x) => ({ ...x, volume: String(combined) }))
+                      : prev.filter((_, j) => j !== i),
+                  )
                 }
               >
-                + Tank aufteilen
+                ✕
               </button>
             )}
-            <p
-              className={
-                Math.abs(allocationSum - combined) < 0.01 ? "muted" : "error"
-              }
-            >
-              Aufgeteilt: {formatHl(allocationSum)} von {formatHl(combined)}
-            </p>
-            {overfilled.length > 0 && (
-              <div className="error">
-                {overfilled[0].name} fasst nur{" "}
-                {formatHl(overfilled[0].capacity_hl)} — Menge reduzieren oder
-                weiter aufteilen.
-              </div>
-            )}
-          </>
+          </div>
+        ))}
+
+        {targetTank && sameStageTanks.length > allocations.length && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              setAllocations((prev) => [...prev, { tank_id: "", volume: "" }])
+            }
+          >
+            + Tank aufteilen
+          </button>
+        )}
+        {targetTank && (
+          <p
+            className={
+              Math.abs(allocationSum - combined) < 0.01 ? "muted" : "error"
+            }
+          >
+            Aufgeteilt: {formatHl(allocationSum)} von {formatHl(combined)}
+          </p>
+        )}
+        {overfilled.length > 0 && (
+          <div className="error">
+            {overfilled[0].name} fasst nur{" "}
+            {formatHl(overfilled[0].capacity_hl)} — Menge reduzieren oder
+            weiter aufteilen.
+          </div>
         )}
 
         {error && <div className="error">{error}</div>}
