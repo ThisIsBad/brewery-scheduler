@@ -17,3 +17,7 @@ build/
 STARTUP-FEHLER.txt
 STARTUP-STATUS.txt
 .deps-fingerprint
+
+# Prod-Konfiguration und Backups bleiben auf dem Server
+deploy/.env
+deploy/backups/

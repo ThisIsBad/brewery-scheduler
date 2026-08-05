@@ -1,0 +1,18 @@
+# SITE_ADDRESS: eine Domain (z. B. brauerei.example.de) -> automatisches
+# HTTPS via Let's Encrypt. Nur eine IP ohne Domain? Dann ":80" eintragen —
+# ohne TLS, aber weiterhin hinter Basic-Auth.
+{$SITE_ADDRESS} {
+	basic_auth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
