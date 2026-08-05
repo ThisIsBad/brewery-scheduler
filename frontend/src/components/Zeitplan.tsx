@@ -12,7 +12,7 @@ interface ZeitplanProps {
     nextTankId: string,
     nextStartMs: number,
   ) => void;
-  /** Ende/Dauer ändern: nur end_at wandert, der Start bleibt. */
+  /** Dauer ändern: nur end_at wandert, der Start bleibt. */
   onResizeOccupancy: (
     sudId: string,
     occupancyId: string,
@@ -112,8 +112,9 @@ export function Zeitplan({
     onMoveOccupancy(selected.sud.id, selected.occ.id, selected.occ.tank_id, nextStart);
   };
 
-  // Ende/Dauer ändern (Stefan, 2026-08-06): nur end_at wandert, der Start
-  // bleibt — z. B. die Lagerung um eine Woche verlängern.
+  // Dauer ändern (Stefan, 2026-08-05: bewusst Start ODER Dauer wählen):
+  // nur end_at wandert, der Start bleibt — z. B. Lagerung um eine Woche
+  // verlängern.
   const resizeSelected = (deltaDays: number) => {
     if (!selected?.occ.end_at) return;
     const nextEnd = new Date(selected.occ.end_at).getTime() + deltaDays * DAY_MS;
@@ -324,10 +325,10 @@ export function Zeitplan({
           </div>
           {selected.occ.end_at && (
             <div className="zeitplan-actions">
-              <span className="zeitplan-gruppe">Ende</span>
+              <span className="zeitplan-gruppe">Dauer</span>
               <button
                 type="button"
-                aria-label="Ende −7 Tage"
+                aria-label="Dauer −7 Tage"
                 disabled={!canResize(-7)}
                 onClick={() => resizeSelected(-7)}
               >
@@ -335,7 +336,7 @@ export function Zeitplan({
               </button>
               <button
                 type="button"
-                aria-label="Ende −1 Tag"
+                aria-label="Dauer −1 Tag"
                 disabled={!canResize(-1)}
                 onClick={() => resizeSelected(-1)}
               >
@@ -343,14 +344,14 @@ export function Zeitplan({
               </button>
               <button
                 type="button"
-                aria-label="Ende +1 Tag"
+                aria-label="Dauer +1 Tag"
                 onClick={() => resizeSelected(1)}
               >
                 +1
               </button>
               <button
                 type="button"
-                aria-label="Ende +7 Tage"
+                aria-label="Dauer +7 Tage"
                 onClick={() => resizeSelected(7)}
               >
                 +7
