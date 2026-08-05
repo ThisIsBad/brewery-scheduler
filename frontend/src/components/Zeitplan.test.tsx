@@ -127,7 +127,7 @@ describe("Zeitplan (Touch-Timeline)", () => {
     );
   });
 
-  it("Ende +7 verlängert nur die Dauer, der Start bleibt", () => {
+  it("Dauer +7 verlängert nur die Dauer, der Start bleibt", () => {
     const onResize = vi.fn();
     render(
       <Zeitplan
@@ -142,7 +142,7 @@ describe("Zeitplan (Touch-Timeline)", () => {
     const bar = screen.getByRole("toolbar", { name: "Sud verschieben" });
     // Info zeigt von–bis mit Dauer (7 Tage im Fixture).
     expect(within(bar).getByText(/\(7 Tage\)/)).toBeInTheDocument();
-    fireEvent.click(within(bar).getByRole("button", { name: "Ende +7 Tage" }));
+    fireEvent.click(within(bar).getByRole("button", { name: "Dauer +7 Tage" }));
 
     expect(onResize).toHaveBeenCalledWith(
       "sud-1",
@@ -151,7 +151,7 @@ describe("Zeitplan (Touch-Timeline)", () => {
     );
     // Kürzen unter den Start hinaus ist gesperrt (7 Tage Dauer → −7 ergäbe 0).
     expect(
-      within(bar).getByRole("button", { name: "Ende −7 Tage" }),
+      within(bar).getByRole("button", { name: "Dauer −7 Tage" }),
     ).toBeDisabled();
   });
 
