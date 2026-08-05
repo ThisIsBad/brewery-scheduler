@@ -1,0 +1,31 @@
+# Prod-Deploy (MVP-Pipeline, 2026-08-05): main ist Dev; ein Versions-Tag
+# (v0.1.0, v0.1.1, …) ist ein Prod-Release. Der Job verbindet sich per SSH
+# mit dem Server und baut den Stack dort neu. Er läuft nur, wenn die drei
+# Secrets PROD_HOST / PROD_USER / PROD_SSH_KEY gesetzt sind — bis dahin ist
+# das Tagging folgenlos.
+name: deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  prod:
+    runs-on: ubuntu-latest
+    if: ${{ vars.PROD_DEPLOY_ENABLED == 'true' }}
+    steps:
+      - name: SSH-Deploy auf den Prod-Server
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PROD_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=accept-new "$PROD_USER@$PROD_HOST" \
+            "set -e; cd /opt/brewery-scheduler; git fetch --tags origin; git checkout -f '$TAG'; \
+             docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d --build; \
+             docker image prune -f"
