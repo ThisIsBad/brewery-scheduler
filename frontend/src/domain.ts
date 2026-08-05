@@ -46,7 +46,9 @@ export function combinedVolumeHl(lead: Sud, all: Sud[]): number {
   );
 }
 
-/** "Nr. 1+2/2026" — the lead's number plus its partners'. */
+/** "Keller Hell 1/2026" — Sorte + laufende Nummer je Jahr, beim
+ * Doppelsud "Festbier 1+2/2026". Die Sorte gehört zur Nummer, weil je
+ * Bier separat gezählt wird (Stefan, 2026-08-06). */
 export function sudNumberLabel(lead: Sud, all: Sud[]): string {
   const numbers = [
     lead.style_year_number,
@@ -55,7 +57,7 @@ export function sudNumberLabel(lead: Sud, all: Sud[]): string {
   // brew_date is a date-only string; slicing avoids the UTC-midnight parse
   // that would shift Jan 1 into the previous year west of UTC.
   const year = lead.brew_date.slice(0, 4);
-  return `Nr. ${numbers.join("+")}/${year}`;
+  return `${lead.recipe.beer_style} ${numbers.join("+")}/${year}`;
 }
 
 export function occupancyAt(sud: Sud, when: Date): Occupancy | null {

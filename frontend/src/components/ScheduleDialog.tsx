@@ -94,7 +94,7 @@ export function ScheduleDialog({
     <div className="dialog-backdrop" role="dialog" aria-label="Einplanen">
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          Einplanen: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          Einplanen: {sudNumberLabel(sud, sude)} · {sud.recipe.name}
         </h2>
         <p className="muted">{formatHl(combined)} in den Gärtank</p>
 

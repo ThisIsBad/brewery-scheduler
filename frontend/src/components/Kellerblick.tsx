@@ -126,7 +126,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
               <div className="card-body">
                 {withRemaining.map(({ sud, occ, remaining }) => (
                   <div className="beer" key={occ.id}>
-                    {sud.recipe.name} {sudNumberLabel(sud, sude)} · noch{" "}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name} · noch{" "}
                     {formatHl(remaining)}{" "}
                     <button
                       type="button"
@@ -213,7 +213,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
               </header>
               <div className="card-body">
                 <div className="beer">
-                  {sud.recipe.name} {sudNumberLabel(sud, sude)}
+                  {sudNumberLabel(sud, sude)} · {sud.recipe.name}
                 </div>
                 <div className="muted">
                   {dayProgressLabel(occ, now)} im Tank
@@ -292,7 +292,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 </header>
                 <div className="card-body">
                   <div className="beer">
-                    {sud.recipe.name} {sudNumberLabel(sud, sude)}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}
                   </div>
                   <div className="muted">
                     geplantes Ende {occ.end_at ? formatDate(occ.end_at) : "—"} ist
@@ -333,7 +333,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
               >
                 <div className="card-body">
                   <div className="beer">
-                    {sud.recipe.name} {sudNumberLabel(sud, sude)}
+                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}
                   </div>
                   <div className="muted">
                     ab {formatDate(occ.start_at)} in {tank?.name ?? "?"} (
@@ -365,7 +365,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
             <article className="card unplanned" key={sud.id}>
               <div className="card-body">
                 <div className="beer">
-                  {sud.recipe.name} {sudNumberLabel(sud, sude)}
+                  {sudNumberLabel(sud, sude)} · {sud.recipe.name}
                 </div>
                 <div className="muted">Sudtag {formatDate(sud.brew_date)}</div>
               </div>

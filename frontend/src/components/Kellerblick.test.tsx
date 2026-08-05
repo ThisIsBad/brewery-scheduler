@@ -118,8 +118,8 @@ describe("Kellerblick", () => {
       />,
     );
 
-    // The unplanned lead folds the partner number into its label...
-    expect(screen.getByText(/Nr\. 1\+2\//)).toBeInTheDocument();
+    // The unplanned lead folds the partner number into its label (Sorte n+m/Jahr)...
+    expect(screen.getByText(/kellerbier 1\+2\//)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Einplanen" })).toBeInTheDocument();
     // ...and the partner gets no card of its own.
     expect(screen.getAllByRole("article")).toHaveLength(1);

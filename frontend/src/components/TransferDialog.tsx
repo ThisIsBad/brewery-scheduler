@@ -173,7 +173,7 @@ export function TransferDialog({
     <div className="dialog-backdrop" role="dialog" aria-label="Umdrücken">
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          Umdrücken: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          Umdrücken: {sudNumberLabel(sud, sude)} · {sud.recipe.name}
         </h2>
         <p className="muted">
           {formatHl(combined)} aus {sourceTank?.name ?? "?"}
