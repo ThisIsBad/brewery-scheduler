@@ -12,6 +12,12 @@ interface ZeitplanProps {
     nextTankId: string,
     nextStartMs: number,
   ) => void;
+  /** Ende/Dauer ändern: nur end_at wandert, der Start bleibt. */
+  onResizeOccupancy: (
+    sudId: string,
+    occupancyId: string,
+    nextEndMs: number,
+  ) => void;
 }
 
 // Fällt nur noch als Notnagel an, wenn ein Bier (noch) keine Farbe hat —
@@ -42,7 +48,12 @@ interface Selected {
 /** Touch-first planning timeline (Track C): tap a block to select it,
  * then move it with the day buttons or re-tank it via the dropdown —
  * no drag geometry, so it works with gloves in the cellar. */
-export function Zeitplan({ tanks, sude, onMoveOccupancy }: ZeitplanProps) {
+export function Zeitplan({
+  tanks,
+  sude,
+  onMoveOccupancy,
+  onResizeOccupancy,
+}: ZeitplanProps) {
   const [zoom, setZoom] = useState(1);
   const [selected, setSelected] = useState<Selected | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -99,6 +110,23 @@ export function Zeitplan({ tanks, sude, onMoveOccupancy }: ZeitplanProps) {
     const nextStart =
       new Date(selected.occ.start_at).getTime() + deltaDays * DAY_MS;
     onMoveOccupancy(selected.sud.id, selected.occ.id, selected.occ.tank_id, nextStart);
+  };
+
+  // Ende/Dauer ändern (Stefan, 2026-08-06): nur end_at wandert, der Start
+  // bleibt — z. B. die Lagerung um eine Woche verlängern.
+  const resizeSelected = (deltaDays: number) => {
+    if (!selected?.occ.end_at) return;
+    const nextEnd = new Date(selected.occ.end_at).getTime() + deltaDays * DAY_MS;
+    if (nextEnd <= new Date(selected.occ.start_at).getTime()) return;
+    onResizeOccupancy(selected.sud.id, selected.occ.id, nextEnd);
+  };
+
+  const canResize = (deltaDays: number): boolean => {
+    if (!selected?.occ.end_at) return false;
+    return (
+      new Date(selected.occ.end_at).getTime() + deltaDays * DAY_MS >
+      new Date(selected.occ.start_at).getTime()
+    );
   };
 
   const retankSelected = (tankId: string) => {
@@ -265,26 +293,71 @@ export function Zeitplan({ tanks, sude, onMoveOccupancy }: ZeitplanProps) {
         <div className="zeitplan-actionbar" role="toolbar" aria-label="Sud verschieben">
           <div className="zeitplan-actioninfo">
             <strong>
-              {selected.sud.recipe.name} {sudNumberLabel(selected.sud, sude)}
+              {sudNumberLabel(selected.sud, sude)} · {selected.sud.recipe.name}
             </strong>
             <span className="muted">
-              {STAGE_LABEL[selected.occ.stage]} · ab{" "}
+              {STAGE_LABEL[selected.occ.stage]} ·{" "}
               {new Date(selected.occ.start_at).toLocaleDateString("de-DE")}
+              {selected.occ.end_at
+                ? ` – ${new Date(selected.occ.end_at).toLocaleDateString("de-DE")} (${Math.round(
+                    (new Date(selected.occ.end_at).getTime() -
+                      new Date(selected.occ.start_at).getTime()) /
+                      DAY_MS,
+                  )} Tage)`
+                : " – offen"}
             </span>
           </div>
           <div className="zeitplan-actions">
-            <button type="button" onClick={() => moveSelected(-7)}>
+            <span className="zeitplan-gruppe">Start</span>
+            <button type="button" aria-label="Start −7 Tage" onClick={() => moveSelected(-7)}>
               −7
             </button>
-            <button type="button" onClick={() => moveSelected(-1)}>
-              −1 Tag
+            <button type="button" aria-label="Start −1 Tag" onClick={() => moveSelected(-1)}>
+              −1
             </button>
-            <button type="button" onClick={() => moveSelected(1)}>
-              +1 Tag
+            <button type="button" aria-label="Start +1 Tag" onClick={() => moveSelected(1)}>
+              +1
             </button>
-            <button type="button" onClick={() => moveSelected(7)}>
+            <button type="button" aria-label="Start +7 Tage" onClick={() => moveSelected(7)}>
               +7
             </button>
+          </div>
+          {selected.occ.end_at && (
+            <div className="zeitplan-actions">
+              <span className="zeitplan-gruppe">Ende</span>
+              <button
+                type="button"
+                aria-label="Ende −7 Tage"
+                disabled={!canResize(-7)}
+                onClick={() => resizeSelected(-7)}
+              >
+                −7
+              </button>
+              <button
+                type="button"
+                aria-label="Ende −1 Tag"
+                disabled={!canResize(-1)}
+                onClick={() => resizeSelected(-1)}
+              >
+                −1
+              </button>
+              <button
+                type="button"
+                aria-label="Ende +1 Tag"
+                onClick={() => resizeSelected(1)}
+              >
+                +1
+              </button>
+              <button
+                type="button"
+                aria-label="Ende +7 Tage"
+                onClick={() => resizeSelected(7)}
+              >
+                +7
+              </button>
+            </div>
+          )}
+          <div className="zeitplan-actions">
             <select
               aria-label="Tank wechseln"
               value={selected.occ.tank_id}

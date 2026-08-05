@@ -139,6 +139,31 @@ export default function App() {
     [sude, applySudUpdate],
   );
 
+  // Ende/Dauer ändern (2026-08-06): nur end_at der gewählten Belegung
+  // wandert — z. B. die Lagerung verlängern; der Start bleibt stehen.
+  const handleResize = useCallback(
+    async (sudId: string, occupancyId: string, nextEndMs: number) => {
+      const sud = sude.find((s) => s.id === sudId);
+      if (!sud) return;
+      const payload: ScheduleOccupancyIn[] = sud.occupancies.map((o) => ({
+        tank_id: o.tank_id,
+        stage: o.stage,
+        start_at: o.start_at,
+        end_at:
+          o.id === occupancyId ? new Date(nextEndMs).toISOString() : o.end_at,
+        volume_hl: o.volume_hl,
+      }));
+
+      try {
+        const updated = await api.updateSchedule(sudId, { occupancies: payload });
+        applySudUpdate(updated);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [sude, applySudUpdate],
+  );
+
   return (
     <div className="app">
       <header className="app-header">
@@ -217,7 +242,12 @@ export default function App() {
       {view === "zeitplan" && (
         <div className="app-board">
           {tanks.length > 0 && (
-            <Zeitplan tanks={tanks} sude={sude} onMoveOccupancy={handleMove} />
+            <Zeitplan
+              tanks={tanks}
+              sude={sude}
+              onMoveOccupancy={handleMove}
+              onResizeOccupancy={handleResize}
+            />
           )}
         </div>
       )}

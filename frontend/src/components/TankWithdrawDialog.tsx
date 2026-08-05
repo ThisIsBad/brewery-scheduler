@@ -88,7 +88,7 @@ export function TankWithdrawDialog({
           {withRemaining
             .map(
               (e) =>
-                `${e.sud.recipe.name} ${sudNumberLabel(e.sud, sude)} ${formatHl(
+                `${sudNumberLabel(e.sud, sude)} ${formatHl(
                   e.remaining,
                 )}`,
             )

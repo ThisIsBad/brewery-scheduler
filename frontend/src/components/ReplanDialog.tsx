@@ -83,7 +83,7 @@ export function ReplanDialog({
     <div className="dialog-backdrop" role="dialog" aria-label="Umplanen">
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          Umplanen: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          Umplanen: {sudNumberLabel(sud, sude)} · {sud.recipe.name}
         </h2>
         <p className="muted">
           {formatHl(remaining)} · Folgeschritte verschieben sich mit

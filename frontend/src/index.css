@@ -387,6 +387,13 @@ button:disabled {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.zeitplan-gruppe {
+  font-size: 13px;
+  color: #555;
+  min-width: 38px;
 }
 
 .zeitplan-actions button,

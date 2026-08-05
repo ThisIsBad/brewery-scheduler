@@ -85,7 +85,7 @@ export function WithdrawDialog({
     <div className="dialog-backdrop" role="dialog" aria-label={KIND_TITLE[kind]}>
       <form className="dialog" onSubmit={handleSubmit}>
         <h2>
-          {KIND_TITLE[kind]}: {sud.recipe.name} {sudNumberLabel(sud, sude)}
+          {KIND_TITLE[kind]}: {sudNumberLabel(sud, sude)} · {sud.recipe.name}
         </h2>
         <p className="muted">
           Aus {tank?.name ?? "?"} · noch {formatHl(remaining)} im Tank
