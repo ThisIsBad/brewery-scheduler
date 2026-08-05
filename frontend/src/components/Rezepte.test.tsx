@@ -247,7 +247,10 @@ test("erfasst den Brauzettel (Schüttung, Maische, Wasser, Hopfen) in der neuen 
 
 test("zeigt den Brauzettel auf der Rezeptkarte", () => {
   const voll = recipe({
-    malts: [{ name: "Pilsner Malz", kg: 250, maelzerei: "BM" }],
+    malts: [
+      { name: "Pilsner Malz", kg: 250, maelzerei: "BM" },
+      { name: "Münchner Malz", kg: 50 },
+    ],
     hop_gaben: [
       { name: "Perle", gramm: 1800, zeitpunkt: "Kochbeginn", alpha_prozent: 6.5 },
     ],
@@ -266,7 +269,11 @@ test("zeigt den Brauzettel auf der Rezeptkarte", () => {
   });
   render(<Rezepte recipes={[voll]} onReload={() => {}} />);
 
-  expect(screen.getByText(/Pilsner Malz 250 kg \(BM\)/)).toBeInTheDocument();
+  // Schüttungssumme + Anteile in % wie die Excel-Spalte (250/300 ≈ 83 %).
+  expect(
+    screen.getByText(/Schüttung \(300 kg\): Pilsner Malz 250 kg \(BM, 83 %\)/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Münchner Malz 50 kg \(17 %\)/)).toBeInTheDocument();
   expect(
     screen.getByText(/Hauptguss 11 hl · Nachgüsse 5.5 \+ 3 hl/),
   ).toBeInTheDocument();
