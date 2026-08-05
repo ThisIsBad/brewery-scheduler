@@ -1,0 +1,2084 @@
+[
+ {
+  "global": 210,
+  "code": "B1",
+  "brew": "2026-02-02",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-03-10"
+   },
+   {
+    "tank": "Kitzmann groß",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 211,
+  "code": "B2",
+  "brew": "2026-02-03",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 212,
+  "code": "B3",
+  "brew": "2026-02-03",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 213,
+  "code": "B4",
+  "brew": "2026-02-04",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 214,
+  "code": "B5",
+  "brew": "2026-02-04",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": "2026-03-10"
+   },
+   {
+    "tank": "Kitzmann groß",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-10",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 215,
+  "code": "B6",
+  "brew": "2026-02-04",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Xaver",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 216,
+  "code": "B7",
+  "brew": "2026-02-05",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Xaver",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 217,
+  "code": "B8",
+  "brew": "2026-02-05",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 218,
+  "code": "B9",
+  "brew": "2026-02-05",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": "2026-03-06"
+   },
+   {
+    "tank": "Bergtank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-06",
+  "versteuert": 10.1,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 219,
+  "code": "B10",
+  "brew": "2026-02-06",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Fritz",
+    "bis": "2026-03-10"
+   },
+   {
+    "tank": "Kitzmann groß",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-10",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 220,
+  "code": "B11",
+  "brew": "2026-02-06",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-02-22"
+   },
+   {
+    "tank": "Fritz",
+    "bis": "2026-03-10"
+   },
+   {
+    "tank": "Kitzmann groß",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-10",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 221,
+  "code": "B12",
+  "brew": "2026-02-06",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": "2026-03-10"
+   },
+   {
+    "tank": "Kitzmann groß",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-10",
+  "versteuert": 15.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 222,
+  "code": "B13",
+  "brew": "2026-02-24",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Xaver",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-24",
+  "versteuert": 7.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 223,
+  "code": "B14",
+  "brew": "2026-02-25",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Xaver",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-24",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 224,
+  "code": "B15",
+  "brew": "2026-02-25",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-20",
+  "versteuert": 14.5,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 225,
+  "code": "B16",
+  "brew": "2026-02-25",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-21",
+  "versteuert": 29.8,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 226,
+  "code": "B17",
+  "brew": "2026-02-25",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-22",
+  "versteuert": 5.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 227,
+  "code": "B18",
+  "brew": "2026-02-26",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-24",
+  "versteuert": 11.7,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 228,
+  "code": "B19",
+  "brew": "2026-02-26",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-26",
+  "versteuert": 21.8,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 229,
+  "code": "B20",
+  "brew": "2026-02-26",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-27",
+  "versteuert": 10.5,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 230,
+  "code": "B21",
+  "brew": "2026-02-27",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Fritz",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-28",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 231,
+  "code": "B22",
+  "brew": "2026-02-27",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-03-11"
+   },
+   {
+    "tank": "Fritz",
+    "bis": "2026-04-04"
+   },
+   {
+    "tank": "Striezitank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-29",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 232,
+  "code": "M1",
+  "brew": "2026-03-12",
+  "sorte": "Bay. Dunkel (Enno)",
+  "menge_hl": 15.0,
+  "stw": 0.124,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 13.3,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 233,
+  "code": "S1",
+  "brew": "2026-03-12",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 12.5,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 234,
+  "code": "S2",
+  "brew": "2026-03-12",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-04-10"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-04-10",
+  "versteuert": 13.7,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 235,
+  "code": "K1",
+  "brew": "2026-03-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 236,
+  "code": "K2",
+  "brew": "2026-03-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 237,
+  "code": "K3",
+  "brew": "2026-03-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 22.6,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 238,
+  "code": "K4",
+  "brew": "2026-03-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-04-06"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-04-06",
+  "versteuert": 8.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 239,
+  "code": "B23",
+  "brew": "2026-03-16",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-04-06"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-01",
+  "versteuert": 29.1,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 240,
+  "code": "B24",
+  "brew": "2026-03-16",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-04-06"
+   },
+   {
+    "tank": "Benjamin",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-01",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 241,
+  "code": "B25",
+  "brew": "2026-03-17",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-04-06"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": null
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-26",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 242,
+  "code": "B26",
+  "brew": "2026-03-17",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-04-06"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-27",
+  "versteuert": 16.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 243,
+  "code": "W1",
+  "brew": "2026-03-17",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": 15.0,
+  "stw": 0.125,
+  "chain": [
+   {
+    "tank": "Offener Gärbottich",
+    "bis": "2026-03-21"
+   },
+   {
+    "tank": "Alva",
+    "bis": "2026-03-31"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-03-31",
+  "versteuert": 14.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 244,
+  "code": "K5",
+  "brew": "2026-04-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-04-23"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-04-23",
+  "versteuert": 29.8,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 245,
+  "code": "K6",
+  "brew": "2026-04-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-04-23"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-04-23",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 246,
+  "code": "B27",
+  "brew": "2026-04-10",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-04-22"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-22",
+  "versteuert": 29.1,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 247,
+  "code": "B28",
+  "brew": "2026-04-10",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-04-22"
+   },
+   {
+    "tank": "Vincenz",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-22",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 248,
+  "code": "B29",
+  "brew": "2026-04-09",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-04-22"
+   },
+   {
+    "tank": "Fritz",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-02",
+  "versteuert": 29.9,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 249,
+  "code": "B30",
+  "brew": "2026-04-09",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-04-22"
+   },
+   {
+    "tank": "Fritz",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-02",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 250,
+  "code": "K7",
+  "brew": "2026-04-11",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": "2026-05-07"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-23",
+  "versteuert": 29.7,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 251,
+  "code": "K8",
+  "brew": "2026-04-11",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-05-07"
+   },
+   {
+    "tank": "Evelyn",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-23",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 252,
+  "code": "K9",
+  "brew": "2026-04-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-05-08"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-01",
+  "versteuert": 29.3,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 253,
+  "code": "K10",
+  "brew": "2026-04-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-05-08"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-01",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 254,
+  "code": "B31",
+  "brew": "2026-04-12",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-05-28"
+   },
+   {
+    "tank": "Ausschank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-25",
+  "versteuert": 28.3,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 255,
+  "code": "B32",
+  "brew": "2026-04-12",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": 16.2,
+  "stw": 0.135,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-05-28"
+   },
+   {
+    "tank": "Ausschank",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-25",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 256,
+  "code": "K11",
+  "brew": "2026-04-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-05-30"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-03",
+  "versteuert": 28.2,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 257,
+  "code": "K12",
+  "brew": "2026-04-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-05-30"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 258,
+  "code": "W2",
+  "brew": "2026-04-29",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.125,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-05-30"
+   }
+  ],
+  "ausschank": "2026-06-13",
+  "versteuert": 18.3,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 259,
+  "code": "K13",
+  "brew": "2026-04-30",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-05-30"
+   }
+  ],
+  "ausschank": "2026-07-01",
+  "versteuert": 10.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 260,
+  "code": "K14",
+  "brew": "2026-05-02",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-05-30"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-03",
+  "versteuert": 21.7,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 261,
+  "code": "K15",
+  "brew": "2026-05-02",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-05-30"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-05",
+  "versteuert": 8.5,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 262,
+  "code": "K16",
+  "brew": "2026-05-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-06-03"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-25",
+  "versteuert": 28.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 263,
+  "code": "M2",
+  "brew": "2026-05-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.125,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-06-02"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-25",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 264,
+  "code": "S3",
+  "brew": "2026-05-13",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": "2026-06-03"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-05-21",
+  "versteuert": 11.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 265,
+  "code": "S4",
+  "brew": "2026-05-15",
+  "sorte": "Wiener Lager (Leopold)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-06-03"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-05",
+  "versteuert": 15.1,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 266,
+  "code": "K17",
+  "brew": "2026-06-09",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-06-03"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-02",
+  "versteuert": 9.0,
+  "braumeister": "Vincenz",
+  "note": "keller fass"
+ },
+ {
+  "global": 267,
+  "code": "K18",
+  "brew": "2026-06-10",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-06-03"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-11",
+  "versteuert": 19.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 268,
+  "code": "K19",
+  "brew": "2026-06-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-06-12"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-04",
+  "versteuert": 15.2,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 269,
+  "code": "K20",
+  "brew": "2026-06-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": "2026-06-12"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-04",
+  "versteuert": 14.6,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 270,
+  "code": "W3",
+  "brew": "2026-06-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.125,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-05-12"
+   },
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-04",
+  "versteuert": 9.5,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 271,
+  "code": "M3",
+  "brew": "2026-06-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-06-30"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-17",
+  "versteuert": 18.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 272,
+  "code": "M4",
+  "brew": "2026-07-07",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-06-30"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-26",
+  "versteuert": 28.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 273,
+  "code": "K21",
+  "brew": "2026-07-07",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-07-01"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-06-26",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 274,
+  "code": "K22",
+  "brew": "2026-07-08",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-07-01"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-23",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 275,
+  "code": "S5",
+  "brew": "2026-07-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-07-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-28",
+  "versteuert": 28.2,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 276,
+  "code": "S6",
+  "brew": "2026-07-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.122,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-07-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-28",
+  "versteuert": 0.0,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 277,
+  "code": "W4",
+  "brew": "2026-07-11",
+  "sorte": "Collab Sud 2026",
+  "menge_hl": 15.0,
+  "stw": 0.125,
+  "chain": [
+   {
+    "tank": "Offener Gärbottich",
+    "bis": "2026-06-16"
+   },
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 278,
+  "code": "K23",
+  "brew": "2026-07-12",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-07-08"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": 6.4,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 279,
+  "code": "K24",
+  "brew": "2026-07-12",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-07-08"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 280,
+  "code": "K25",
+  "brew": "2026-07-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-07-15"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-16",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 281,
+  "code": "K26",
+  "brew": "2026-07-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": 0.119,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-07-15"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-07-16",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 282,
+  "code": "M5",
+  "brew": "2026-07-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-08-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 283,
+  "code": "K27",
+  "brew": "2026-07-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-08-05"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 284,
+  "code": "K28",
+  "brew": "2026-08-04",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-08-05"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 285,
+  "code": "W5",
+  "brew": "2026-08-05",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-07-11"
+   },
+   {
+    "tank": "Lovis",
+    "bis": "2026-08-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 286,
+  "code": "S7",
+  "brew": "2026-08-05",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-08-04"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 287,
+  "code": "S8",
+  "brew": "2026-08-07",
+  "sorte": "Rauchbier (Waltraut)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": "2026-08-04"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 288,
+  "code": "K29",
+  "brew": "2026-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-08-12"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 289,
+  "code": "K30",
+  "brew": "2026-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": "2026-08-12"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 290,
+  "code": "K31",
+  "brew": "2026-08-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-08-12"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 291,
+  "code": "K32",
+  "brew": "2026-08-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": "2026-08-12"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 292,
+  "code": "K33",
+  "brew": "2026-08-13",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-08-19"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 293,
+  "code": "K34",
+  "brew": "2026-08-13",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-08-19"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-08-13",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 294,
+  "code": "M6",
+  "brew": "2026-08-14",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-09-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-03",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 295,
+  "code": "W6",
+  "brew": "2026-08-14",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": "2026-08-09"
+   },
+   {
+    "tank": "Lovis",
+    "bis": "2026-09-01"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-03",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 296,
+  "code": "K35",
+  "brew": "2026-08-15",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Offener Gärbottich",
+    "bis": "2026-09-02"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-03",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 297,
+  "code": "K36",
+  "brew": "2026-08-07",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": "2026-09-02"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-03",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 298,
+  "code": "K37",
+  "brew": "2026-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-09-09"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-10",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 299,
+  "code": "K38",
+  "brew": "2026-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": "2026-09-09"
+   },
+   {
+    "tank": "Kitzmann klein",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-09-10",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ },
+ {
+  "global": 300,
+  "code": "J1",
+  "brew": "2026-09-23",
+  "sorte": "Weizenbock (Justus)",
+  "menge_hl": 15.0,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": "2026-12-02"
+   },
+   {
+    "tank": "Fass",
+    "bis": null
+   }
+  ],
+  "ausschank": "2026-12-06",
+  "versteuert": null,
+  "braumeister": "Vincenz",
+  "note": null
+ }
+]

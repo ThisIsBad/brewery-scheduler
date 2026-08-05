@@ -68,7 +68,7 @@ def test_orm_returns_enum_members(session) -> None:
 
 def test_seed_creates_full_inventory(session) -> None:
     assert session.query(Tank).count() == 22
-    assert session.query(Recipe).count() == 10
+    assert session.query(Recipe).count() == 12
     assert session.query(Sud).count() == 4
     assert session.query(TankOccupancy).count() == 6
     # The Excel's „frühere Biere" are seeded archived.
@@ -193,15 +193,17 @@ def test_list_recipes_returns_seeded_recipes(client) -> None:
     r = client.get("/api/recipes")
     assert r.status_code == 200
     body = r.json()
-    assert len(body) == 10
+    assert len(body) == 12
     assert {x["beer_style"] for x in body} == {
         "Keller Hell",
+        "Keller Hell Sven",
         "Weizen",
         "Festbier",
         "Spezialsud",
         "bay. Dunkel",
         "Rauchbier",
         "Weizenbock",
+        "Wiener Lager",
         "Collab Widder",
         "Wit",
         "Leichtbier",

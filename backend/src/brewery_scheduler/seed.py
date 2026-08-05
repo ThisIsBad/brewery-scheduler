@@ -22,6 +22,7 @@ from .models import (
     TankOccupancy,
     TankStage,
 )
+from .sudplan_2026 import import_sudplan
 
 # Vincenz' echte Tankwelt (Stefan, 2026-08-06). Namenskonvention: Gär- und
 # Lagertanks tragen Rufnamen, Ausschanktanks heißen nach ihrem Keller —
@@ -78,7 +79,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Keller Hell",
         "farbe": "#e0a92e",
-        "name": "Keller Hell Brudi-Sven",
+        "name": "Keller Hell Brudi",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -102,6 +103,38 @@ RECIPES: list[dict] = [
             {"name": "Citra", "gramm": 50, "alpha_prozent": 13.3, "zeitpunkt": "10 min vor Ende"},
         ]},
         "notes": _ZEITEN_NOTE,
+    },
+    {
+        # Zwei unterschiedliche Biere mit gleichem Basisrezept — Sven wird
+        # zusätzlich kalt nachgehopft (Stefan, 2026-08-05). Eigene Sorte:
+        # ein Rezeptstrang je Sorte, und sortenrein bleibt ehrlich (das
+        # kalt gehopfte Bier wird nicht mit Brudi verschnitten).
+        "beer_style": "Keller Hell Sven",
+        "farbe": "#e5c04a",
+        "name": "Keller Hell Sven",
+        "fermentation_duration_days": 7,
+        "open_fermentation_required": False,
+        "open_fermentation_duration_days": None,
+        "storage_duration_days": 21,
+        "max_storage_duration_days": 60,
+        "original_gravity_plato": 11.9,
+        "kochzeit_min": 60,
+        "yeast": "Hauptgärung 3470",
+        "anstellhinweis": "bei 9,5 Grad anstellen",
+        "ingredients": {"malts": [{"name": "Pilsner", "kg": 275, "maelzerei": "BM"}]},
+        "wasser": {"hauptguss_hl": 11, "nachguss_hl": [5.5, 3]},
+        "mash_schedule": {"rasten": [
+            {"schritt": "Einmaischen", "temp_c": 61.5, "dauer_min": 10},
+            {"schritt": "Rast", "temp_c": 62.5, "dauer_min": 45},
+            {"schritt": "Rast", "temp_c": 72, "dauer_min": 20},
+            {"schritt": "Abmaischen", "temp_c": 78, "dauer_min": 10},
+        ]},
+        "hop_additions": {"gaben": [
+            {"name": "Hallertauer Tradition", "gramm": 616, "alpha_prozent": 6.5, "zeitpunkt": "nach 15 min"},
+            {"name": "Perle", "gramm": 414, "alpha_prozent": 9.5, "zeitpunkt": "nach 20 min"},
+            {"name": "Citra", "gramm": 1550, "alpha_prozent": 13.3, "zeitpunkt": "Kalthopfung"},
+        ]},
+        "notes": _ZEITEN_NOTE + " Hopfenmengen aus 2026_Sudplanung.xlsx (Blatt Biersorten).",
     },
     {
         "beer_style": "Weizen",
@@ -371,6 +404,20 @@ RECIPES: list[dict] = [
         "notes": _ZEITEN_NOTE + " Orangenschalen ca. 3 h zirkuliert.",
     },
     {
+        # Aus der Sudplanung 2026 (Sud 265) — im Excel ohne Rezeptdaten;
+        # Zutaten und Zeiten trägt Vincenz nach.
+        "beer_style": "Wiener Lager",
+        "farbe": "#b3541e",
+        "name": "Wiener Lager Leopold",
+        "fermentation_duration_days": 7,
+        "open_fermentation_required": False,
+        "open_fermentation_duration_days": None,
+        "storage_duration_days": 14,
+        "max_storage_duration_days": 45,
+        "kochzeit_min": 60,
+        "notes": "Aus 2026_Sudplanung.xlsx angelegt — Zutaten/Zeiten offen.",
+    },
+    {
         "beer_style": "Leichtbier",
         "farbe": "#c0392b",
         "name": "Leichtbier Werner",
@@ -405,7 +452,16 @@ RECIPES: list[dict] = [
 ]
 
 
-def seed(session: Session) -> None:
+def seed(
+    session: Session, *, demo_sude: bool = False, sudplan: bool = True
+) -> None:
+    """Grunddaten (Standorte, Tanks, Rezepte) plus wahlweise Sude.
+
+    sudplan: Vincenz' echte Sudplanung 2026 — der Standard für Dev und
+    Prod, damit der Umstieg vom Excel nahtlos ist.
+    demo_sude: die kleine, vorhersagbare Vier-Sude-Welt, auf der die
+    Test-Suite aufbaut (conftest ruft seed mit demo_sude=True, sudplan=False).
+    """
     if session.scalar(select(Tank).limit(1)) is not None:
         print("Database already seeded — skipping.")
         return
@@ -435,7 +491,30 @@ def seed(session: Session) -> None:
     session.add_all(recipes)
     session.flush()
 
-    by_style = {r.beer_style: r for r in recipes}
+    if sudplan:
+        stats = import_sudplan(session)
+        session.commit()
+        print(
+            f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, "
+            f"Sudplan 2026: {stats['sude']} Sude ({stats['paare']} Doppelsude), "
+            f"{stats['belegungen']} Belegungen, {stats['verworfen']} Kollisionen, "
+            f"{stats['hinweise']} Hinweise."
+        )
+
+    if not demo_sude:
+        if not sudplan:
+            session.commit()
+            print(f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, keine Sude.")
+        return
+
+    # Zwei Rezepte teilen sich die Sorte "Keller Hell" — für die Demo-Welt
+    # zählt der Name, nicht die Sorte.
+    by_name = {r.name: r for r in recipes}
+    by_style = {
+        "Keller Hell": by_name["Keller Hell Brudi"],
+        "Weizen": by_name["Weizen Fritz"],
+        "Festbier": by_name["Festbier Gisela"],
+    }
     by_tank = {t.name: t for t in tanks}
 
     today = date.today()

@@ -67,7 +67,9 @@ def session(engine) -> Iterator[Session]:
         # regardless of test ordering.
         s.execute(text("ALTER SEQUENCE sud_global_seq RESTART WITH 1"))
         s.commit()
-        seed(s)
+        # Die kleine Vier-Sude-Demo-Welt, auf der die Assertions aufbauen —
+        # die echte Sudplanung 2026 haben nur die Import-Tests im Blick.
+        seed(s, demo_sude=True, sudplan=False)
         yield s
 
 
