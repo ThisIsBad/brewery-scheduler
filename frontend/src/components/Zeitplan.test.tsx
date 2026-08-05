@@ -74,9 +74,9 @@ describe("Zeitplan (Bierfarbe)", () => {
       recipe: { ...sud.recipe, farbe: "#c0392b" },
     };
     render(
-      <Zeitplan tanks={[F30]} sude={[gefaerbt]} onMoveOccupancy={() => {}} />,
+      <Zeitplan tanks={[F30]} sude={[gefaerbt]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />,
     );
-    const block = screen.getByRole("button", { name: /Nr\. 1\// });
+    const block = screen.getByRole("button", { name: /kellerbier 1\// });
     expect(block.style.background).toBe("rgb(192, 57, 43)");
     expect(block.style.color).toBe("rgb(255, 255, 255)");
   });
@@ -85,22 +85,22 @@ describe("Zeitplan (Bierfarbe)", () => {
 describe("Zeitplan (Touch-Timeline)", () => {
   it("rendert Tankzeilen und Sud-Blöcke", () => {
     render(
-      <Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={() => {}} />,
+      <Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />,
     );
     expect(screen.getByText("F-30-1")).toBeInTheDocument();
     expect(screen.getByText("F-30-2")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Nr\. 1\/\d{4}/ }),
+      screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }),
     ).toBeInTheDocument();
   });
 
   it("Tippen wählt aus, +1 Tag verschiebt den Start um einen Tag", () => {
     const onMove = vi.fn();
-    render(<Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} />);
+    render(<Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} onResizeOccupancy={() => {}} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Nr\. 1\/\d{4}/ }));
+    fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
     const bar = screen.getByRole("toolbar", { name: "Sud verschieben" });
-    fireEvent.click(within(bar).getByRole("button", { name: "+1 Tag" }));
+    fireEvent.click(within(bar).getByRole("button", { name: "Start +1 Tag" }));
 
     expect(onMove).toHaveBeenCalledWith(
       "sud-1",
@@ -112,9 +112,9 @@ describe("Zeitplan (Touch-Timeline)", () => {
 
   it("Tankwechsel über das Dropdown behält den Start bei", () => {
     const onMove = vi.fn();
-    render(<Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} />);
+    render(<Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} onResizeOccupancy={() => {}} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Nr\. 1\/\d{4}/ }));
+    fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
     fireEvent.change(screen.getByLabelText("Tank wechseln"), {
       target: { value: F30B.id },
     });
@@ -127,10 +127,38 @@ describe("Zeitplan (Touch-Timeline)", () => {
     );
   });
 
+  it("Ende +7 verlängert nur die Dauer, der Start bleibt", () => {
+    const onResize = vi.fn();
+    render(
+      <Zeitplan
+        tanks={[F30, F30B]}
+        sude={[sud]}
+        onMoveOccupancy={() => {}}
+        onResizeOccupancy={onResize}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
+    const bar = screen.getByRole("toolbar", { name: "Sud verschieben" });
+    // Info zeigt von–bis mit Dauer (7 Tage im Fixture).
+    expect(within(bar).getByText(/\(7 Tage\)/)).toBeInTheDocument();
+    fireEvent.click(within(bar).getByRole("button", { name: "Ende +7 Tage" }));
+
+    expect(onResize).toHaveBeenCalledWith(
+      "sud-1",
+      "occ-1",
+      new Date(sud.occupancies[0].end_at!).getTime() + 7 * 86_400_000,
+    );
+    // Kürzen unter den Start hinaus ist gesperrt (7 Tage Dauer → −7 ergäbe 0).
+    expect(
+      within(bar).getByRole("button", { name: "Ende −7 Tage" }),
+    ).toBeDisabled();
+  });
+
   it("markiert Sude mit Warnungen auch im Zeitplan", () => {
     const warned = { ...sud, warnings: ["Gärzeit evtl. zu kurz — Test."] };
-    render(<Zeitplan tanks={[F30]} sude={[warned]} onMoveOccupancy={() => {}} />);
-    const block = screen.getByRole("button", { name: /Nr\. 1\/\d{4}/ });
+    render(<Zeitplan tanks={[F30]} sude={[warned]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />);
+    const block = screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ });
     expect(block.className).toContain("warn");
   });
 });
@@ -139,9 +167,9 @@ describe("Zeitplan (Auswahl überlebt Moves)", () => {
   it("findet die Auswahl nach ID-Wechsel per Stufe + Start wieder", () => {
     const onMove = vi.fn();
     const { rerender } = render(
-      <Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} />,
+      <Zeitplan tanks={[F30, F30B]} sude={[sud]} onMoveOccupancy={onMove} onResizeOccupancy={() => {}} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /Nr\. 1\/\d{4}/ }));
+    fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
     expect(
       screen.getByRole("toolbar", { name: "Sud verschieben" }),
     ).toBeInTheDocument();
@@ -159,11 +187,11 @@ describe("Zeitplan (Auswahl überlebt Moves)", () => {
       ],
     };
     rerender(
-      <Zeitplan tanks={[F30, F30B]} sude={[moved]} onMoveOccupancy={onMove} />,
+      <Zeitplan tanks={[F30, F30B]} sude={[moved]} onMoveOccupancy={onMove} onResizeOccupancy={() => {}} />,
     );
 
     const bar = screen.getByRole("toolbar", { name: "Sud verschieben" });
-    fireEvent.click(within(bar).getByRole("button", { name: "+1 Tag" }));
+    fireEvent.click(within(bar).getByRole("button", { name: "Start +1 Tag" }));
     expect(onMove).toHaveBeenLastCalledWith(
       "sud-1",
       "occ-NEU",
