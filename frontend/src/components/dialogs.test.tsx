@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
@@ -278,6 +278,47 @@ describe("TransferDialog (Ausschank split)", () => {
 
     expect(screen.getByRole("button", { name: "Umdrücken" })).toBeDisabled();
     expect(mocked.transferSud).not.toHaveBeenCalled();
+  });
+});
+
+describe("TransferDialog (sortenreine Ausschanktanks)", () => {
+  it("bietet Ausschanktanks mit fremder Sorte nicht an", () => {
+    const lead = sud({ occupancies: [storageOcc] }); // Festbier
+    const fremd = sud({
+      id: "sud-9",
+      recipe: { ...lead.recipe, id: "recipe-2", beer_style: "Weizen", name: "Weizen" },
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-fremd",
+          sud_id: "sud-9",
+          tank_id: A100.id,
+          stage: "ausschank",
+          start_at: new Date(Date.now() - 86_400_000).toISOString(),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK, A100, A80]}
+        sude={[lead, fremd]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    const options = within(
+      screen.getByLabelText("Zieltank"),
+    ).getAllByRole("option");
+    const names = options.map((o) => o.textContent ?? "");
+    // A-100 hält Weizen — für Festbier nicht wählbar; das leere A-80 schon.
+    expect(names.some((n) => n.includes("A-100"))).toBe(false);
+    expect(names.some((n) => n.includes("A-80"))).toBe(true);
   });
 });
 

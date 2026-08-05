@@ -38,21 +38,26 @@ export function TransferDialog({
   // Gärtank → Lagertank → Ausschank order is convention, not a constraint.
   // Outside the Ausschank stage a tank must be free right now; small tanks
   // stay in the list because the batch may split across several of them
-  // (Stefan, 2026-08-04). Ausschank tanks blend batches, so all are
-  // offered and the headroom rule decides server-side.
+  // (Stefan, 2026-08-04). Ausschank tanks blend batches of the SAME beer —
+  // Sorten werden nie gemischt (Stefan, 2026-08-05) — so only empty or
+  // same-style ones are offered; the headroom rule decides server-side.
   const now = useMemo(() => new Date(), []);
   const candidates = useMemo(() => {
     return tanks.filter((t) => {
       if (!t.active || t.id === occupancy.tank_id) return false;
-      if (t.stage === "ausschank") return true;
-      const occupiedNow = sude.some((s) =>
+      const occupants = sude.filter((s) =>
         s.occupancies.some(
           (o) => o.tank_id === t.id && occupancyAt(s, now)?.id === o.id,
         ),
       );
-      return !occupiedNow;
+      if (t.stage === "ausschank") {
+        return occupants.every(
+          (s) => s.recipe.beer_style === sud.recipe.beer_style,
+        );
+      }
+      return occupants.length === 0;
     });
-  }, [tanks, sude, now, occupancy.tank_id]);
+  }, [tanks, sude, now, occupancy.tank_id, sud.recipe.beer_style]);
 
   // The split rows ARE the interface (Stefan, 2026-08-05): one row is a
   // plain move, „+ Tank aufteilen“ adds more. No separate target picker —

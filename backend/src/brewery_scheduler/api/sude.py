@@ -233,6 +233,7 @@ def update_schedule(
                     float(occ.volume_hl) if occ.volume_hl is not None else remaining_hl,
                     occ.start_at,
                     occ.end_at,
+                    beer_style=sud.beer_style,
                     exclude_sud_id=sud.id,
                 )
 
@@ -437,15 +438,17 @@ def transfer_sud(
         tank = tanks[allocation.tank_id]
         share = moving_hl if volume is None else volume
         if target_stage == TankStage.AUSSCHANK:
-            # Ausschank tanks blend batches; the headroom rule decides.
-            # Only the occupancies that end now are excluded — a sibling
-            # share already sitting in the target tank keeps counting.
+            # Ausschank tanks blend same-style batches; the headroom rule
+            # decides. Only the occupancies that end now are excluded — a
+            # sibling share already sitting in the target tank keeps
+            # counting.
             _check_ausschank_headroom(
                 session,
                 tank,
                 share,
                 payload.start_at,
                 payload.end_at,
+                beer_style=sud.beer_style,
                 exclude_occupancy_ids=truncating_ids,
             )
         elif share > float(tank.capacity_hl):
@@ -639,12 +642,15 @@ def _check_ausschank_headroom(
     volume_hl: float,
     start_at,
     end_at,
+    beer_style: str | None = None,
     exclude_sud_id: uuid.UUID | None = None,
     exclude_occupancy_ids: set[uuid.UUID] | None = None,
 ) -> None:
-    """Ausschank tanks blend several batches; the DB EXCLUDE constraint is
-    scoped away from this stage, so the capacity rule lives here: the sum of
-    time-overlapping allocations plus the new one must fit the tank.
+    """Ausschank tanks blend several batches OF THE SAME BEER — styles are
+    never mixed (Stefan, 2026-08-05). The DB EXCLUDE constraint is scoped
+    away from this stage, so both rules live here: no foreign style in the
+    window, and the sum of time-overlapping allocations plus the new one
+    must fit the tank.
 
     Exclusions cover what the caller is about to replace: the whole Sud
     when re-scheduling, or exactly the occupancies a transfer truncates —
@@ -667,6 +673,15 @@ def _check_ausschank_headroom(
 
     allocated = 0.0
     for occ in session.scalars(stmt):
+        if beer_style is not None and occ.sud.beer_style != beer_style:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Im Ausschanktank {tank.name} liegt in diesem Zeitraum "
+                    f"bereits {occ.sud.beer_style} — Sorten werden nicht "
+                    "gemischt."
+                ),
+            )
         if occ.volume_hl is not None:
             allocated += float(occ.volume_hl)
         else:

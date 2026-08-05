@@ -720,14 +720,13 @@ def test_transfer_scoped_sum_checks_against_share(client, session) -> None:
 
 def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> None:
     # Sequential consolidation: both split shares end up in the 35-hl
-    # Ausschank tank (8 + 7). A third batch bringing 25 hl on top would
-    # overflow it — the sibling share must keep counting toward headroom
-    # even while its batch is mid-move.
+    # Ausschank tank (8 + 7). A same-style batch bringing 25 hl on top
+    # would overflow it — the sibling share must keep counting toward
+    # headroom even while its batch is mid-move.
     lead = _seeded_lead(session, WEIZEN)
     t1 = session.query(Tank).filter(Tank.name == "S2-10-1").one()
     t2 = session.query(Tank).filter(Tank.name == "S2-10-2").one()
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
-    a100 = session.query(Tank).filter(Tank.name == "A-100").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=5)
     r = _transfer(
         client,
@@ -756,15 +755,20 @@ def test_scoped_moves_blend_shares_into_ausschank_headroom(client, session) -> N
     )
     assert r.status_code == 200, r.text
 
-    festbier = _seeded_lead(session, FESTBIER)
-    r = _transfer(
-        client,
-        festbier.id,
-        [
-            {"tank_id": str(a35.id), "volume_hl": 25},
-            {"tank_id": str(a100.id), "volume_hl": 5},
-        ],
-        start + timedelta(days=3),
+    zweiter = _api_sud(client, session, WEIZEN, "F-30-3", start - timedelta(days=20))
+    r = client.put(
+        f"/api/sude/{zweiter['id']}/schedule",
+        json={
+            "occupancies": [
+                {
+                    "tank_id": str(a35.id),
+                    "stage": "ausschank",
+                    "start_at": (start + timedelta(days=3)).isoformat(),
+                    "end_at": None,
+                    "volume_hl": 25,
+                }
+            ]
+        },
     )
     assert r.status_code == 409, r.text
     assert "exceeds" in r.json()["detail"]
@@ -852,6 +856,34 @@ def test_ausschank_consolidates_batches_until_capacity(client, session) -> None:
     assert statuses == [200, 200, 409]
 
 
+def _api_sud(client, session, style, ferm_tank_name, start, days=7) -> dict:
+    """Create an extra Sud of `style` via the API with a finished
+    fermentation window — the seeds carry only one lead per style, and
+    same-style scenarios (sortenreines Blending) need a second."""
+    recipe = (
+        session.query(Recipe)
+        .filter(Recipe.beer_style == style)
+        .order_by(Recipe.version.desc())
+        .first()
+    )
+    ferm_tank = session.query(Tank).filter(Tank.name == ferm_tank_name).one()
+    created = client.post(
+        "/api/sude",
+        json={
+            "recipe_id": str(recipe.id),
+            "brew_at": _brew_at(date.today()),
+            "initial_occupancy": {
+                "tank_id": str(ferm_tank.id),
+                "stage": "fermentation_closed",
+                "start_at": start.isoformat(),
+                "end_at": (start + timedelta(days=days)).isoformat(),
+            },
+        },
+    )
+    assert created.status_code == 201, created.text
+    return created.json()
+
+
 def _existing_occupancies_payload(sud) -> list[dict]:
     return [
         {
@@ -866,11 +898,9 @@ def _existing_occupancies_payload(sud) -> list[dict]:
 
 
 def test_schedule_enforces_ausschank_headroom(client, session) -> None:
-    # The generic schedule endpoint must apply the same headroom rule. The
-    # payloads keep each Sud's completed fermentation history so the
-    # yeast-free rule is satisfied and headroom is the deciding factor.
+    # The generic schedule endpoint must apply the same headroom rule —
+    # with same-style batches, so headroom (not the style rule) decides.
     lead = _seeded_lead(session, KELLERBIER)
-    weizen = _seeded_lead(session, WEIZEN)
     a35 = session.query(Tank).filter(Tank.name == "A2-35-2").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=300)
 
@@ -891,11 +921,11 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     )
     assert r1.status_code == 200, r1.text
 
+    zweiter = _api_sud(client, session, KELLERBIER, "F-30-3", start - timedelta(days=20))
     r2 = client.put(
-        f"/api/sude/{weizen.id}/schedule",
+        f"/api/sude/{zweiter['id']}/schedule",
         json={
-            "occupancies": _existing_occupancies_payload(weizen)
-            + [
+            "occupancies": [
                 {
                     "tank_id": str(a35.id),
                     "stage": "ausschank",
@@ -908,6 +938,47 @@ def test_schedule_enforces_ausschank_headroom(client, session) -> None:
     )
     assert r2.status_code == 409, r2.text
     assert "capacity" in r2.json()["detail"]
+
+
+def test_ausschank_rejects_style_mix(client, session) -> None:
+    # Sorten werden nie gemischt (Stefan, 2026-08-05): sobald ein
+    # Ausschanktank eine Sorte enthält, blockt jede andere — beim
+    # Umdrücken UND beim Planen.
+    weizen = _seeded_lead(session, WEIZEN)
+    keller = _seeded_lead(session, KELLERBIER)
+    a120 = session.query(Tank).filter(Tank.name == "A-120").one()
+    start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    r = _transfer(
+        client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start
+    )
+    assert r.status_code == 200, r.text
+
+    blocked = _transfer(
+        client,
+        keller.id,
+        [{"tank_id": str(a120.id), "volume_hl": 15}],
+        start + timedelta(days=1),
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert "nicht gemischt" in blocked.json()["detail"]
+
+    planned = client.put(
+        f"/api/sude/{keller.id}/schedule",
+        json={
+            "occupancies": _existing_occupancies_payload(keller)
+            + [
+                {
+                    "tank_id": str(a120.id),
+                    "stage": "ausschank",
+                    "start_at": (start + timedelta(days=1)).isoformat(),
+                    "end_at": None,
+                    "volume_hl": 15,
+                }
+            ]
+        },
+    )
+    assert planned.status_code == 409, planned.text
+    assert "nicht gemischt" in planned.json()["detail"]
 
 
 def test_schedule_allows_stage_regression(client, session) -> None:
@@ -1920,30 +1991,41 @@ def test_recipe_ingredients_roundtrip(client) -> None:
 
 
 def test_tank_withdraw_distributes_proportionally(client, session) -> None:
-    # Blending (2026-08-04): Weizen (15 hl) und der Festbier-Doppelsud
-    # (30 hl) teilen sich A-120; eine Tankbuchung über 9 hl verteilt sich
-    # im Verhältnis 1:2 auf die enthaltenen Anteile.
+    # Blending (2026-08-04, sortenrein seit 2026-08-05): zwei Weizen-Sude
+    # (15 + 10 hl nach einer Fassabfüllung) teilen sich A-120; eine
+    # Tankbuchung über 10 hl verteilt sich im Verhältnis 3:2.
     weizen = _seeded_lead(session, WEIZEN)
-    festbier = _seeded_lead(session, FESTBIER)
     a120 = session.query(Tank).filter(Tank.name == "A-120").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    zweiter = _api_sud(client, session, WEIZEN, "F-30-3", start - timedelta(days=20))
+    ferm_tank = session.query(Tank).filter(Tank.name == "F-30-3").one()
+    r = client.post(
+        f"/api/sude/{zweiter['id']}/withdraw",
+        json={
+            "tank_id": str(ferm_tank.id),
+            "volume_hl": 5,
+            "at": (start - timedelta(days=15)).isoformat(),
+        },
+    )
+    assert r.status_code == 200, r.text
+
     r = _transfer(client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start)
     assert r.status_code == 200, r.text
     r = _transfer(
-        client, festbier.id, [{"tank_id": str(a120.id), "volume_hl": 30}], start
+        client, zweiter["id"], [{"tank_id": str(a120.id), "volume_hl": 10}], start
     )
     assert r.status_code == 200, r.text
 
     at = (start + timedelta(days=1)).isoformat()
     r = client.post(
         f"/api/tanks/{a120.id}/withdraw",
-        json={"volume_hl": 9, "at": at, "kind": "ausschank"},
+        json={"volume_hl": 10, "at": at, "kind": "ausschank"},
     )
     assert r.status_code == 200, r.text
     body = r.json()
     per_sud = {s["id"]: s["withdrawals"][-1]["volume_hl"] for s in body}
-    assert per_sud[str(weizen.id)] == 3
-    assert per_sud[str(festbier.id)] == 6
+    assert per_sud[str(weizen.id)] == 6
+    assert per_sud[zweiter["id"]] == 4
     assert all(s["withdrawals"][-1]["kind"] == "ausschank" for s in body)
 
 
@@ -2017,11 +2099,11 @@ def test_tank_withdraw_kegs_stay_summable(client, session) -> None:
     # Fassabfüllung am Tank: hl aus Stückzahlen, die Stückzahlen hängen an
     # genau EINER Teilbuchung, damit Summen über alle Buchungen stimmen.
     weizen = _seeded_lead(session, WEIZEN)
-    festbier = _seeded_lead(session, FESTBIER)
     a120 = session.query(Tank).filter(Tank.name == "A-120").one()
     start = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=60)
+    zweiter = _api_sud(client, session, WEIZEN, "F-30-4", start - timedelta(days=20))
     _transfer(client, weizen.id, [{"tank_id": str(a120.id), "volume_hl": 15}], start)
-    _transfer(client, festbier.id, [{"tank_id": str(a120.id), "volume_hl": 30}], start)
+    _transfer(client, zweiter["id"], [{"tank_id": str(a120.id), "volume_hl": 15}], start)
 
     at = (start + timedelta(days=1)).isoformat()
     r = client.post(
