@@ -13,7 +13,8 @@ interface TankWithdrawDialogProps {
   onDone: (updated: Sud[]) => void;
 }
 
-const KEG_SIZES = [10, 20, 30, 50];
+// 30-l-Fässer vorerst raus (Stefan, 2026-08-05) — wie im Sud-Dialog.
+const KEG_SIZES = [10, 20, 50];
 
 const KIND_TITLE: Record<WithdrawalKind, string> = {
   keg_fill: "Fass abfüllen",
