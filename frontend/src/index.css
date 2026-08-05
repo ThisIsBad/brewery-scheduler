@@ -413,6 +413,19 @@ button:disabled {
 .rezepte h2 {
   font-size: 15px;
   margin: 16px 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bierfarbe {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
 }
 
 .rezepte .card.history {

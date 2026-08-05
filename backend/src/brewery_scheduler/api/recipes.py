@@ -11,6 +11,7 @@ from ..schemas import (
     RecipeCreateIn,
     RecipeOut,
     RecipeStyleActiveIn,
+    RecipeStyleFarbeIn,
     WasserIn,
 )
 
@@ -84,17 +85,18 @@ def create_recipe_version(
         )
         or 0
     ) + 1
-    # A new version keeps the style's archive state; a brand-new beer
-    # (version 1 of an unseen style) starts active.
-    style_active = session.scalar(
-        select(Recipe.active)
+    # A new version keeps the style's archive state and color; a brand-new
+    # beer (version 1 of an unseen style) starts active and uncolored.
+    style_row = session.execute(
+        select(Recipe.active, Recipe.farbe)
         .where(Recipe.beer_style == payload.beer_style)
         .limit(1)
-    )
+    ).first()
     recipe = Recipe(
         beer_style=payload.beer_style,
         version=next_version,
-        active=style_active if style_active is not None else True,
+        active=style_row.active if style_row is not None else True,
+        farbe=style_row.farbe if style_row is not None else None,
         name=payload.name,
         fermentation_duration_days=payload.fermentation_duration_days,
         open_fermentation_required=payload.open_fermentation_required,
@@ -119,6 +121,26 @@ def create_recipe_version(
     session.commit()
     session.refresh(recipe)
     return _recipe_out(recipe)
+
+
+@router.post("/style-farbe", response_model=list[RecipeOut])
+def set_style_farbe(
+    payload: RecipeStyleFarbeIn, session: Session = Depends(get_session)
+) -> list[RecipeOut]:
+    """Set a beer's display color (all versions of the style) — it paints
+    the Sude in the Zeitplan."""
+    recipes = list(
+        session.scalars(select(Recipe).where(Recipe.beer_style == payload.beer_style))
+    )
+    if not recipes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No recipe with style {payload.beer_style!r}.",
+        )
+    for recipe in recipes:
+        recipe.farbe = payload.farbe
+    session.commit()
+    return [_recipe_out(r) for r in recipes]
 
 
 @router.post("/style-active", response_model=list[RecipeOut])

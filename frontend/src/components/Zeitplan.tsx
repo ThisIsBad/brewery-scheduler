@@ -14,12 +14,20 @@ interface ZeitplanProps {
   ) => void;
 }
 
-const STYLE_COLOR: Record<string, string> = {
-  kellerbier: "#c79144",
-  wheat: "#e6c35a",
-  festbier: "#8b3a1a",
-  special: "#5b6f8a",
-};
+// Fällt nur noch als Notnagel an, wenn ein Bier (noch) keine Farbe hat —
+// die eigentliche Farbe pflegt der Rezepte-Tab (sud.recipe.farbe).
+const FALLBACK_COLOR = "#888";
+
+/** Lesbare Textfarbe auf der Bierfarbe (einfache Luminanz-Schwelle). */
+function textColorFor(hex: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16);
+  const luminanz =
+    (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) /
+    255;
+  return luminanz > 0.62 ? "#333" : "#fff";
+}
 
 const DAY_MS = 86_400_000;
 const ZOOM_WIDTHS = [18, 36, 64];
@@ -234,7 +242,10 @@ export function Zeitplan({ tanks, sude, onMoveOccupancy }: ZeitplanProps) {
                         width: left < 0 ? width + left : width,
                         background: warned
                           ? undefined
-                          : STYLE_COLOR[sud.recipe.beer_style] ?? "#888",
+                          : sud.recipe.farbe ?? FALLBACK_COLOR,
+                        color: warned
+                          ? undefined
+                          : textColorFor(sud.recipe.farbe ?? FALLBACK_COLOR),
                       }}
                       onClick={() =>
                         setSelected(isSelected ? null : { sud, occ })

@@ -85,6 +85,9 @@ class Recipe(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     # Former beers („frühere Biere") stay on file but take no new Sude.
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Display color of the beer (hex, style-wide like `active`) — paints
+    # the Sude in the Zeitplan (Stefan, 2026-08-06).
+    farbe: Mapped[str | None] = mapped_column(String(16), nullable=True)
     ingredients: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     mash_schedule: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     hop_additions: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)

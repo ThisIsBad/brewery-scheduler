@@ -2336,6 +2336,48 @@ def test_style_active_archives_all_versions(client) -> None:
     assert r4.status_code == 404
 
 
+def test_style_farbe_paints_all_versions_and_inherits(client) -> None:
+    # Bierfarbe (2026-08-06): stilweit wie das Archiv-Flag; neue Versionen
+    # erben sie, kaputte Hex-Werte sind ein 422.
+    r = client.post(
+        "/api/recipes/style-farbe",
+        json={"beer_style": "Keller Hell", "farbe": "#123abc"},
+    )
+    assert r.status_code == 200, r.text
+    assert all(x["farbe"] == "#123abc" for x in r.json())
+
+    neu = client.post(
+        "/api/recipes",
+        json={
+            "beer_style": "Keller Hell",
+            "name": "Keller Hell (Farbtest)",
+            "fermentation_duration_days": 7,
+            "storage_duration_days": 21,
+            "max_storage_duration_days": 60,
+        },
+    )
+    assert neu.status_code == 201, neu.text
+    assert neu.json()["farbe"] == "#123abc"
+
+    kaputt = client.post(
+        "/api/recipes/style-farbe",
+        json={"beer_style": "Keller Hell", "farbe": "gold"},
+    )
+    assert kaputt.status_code == 422
+
+    fehlt = client.post(
+        "/api/recipes/style-farbe",
+        json={"beer_style": "Gibtsnicht", "farbe": "#123abc"},
+    )
+    assert fehlt.status_code == 404
+
+    # Die Farbe hängt auch am Sud (über dessen Rezept) — der Zeitplan
+    # liest sie dort.
+    sude = client.get("/api/sude").json()
+    keller_sud = next(s for s in sude if s["recipe"]["beer_style"] == "Keller Hell")
+    assert keller_sud["recipe"]["farbe"] == "#123abc"
+
+
 def test_recipe_hop_timing_requires_text(client) -> None:
     # The timing is free text as on the paper sheet — an empty one is a
     # data-entry slip, not a valid Gabe.

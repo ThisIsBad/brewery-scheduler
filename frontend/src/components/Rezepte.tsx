@@ -51,7 +51,15 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
     if (!current) return null;
     return (
       <section key={style}>
-        <h2>{STYLE_LABEL[style] ?? style}</h2>
+        <h2>
+          <FarbWahl
+            style={style}
+            farbe={current.farbe ?? null}
+            onError={setError}
+            onSaved={onReload}
+          />
+          {STYLE_LABEL[style] ?? style}
+        </h2>
             <article className="card">
               <header>
                 <strong>{current.name}</strong>
@@ -251,6 +259,41 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
         />
       )}
     </div>
+  );
+}
+
+interface FarbWahlProps {
+  style: BeerStyle;
+  farbe: string | null;
+  onError: (message: string | null) => void;
+  onSaved: () => void;
+}
+
+/** Bierfarbe je Sorte (2026-08-06) — färbt die Sude im Zeitplan. Commit
+ * erst beim Schließen des Farbwählers, nicht bei jedem Zwischenwert. */
+function FarbWahl({ style, farbe, onError, onSaved }: FarbWahlProps) {
+  const [wert, setWert] = useState(farbe ?? "#888888");
+
+  const commit = async () => {
+    if (wert === (farbe ?? "#888888")) return;
+    onError(null);
+    try {
+      await api.setRecipeStyleFarbe({ beer_style: style, farbe: wert });
+      onSaved();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <input
+      type="color"
+      className="bierfarbe"
+      aria-label={`Farbe ${style}`}
+      value={wert}
+      onChange={(e) => setWert(e.target.value)}
+      onBlur={() => void commit()}
+    />
   );
 }
 

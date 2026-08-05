@@ -7,6 +7,7 @@ vi.mock("../api/client", () => ({
   api: {
     createRecipe: vi.fn(),
     setRecipeStyleActive: vi.fn(),
+    setRecipeStyleFarbe: vi.fn(),
   },
 }));
 
@@ -16,6 +17,7 @@ import { Rezepte } from "./Rezepte";
 const mocked = api as unknown as {
   createRecipe: ReturnType<typeof vi.fn>;
   setRecipeStyleActive: ReturnType<typeof vi.fn>;
+  setRecipeStyleFarbe: ReturnType<typeof vi.fn>;
 };
 
 const recipe = (over: Partial<Recipe>): Recipe => ({
@@ -37,6 +39,29 @@ const recipe = (over: Partial<Recipe>): Recipe => ({
 beforeEach(() => {
   mocked.createRecipe.mockReset().mockResolvedValue(recipe({ version: 2 }));
   mocked.setRecipeStyleActive.mockReset().mockResolvedValue([]);
+  mocked.setRecipeStyleFarbe.mockReset().mockResolvedValue([]);
+});
+
+test("setzt die Bierfarbe beim Schließen des Farbwählers", async () => {
+  const onReload = vi.fn();
+  render(
+    <Rezepte
+      recipes={[recipe({ beer_style: "Keller Hell", farbe: "#e0a92e" })]}
+      onReload={onReload}
+    />,
+  );
+
+  const input = screen.getByLabelText("Farbe Keller Hell");
+  fireEvent.change(input, { target: { value: "#123abc" } });
+  expect(mocked.setRecipeStyleFarbe).not.toHaveBeenCalled(); // erst beim Blur
+  fireEvent.blur(input);
+  await waitFor(() =>
+    expect(mocked.setRecipeStyleFarbe).toHaveBeenCalledWith({
+      beer_style: "Keller Hell",
+      farbe: "#123abc",
+    }),
+  );
+  await waitFor(() => expect(onReload).toHaveBeenCalled());
 });
 
 test("legt ein neues Bier als Version 1 an und reaktiviert frühere Biere", async () => {

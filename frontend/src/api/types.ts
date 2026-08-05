@@ -51,6 +51,8 @@ export interface Recipe {
   name: string;
   /** false = „Frühere Biere": bleibt archiviert, nimmt keine neuen Sude. */
   active?: boolean;
+  /** Anzeigefarbe des Biers (hex) — färbt die Sude im Zeitplan. */
+  farbe?: string | null;
   fermentation_duration_days: number;
   open_fermentation_required: boolean;
   open_fermentation_duration_days: number | null;
@@ -214,6 +216,11 @@ export interface RecipeCreateIn {
 export interface RecipeStyleActiveIn {
   beer_style: string;
   active: boolean;
+}
+
+export interface RecipeStyleFarbeIn {
+  beer_style: string;
+  farbe: string;
 }
 
 export interface RecipeOverridesIn {
