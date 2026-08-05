@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
@@ -180,6 +180,40 @@ describe("TankWithdrawDialog (Blending)", () => {
     await waitFor(() => expect(onDone).toHaveBeenCalledWith([erster, zweiter]));
   });
 
+  it("rechnet Fass-Stückzahlen am Tank in hl um und schickt kegs", async () => {
+    const erster = sud({ id: "sud-1", occupancies: [occA] });
+    const onDone = vi.fn();
+    mocked.tankWithdraw.mockResolvedValue([erster]);
+    render(
+      <TankWithdrawDialog
+        tank={A100}
+        entries={[{ sud: erster, occ: occA }]}
+        sude={[erster]}
+        kind="keg_fill"
+        onClose={() => {}}
+        onDone={onDone}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Fässer 50 l (Stück)"), {
+      target: { value: "4" },
+    });
+    fireEvent.change(screen.getByLabelText("Fässer 20 l (Stück)"), {
+      target: { value: "3" },
+    });
+    expect(screen.getByText(/Ergibt 2.6 hl/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Abfüllen" }));
+    await waitFor(() => expect(mocked.tankWithdraw).toHaveBeenCalledOnce());
+    const [, payload] = mocked.tankWithdraw.mock.calls[0];
+    expect(payload.kegs).toEqual([
+      { size_l: 20, count: 3 },
+      { size_l: 50, count: 4 },
+    ]);
+    expect(payload.volume_hl).toBeUndefined();
+    expect(payload.kind).toBe("keg_fill");
+  });
+
   it("sperrt Buchungen über dem Tankinhalt", () => {
     const erster = sud({ id: "sud-1", occupancies: [occA] });
     render(
@@ -278,6 +312,122 @@ describe("TransferDialog (Ausschank split)", () => {
 
     expect(screen.getByRole("button", { name: "Umdrücken" })).toBeDisabled();
     expect(mocked.transferSud).not.toHaveBeenCalled();
+  });
+});
+
+describe("TransferDialog (sortenreine Ausschanktanks)", () => {
+  it("bietet Ausschanktanks mit fremder Sorte nicht an", () => {
+    const lead = sud({ occupancies: [storageOcc] }); // Festbier
+    const fremd = sud({
+      id: "sud-9",
+      recipe: { ...lead.recipe, id: "recipe-2", beer_style: "Weizen", name: "Weizen" },
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-fremd",
+          sud_id: "sud-9",
+          tank_id: A100.id,
+          stage: "ausschank",
+          start_at: new Date(Date.now() - 86_400_000).toISOString(),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK, A100, A80]}
+        sude={[lead, fremd]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    const options = within(
+      screen.getByLabelText("Zieltank"),
+    ).getAllByRole("option");
+    const names = options.map((o) => o.textContent ?? "");
+    // A-100 hält Weizen — für Festbier nicht wählbar; das leere A-80 schon.
+    expect(names.some((n) => n.includes("A-100"))).toBe(false);
+    expect(names.some((n) => n.includes("A-80"))).toBe(true);
+  });
+
+  it("sieht auch aufgeteilte und erst geplante Fremd-Belegungen", () => {
+    const lead = sud({ occupancies: [storageOcc] }); // Festbier
+    // Weizen liegt aufgeteilt in A-100 UND A-80 (zwei gleichzeitige
+    // Belegungen) — beide Tanks sind fremd belegt.
+    const gesplittet = sud({
+      id: "sud-9",
+      recipe: { ...lead.recipe, id: "recipe-2", beer_style: "Weizen", name: "Weizen" },
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-f1",
+          sud_id: "sud-9",
+          tank_id: A100.id,
+          stage: "ausschank",
+          start_at: new Date(Date.now() - 86_400_000).toISOString(),
+          end_at: null,
+          volume_hl: 8,
+        },
+        {
+          id: "occ-f2",
+          sud_id: "sud-9",
+          tank_id: A80.id,
+          stage: "ausschank",
+          start_at: new Date(Date.now() - 86_400_000).toISOString(),
+          end_at: null,
+          volume_hl: 7,
+        },
+      ],
+    });
+    // Und in A-50 ist ab morgen fremdes Bier GEPLANT — das offene
+    // Umdrück-Fenster würde damit kollidieren.
+    const a50: Tank = {
+      id: "tank-a50x",
+      name: "A-50",
+      location_id: "loc-1",
+      stage: "ausschank",
+      capacity_hl: 50,
+      active: true,
+      locked: false,
+    };
+    const geplant = sud({
+      id: "sud-10",
+      recipe: { ...lead.recipe, id: "recipe-2", beer_style: "Weizen", name: "Weizen" },
+      occupancies: [
+        {
+          id: "occ-f3",
+          sud_id: "sud-10",
+          tank_id: a50.id,
+          stage: "ausschank",
+          start_at: new Date(Date.now() + 86_400_000).toISOString(),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+
+    render(
+      <TransferDialog
+        sud={lead}
+        occupancy={storageOcc}
+        tanks={[STORAGE_TANK, A100, A80, a50]}
+        sude={[lead, gesplittet, geplant]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    const names = within(screen.getByLabelText("Zieltank"))
+      .getAllByRole("option")
+      .map((o) => o.textContent ?? "");
+    expect(names.some((n) => n.includes("A-100"))).toBe(false);
+    expect(names.some((n) => n.includes("A-80"))).toBe(false);
+    expect(names.some((n) => n.includes("A-50"))).toBe(false);
   });
 });
 

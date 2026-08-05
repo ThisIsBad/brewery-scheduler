@@ -127,6 +127,7 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tank {occ.tank_id} not found",
             )
+        _ensure_stage_matches_tank(occ.stage, tank)
         planned = [
             SimpleNamespace(stage=occ.stage, start_at=occ.start_at, end_at=end_at)
         ]
@@ -140,6 +141,18 @@ def create_sud(payload: SudCreateIn, session: Session = Depends(get_session)) ->
                     f"Batch volume of {float(sud.volume_hl):g} hl exceeds the "
                     f"{float(tank.capacity_hl):g} hl capacity of tank {tank.name}."
                 ),
+            )
+        if occ.stage == TankStage.AUSSCHANK:
+            # Same rules as transfer and schedule — the sortenrein and
+            # headroom checks must hold at EVERY occupancy-creating
+            # endpoint, or the invariant has a back door.
+            _check_ausschank_headroom(
+                session,
+                tank,
+                float(occ.volume_hl) if occ.volume_hl is not None else float(sud.volume_hl),
+                occ.start_at,
+                end_at,
+                beer_style=sud.beer_style,
             )
 
         sud.occupancies.append(
@@ -203,6 +216,10 @@ def update_schedule(
             tank = tanks.get(occ.tank_id)
             if tank is None:
                 continue
+            # A stage label that contradicts the tank would silently dodge
+            # the stage-scoped rules (EXCLUDE constraint, sortenrein,
+            # headroom) — reject it outright.
+            _ensure_stage_matches_tank(occ.stage, tank)
             # The physically remaining batch volume (lead + merged partners
             # minus withdrawals) must fit every non-Ausschank tank in the
             # new schedule.
@@ -233,6 +250,7 @@ def update_schedule(
                     float(occ.volume_hl) if occ.volume_hl is not None else remaining_hl,
                     occ.start_at,
                     occ.end_at,
+                    beer_style=sud.beer_style,
                     exclude_sud_id=sud.id,
                 )
 
@@ -437,15 +455,17 @@ def transfer_sud(
         tank = tanks[allocation.tank_id]
         share = moving_hl if volume is None else volume
         if target_stage == TankStage.AUSSCHANK:
-            # Ausschank tanks blend batches; the headroom rule decides.
-            # Only the occupancies that end now are excluded — a sibling
-            # share already sitting in the target tank keeps counting.
+            # Ausschank tanks blend same-style batches; the headroom rule
+            # decides. Only the occupancies that end now are excluded — a
+            # sibling share already sitting in the target tank keeps
+            # counting.
             _check_ausschank_headroom(
                 session,
                 tank,
                 share,
                 payload.start_at,
                 payload.end_at,
+                beer_style=sud.beer_style,
                 exclude_occupancy_ids=truncating_ids,
             )
         elif share > float(tank.capacity_hl):
@@ -526,6 +546,17 @@ def transfer_sud(
     session.commit()
     session.refresh(sud)
     return _with_warnings(sud, warnings)
+
+
+def _ensure_stage_matches_tank(stage, tank: Tank) -> None:
+    if TankStage(stage) != TankStage(tank.stage):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Belegung als {TankStage(stage).value} passt nicht zu Tank "
+                f"{tank.name} ({TankStage(tank.stage).value})."
+            ),
+        )
 
 
 def _resolve_withdraw_volume(payload: WithdrawIn | TankWithdrawIn) -> float:
@@ -628,6 +659,27 @@ def withdraw(
             notes=payload.notes,
         )
     )
+
+    # An emptied occupancy frees its tank immediately — an open zero-volume
+    # occupancy would keep blocking the tank (sortenrein, EXCLUDE) although
+    # it is physically empty. An emptied BATCH is finished outright,
+    # mirroring the tank-level endpoint.
+    if volume_hl >= remaining_hl - 0.01 and (
+        occupancy.end_at is None or occupancy.end_at > payload.at
+    ):
+        occupancy.end_at = payload.at
+    session.flush()
+    _, batch_remaining = _batch_volumes(session, sud)
+    if batch_remaining <= 0.01:
+        sud.status = SudStatus.SERVED
+        for occ in sud.occupancies:
+            if occ.end_at is None or occ.end_at > payload.at:
+                occ.end_at = payload.at
+        for partner in session.scalars(
+            select(Sud).where(Sud.merged_into_sud_id == sud.id)
+        ):
+            partner.status = SudStatus.SERVED
+
     session.commit()
     session.refresh(sud)
     return sud
@@ -639,12 +691,15 @@ def _check_ausschank_headroom(
     volume_hl: float,
     start_at,
     end_at,
+    beer_style: str | None = None,
     exclude_sud_id: uuid.UUID | None = None,
     exclude_occupancy_ids: set[uuid.UUID] | None = None,
 ) -> None:
-    """Ausschank tanks blend several batches; the DB EXCLUDE constraint is
-    scoped away from this stage, so the capacity rule lives here: the sum of
-    time-overlapping allocations plus the new one must fit the tank.
+    """Ausschank tanks blend several batches OF THE SAME BEER — styles are
+    never mixed (Stefan, 2026-08-05). The DB EXCLUDE constraint is scoped
+    away from this stage, so both rules live here: no foreign style in the
+    window, and the sum of time-overlapping allocations plus the new one
+    must fit the tank.
 
     Exclusions cover what the caller is about to replace: the whole Sud
     when re-scheduling, or exactly the occupancies a transfer truncates —
@@ -667,6 +722,15 @@ def _check_ausschank_headroom(
 
     allocated = 0.0
     for occ in session.scalars(stmt):
+        if beer_style is not None and occ.sud.beer_style != beer_style:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Im Ausschanktank {tank.name} liegt in diesem Zeitraum "
+                    f"bereits {occ.sud.beer_style} — Sorten werden nicht "
+                    "gemischt."
+                ),
+            )
         if occ.volume_hl is not None:
             allocated += float(occ.volume_hl)
         else:

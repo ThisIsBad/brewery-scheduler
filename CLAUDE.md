@@ -82,6 +82,9 @@ Before marking a PR ready or claiming a task complete:
   sum-of-allocations ≤ capacity, enforced in the application at every
   mutating endpoint. Phase-2 validation blocks hard — no override
   mechanism.
+- **Blending is sortenrein** (confirmed 2026-08-05): only batches of the
+  SAME `beer_style` ever share an Ausschank tank — mixing styles is a
+  hard 409 in transfer and schedule, never a warning.
 - **30-hl merged batches are real** (confirmed 2026-08, issue #3): the same
   recipe is brewed twice within 48 h and merged into one 30-hl tank. Until
   Phase 2 models this explicitly, the `EXCLUDE` constraint blocks the second

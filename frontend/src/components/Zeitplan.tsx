@@ -280,7 +280,11 @@ export function Zeitplan({ tanks, sude, onMoveOccupancy }: ZeitplanProps) {
               onChange={(e) => retankSelected(e.target.value)}
             >
               {tanks
-                .filter((t) => t.active || t.id === selected.occ.tank_id)
+                .filter(
+                  (t) =>
+                    (t.active && t.stage === selected.occ.stage) ||
+                    t.id === selected.occ.tank_id,
+                )
                 .map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

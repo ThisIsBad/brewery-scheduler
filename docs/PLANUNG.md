@@ -37,6 +37,34 @@
   kein Rezept. Kandidat für ein späteres „Brauprotokoll"-Feature am Sud
   (Dezember-Planung).
 
+**Nachtrag 2026-08-05 (Feedbackrunde):**
+
+- **Umdrücken**: nur noch Aufteilungszeilen — die separate Zieltank-Auswahl
+  (Doppelanzeige) ist raus.
+- **Fassgrößen**: 30 l vorerst aus den Dialogen (kaum verwendet); API
+  bleibt tolerant, alte Buchungen gültig.
+- **Blending ist sortenrein**: In einem Ausschanktank liegen nur Sude
+  DERSELBEN Sorte — Mischen ist ein harter 409 (Umdrücken UND Planung),
+  keine Warnung. Auch in CLAUDE.md als Domänenregel verankert.
+- **Offline-Warteschlange**: bewusst einfach halten; Klärungsbedarf
+  (Konflikt-Handling im Detail, Absicherung gegen Doppelbuchung bei
+  verlorener Antwort) für eine eigene Runde notiert.
+
+**Was aus Rezeptwerten errechenbar wäre (Aufstellung für Stefan, 2026-08-05):**
+
+| Rechnung | Braucht | Stand |
+|---|---|---|
+| Schüttungsanteile in % (wie Excel-Spalte) | nur kg je Malz | Daten komplett — nur Anzeige ergänzen |
+| Einkaufslisten (kg je Malz/Mälzerei, g je Hopfensorte über geplante Sude) | Rezepte + geplante Sude | Daten komplett |
+| Soll-IBU je Rezept (Tinseth) + Vergleich mit IBU-Ziel | g, % Alpha (da), Kochzeit der Gabe (aus Zeitpunkt-Text ableitbar), Stammwürze (da), Ausschlagmenge (da) | machbar; Whirlpool-/Kaltgaben mit Restausnutzung angenähert |
+| Hopfen-Umrechnung bei neuer Charge (gleiche Bittere, neues % Alpha) | % Alpha alt + neu | machbar, je Gabe: g·α_alt/α_neu |
+| Bierfarbe (EBC, Morey-Näherung) | EBC-Wert **je Malz** | Feld je Malz fehlt noch (kleine Ergänzung) |
+| Stammwürze-Plausibilität („275 kg auf 15,5 hl ⇒ ~11,9 °P") | Schüttung (da), Menge (da), Sudhausausbeute in % | Ausbeute als Brauereiwert einmalig pflegen — oder aus Brauprotokoll |
+| Tatsächliche Sudhausausbeute | Pfanne-voll-Menge + StW vom Brautag | braucht Brauprotokoll (Dezember) |
+| Alkoholgehalt, Vergärungsgrad | Restextrakt-Messung je Sud | braucht Brauprotokoll |
+| Biersteuer-Basis (°P × Mengen, Fass/Ausschank getrennt) | vorhandene Buchungen + °P | Daten laufen schon auf; Auswertung vertagt (Dezember) |
+| Fass-Bestandsabgleich | Stückzahlen je Buchung (da) | Phase 6 |
+
 ---
 
 Erstellt am Ende der zweiten Nachtschicht. Die ROADMAP-Phasen 1–3 sind
