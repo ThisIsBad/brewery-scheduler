@@ -23,34 +23,45 @@ from .models import (
     TankStage,
 )
 
-LOCATIONS: list[str] = ["Hauptkeller", "Nebenkeller"]
+# Vincenz' echte Tankwelt (Stefan, 2026-08-06). Namenskonvention: Gär- und
+# Lagertanks tragen Rufnamen, Ausschanktanks heißen nach ihrem Keller —
+# Typ und Größe kommen aus den Stammdaten, nicht aus dem Namen.
+LOCATIONS: list[str] = [
+    "Schänke 4",
+    "Kitzmann Keller",
+    "Resenscheck Keller",
+    "Striezi Keller",
+]
 
 TANKS: list[dict] = [
-    # Main cellar — fermentation (180 hl total)
-    {"name": "F-30-1", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-2", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-3", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-4", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-30-5", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
-    {"name": "F-15-1", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
-    {"name": "F-15-2", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
-    {"name": "F-OPEN-15", "location": "Hauptkeller", "stage": TankStage.FERMENTATION_OPEN, "capacity_hl": 15},
-    # Main cellar — storage (150 hl total)
-    {"name": "S-30-1", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-2", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-3", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-4", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
-    {"name": "S-30-5", "location": "Hauptkeller", "stage": TankStage.STORAGE, "capacity_hl": 30},
-    # Main cellar — Ausschank (350 hl total)
-    {"name": "A-120", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 120},
-    {"name": "A-100", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
-    {"name": "A-80", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
-    {"name": "A-50", "location": "Hauptkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50},
-    # Secondary cellar
-    {"name": "A2-35-1", "location": "Nebenkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
-    {"name": "A2-35-2", "location": "Nebenkeller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
-    {"name": "S2-10-1", "location": "Nebenkeller", "stage": TankStage.STORAGE, "capacity_hl": 10},
-    {"name": "S2-10-2", "location": "Nebenkeller", "stage": TankStage.STORAGE, "capacity_hl": 10},
+    # Schänke 4 — Gärtanks
+    {"name": "Lisa", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "Wanda", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "Greta", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "Anouk", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "Yuri", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 30},
+    {"name": "Alva", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
+    {"name": "Lovis", "location": "Schänke 4", "stage": TankStage.FERMENTATION_CLOSED, "capacity_hl": 15},
+    {"name": "Offener Gärbottich", "location": "Schänke 4", "stage": TankStage.FERMENTATION_OPEN, "capacity_hl": 15},
+    # Schänke 4 — Lagertanks
+    {"name": "Vincenz", "location": "Schänke 4", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "Xaver", "location": "Schänke 4", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "Benjamin", "location": "Schänke 4", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "Evelyn", "location": "Schänke 4", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    {"name": "Fritz", "location": "Schänke 4", "stage": TankStage.STORAGE, "capacity_hl": 30},
+    # Schänke 4 — Bergtanks (Ausschank)
+    {"name": "Bergtank 120 hl", "location": "Schänke 4", "stage": TankStage.AUSSCHANK, "capacity_hl": 120},
+    {"name": "Bergtank 100 hl", "location": "Schänke 4", "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
+    # Kitzmann Keller
+    {"name": "Kitzmann hinten", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50},
+    # Resenscheck Keller — nur zur Bergkirchweih im Einsatz
+    {"name": "Resenscheck", "location": "Resenscheck Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    # Striezi Keller
+    {"name": "Striezi Keller 1", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
+    {"name": "Striezi Keller 2", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
+    {"name": "Striezi Keller 3", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 10},
+    {"name": "Striezi Keller 4", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 10},
 ]
 
 # The brewery's real beers, transcribed from Stefans Bierrezepte.xlsx
@@ -495,14 +506,14 @@ def seed(session: Session) -> None:
         # Kellerbier: finished fermenting, currently in storage.
         TankOccupancy(
             sud_id=kellerbier.id,
-            tank_id=by_tank["F-30-1"].id,
+            tank_id=by_tank["Lisa"].id,
             stage=TankStage.FERMENTATION_CLOSED,
             start_at=midnight_utc - timedelta(days=14),
             end_at=midnight_utc - timedelta(days=7),
         ),
         TankOccupancy(
             sud_id=kellerbier.id,
-            tank_id=by_tank["S-30-1"].id,
+            tank_id=by_tank["Vincenz"].id,
             stage=TankStage.STORAGE,
             start_at=midnight_utc - timedelta(days=7),
             end_at=midnight_utc + timedelta(days=14),
@@ -510,14 +521,14 @@ def seed(session: Session) -> None:
         # Weizen: open ferm done, now in closed fermentation.
         TankOccupancy(
             sud_id=weizen.id,
-            tank_id=by_tank["F-OPEN-15"].id,
+            tank_id=by_tank["Offener Gärbottich"].id,
             stage=TankStage.FERMENTATION_OPEN,
             start_at=midnight_utc - timedelta(days=7),
             end_at=midnight_utc - timedelta(days=3),
         ),
         TankOccupancy(
             sud_id=weizen.id,
-            tank_id=by_tank["F-15-1"].id,
+            tank_id=by_tank["Alva"].id,
             stage=TankStage.FERMENTATION_CLOSED,
             start_at=midnight_utc - timedelta(days=3),
             end_at=midnight_utc + timedelta(days=4),
@@ -525,14 +536,14 @@ def seed(session: Session) -> None:
         # Festbier: planned ferm + storage in the future.
         TankOccupancy(
             sud_id=festbier.id,
-            tank_id=by_tank["F-30-2"].id,
+            tank_id=by_tank["Wanda"].id,
             stage=TankStage.FERMENTATION_CLOSED,
             start_at=midnight_utc + timedelta(days=7),
             end_at=midnight_utc + timedelta(days=15),
         ),
         TankOccupancy(
             sud_id=festbier.id,
-            tank_id=by_tank["S-30-2"].id,
+            tank_id=by_tank["Xaver"].id,
             stage=TankStage.STORAGE,
             start_at=midnight_utc + timedelta(days=15),
             end_at=midnight_utc + timedelta(days=43),
