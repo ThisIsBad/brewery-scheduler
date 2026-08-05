@@ -24,8 +24,13 @@ export function Tankverwaltung({ tanks, locations, onReload }: TankverwaltungPro
 
   const active = tanks.filter((t) => t.active);
   const inactive = tanks.filter((t) => !t.active);
+  // Anzeigeordnung (Stefan, 2026-08-06): Typ (Gär < Lager < Ausschank,
+  // beide Gärstufen zählen als Gärtank) → Größe aufsteigend → Name.
+  const typRang = (t: Tank) =>
+    t.stage === "storage" ? 1 : t.stage === "ausschank" ? 2 : 0;
   const byStage = (a: Tank, b: Tank) =>
-    STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage) ||
+    typRang(a) - typRang(b) ||
+    a.capacity_hl - b.capacity_hl ||
     a.name.localeCompare(b.name);
 
   const reactivate = async (tank: Tank) => {

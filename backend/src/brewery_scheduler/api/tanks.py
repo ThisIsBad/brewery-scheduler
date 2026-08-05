@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_session
@@ -24,7 +24,9 @@ router = APIRouter(prefix="/api/tanks", tags=["tanks"])
 
 @router.get("", response_model=list[TankOut])
 def list_tanks(session: Session = Depends(get_session)) -> list[Tank]:
-    """List all tanks, ordered for stable display in the Gantt view.
+    """List all tanks in display order (Stefan, 2026-08-06): per location
+    by type (Gärtank < Lagertank < Ausschanktank — both fermentation
+    stages count as Gärtank), then size ascending, then name.
 
     Includes deactivated tanks (`active: false`) so historical occupancies
     keep rendering; pickers filter on `active` client-side.
@@ -34,10 +36,21 @@ def list_tanks(session: Session = Depends(get_session)) -> list[Tank]:
     would create a second materialization path for the same data and risk
     inconsistency; we'll revisit if profiling shows it matters.
     """
+    type_rank = case(
+        (Tank.stage == TankStage.STORAGE, 1),
+        (Tank.stage == TankStage.AUSSCHANK, 2),
+        else_=0,
+    )
     stmt = (
         select(Tank)
         .join(Location)
-        .order_by(Location.position, Location.name, Tank.stage, Tank.name)
+        .order_by(
+            Location.position,
+            Location.name,
+            type_rank,
+            Tank.capacity_hl,
+            Tank.name,
+        )
     )
     return list(session.scalars(stmt))
 
