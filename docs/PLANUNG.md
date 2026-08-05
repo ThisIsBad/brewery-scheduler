@@ -50,6 +50,21 @@
   (Konflikt-Handling im Detail, Absicherung gegen Doppelbuchung bei
   verlorener Antwort) für eine eigene Runde notiert.
 
+**Nachtrag 2026-08-06 (Vincenz-Tankwelt, bestätigt):**
+
+- 22 Tanks mit echten Namen. Konvention: **Gär-/Lagertanks tragen
+  Rufnamen** (Lisa … Yuri, Alva, Lovis; Vincenz … Fritz),
+  **Ausschanktanks heißen nach ihrem Keller** (Bergtank 100/120 hl,
+  Kitzmann vorne/hinten, Resenscheck, Striezi Keller 1–4). Typ und
+  Größe kommen aus den Stammdaten — die App zeigt beides überall neben
+  dem Namen; bewusst KEINE Typ-/Größen-Präfixe im Namen.
+- Standorte = Keller: Schänke 4, Kitzmann Keller, Resenscheck Keller
+  (nur Bergkirchweih), Striezi Keller.
+- Die beiden 10-hl-Tanks sind Ausschanktanks. Sortenrein gilt damit
+  überall dort, wo überhaupt gemischt werden kann — außerhalb des
+  Ausschanks erzwingt die DB ohnehin Exklusivbelegung.
+- Umbenennen können Stefan/Vincenz jederzeit selbst im Tanks-Tab.
+
 **Was aus Rezeptwerten errechenbar wäre (Aufstellung für Stefan, 2026-08-05):**
 
 | Rechnung | Braucht | Stand |
