@@ -89,6 +89,17 @@ Before marking a PR ready or claiming a task complete:
   recipe is brewed twice within 48 h and merged into one 30-hl tank. Until
   Phase 2 models this explicitly, the `EXCLUDE` constraint blocks the second
   occupancy — do not "fix" that by relaxing the constraint.
+- **Two Sud numbers, both load-bearing.** `global_number` is Vincenz'
+  jahresübergreifende Zählung (2026 = 210…300; new Sude continue at 301)
+  and is shown as "Sud 285". `style_year_number` is the per-style count
+  shown as "Keller Hell 28/2026". Never conflate them.
+- **The 2026 Sudplanung is seed data** (confirmed 2026-08-05):
+  `backend/scripts/extract_sudplan_2026.py` → `data/sudplan_2026.json` →
+  `sudplan_2026.py` at seed time. Mapping decisions live in that module's
+  docstring — notably "Striezitank" IS the Bergtank 120 hl, and
+  "Bergbier (Gisela)" IS the Festbier. Tests run on the small demo world
+  (`seed(demo_sude=True, sudplan=False)`); only `test_sudplan_import.py`
+  loads the real plan, pinned to Stichtag 2026-08-05.
 - **Primary usage is mobile, in the cellar, with spotty connectivity**
   (confirmed 2026-08, ROADMAP §2.8). Every user-facing feature ships
   mobile-first; the app is a PWA with offline read cache and a queued-

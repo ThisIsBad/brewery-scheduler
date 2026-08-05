@@ -65,6 +65,32 @@
   Ausschanks erzwingt die DB ohnehin Exklusivbelegung.
 - Umbenennen können Stefan/Vincenz jederzeit selbst im Tanks-Tab.
 
+**Nachtrag 2026-08-05 (Sudplanung 2026 übernommen):**
+
+- Die 91 Sude (Nr. 210–300) aus `2026_Sudplanung.xlsx` sind Seed-Daten:
+  `backend/scripts/extract_sudplan_2026.py` erzeugt
+  `data/sudplan_2026.json`, `sudplan_2026.py` lädt sie beim Seeden.
+  Aktualisiert Vincenz das Excel, Extraktor erneut laufen lassen und die
+  JSON committen.
+- **Globale Sudnummer** („Sud 285") ist jetzt Teil der Sud-Identität in
+  API und UI; Neuanlagen zählen ab 301 weiter. Die Sorten-Nummer
+  („Keller Hell 28/2026") bleibt daneben bestehen — Vincenz entscheidet
+  später, ob das Format so bleibt.
+- Mapping (Stefan, 2026-08-05): **„Striezitank" = Bergtank 120 hl**;
+  „Kitzmann groß/klein" = Kitzmann hinten/vorne; „Bergtank" = Bergtank
+  100 hl; **„Bergbier (Gisela)" = Festbier** (belegt durch Sudblatt 210);
+  „Collab Sud 2026" läuft auf „Collab Widder"; „Fass"/„Ausschank" sind
+  Ketten-Enden, keine Tanks.
+- **Kellerbier gibt es zweimal**: „Keller Hell" (Brudi) und als eigene
+  Sorte „Keller Hell Sven" (zusätzlich kalt nachgehopft) — zwei
+  unterschiedliche Biere, ein Rezeptstrang je Sorte, sortenrein bleibt
+  scharf. Neu angelegt: „Wiener Lager Leopold" (Zutaten offen).
+- Import-Prinzip: reparieren was geht, den Rest **am Sud vermerken**
+  statt scheitern — 13 nicht nachgepflegte Zeilen („Kette gekappt"),
+  3 echte Plan-Überbuchungen (Wanda 285 vs. 298, Lisa 297 vs. 292,
+  Evelyn 250+251) stehen als Notiz am Sud und tauchen im Zeitplan als
+  Lücke auf. Ausschank älter als 3 Wochen gilt als leer (abgeschlossen).
+
 **Was aus Rezeptwerten errechenbar wäre (Aufstellung für Stefan, 2026-08-05):**
 
 | Rechnung | Braucht | Stand |
