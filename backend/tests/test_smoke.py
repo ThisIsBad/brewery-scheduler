@@ -121,6 +121,36 @@ def test_list_tanks_returns_full_inventory(client) -> None:
     assert capacities[0] == 10
     assert capacities[-1] == 120
 
+    # Anzeigeordnung (2026-08-06): je Standort Typ (Gär < Lager <
+    # Ausschank) → Größe aufsteigend → Name. Der Offene Gärbottich zählt
+    # als Gärtank und reiht sich bei den 15ern alphabetisch ein.
+    names = [t["name"] for t in body]
+    assert names[:16] == [
+        "Alva",
+        "Lovis",
+        "Offener Gärbottich",
+        "Anouk",
+        "Greta",
+        "Lisa",
+        "Wanda",
+        "Yuri",
+        "Benjamin",
+        "Evelyn",
+        "Fritz",
+        "Vincenz",
+        "Xaver",
+        "Bergtank 100 hl",
+        "Bergtank 120 hl",
+        "Kitzmann vorne",
+    ]
+    # Striezi Keller: Größe schlägt Nummer — die 10er vor den 35ern.
+    assert names[-4:] == [
+        "Striezi Keller 3",
+        "Striezi Keller 4",
+        "Striezi Keller 1",
+        "Striezi Keller 2",
+    ]
+
 
 def test_list_sude_returns_seeded_batches(client) -> None:
     r = client.get("/api/sude")
