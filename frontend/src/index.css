@@ -421,6 +421,55 @@ button:disabled {
   margin-left: 16px;
 }
 
+/* --- Einkauf --- */
+
+.einkauf {
+  padding: 12px;
+}
+
+.einkauf h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin: 16px 0 8px;
+}
+
+.einkauf-zeitraum {
+  display: flex;
+  gap: 12px;
+}
+
+.einkauf-zeitraum label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #555;
+}
+
+.einkauf-zeitraum input {
+  padding: 8px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.einkauf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  padding: 7px 2px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.einkauf-row.einkauf-summe {
+  border-bottom: none;
+  font-weight: 600;
+}
+
 /* --- Tankverwaltung --- */
 
 .tankverwaltung {

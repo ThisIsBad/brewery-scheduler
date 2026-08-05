@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "./api/client";
 import { replay } from "./api/queue";
 import type { Location, Recipe, ScheduleOccupancyIn, Sud, Tank } from "./api/types";
+import { Einkaufsliste } from "./components/Einkaufsliste";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { Rezepte } from "./components/Rezepte";
@@ -10,7 +11,7 @@ import { Tankverwaltung } from "./components/Tankverwaltung";
 import { Warteschlange } from "./components/Warteschlange";
 import { Zeitplan } from "./components/Zeitplan";
 
-type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte";
+type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte" | "einkauf";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -171,6 +172,13 @@ export default function App() {
           >
             Rezepte
           </button>
+          <button
+            type="button"
+            className={view === "einkauf" ? "active" : ""}
+            onClick={() => setView("einkauf")}
+          >
+            Einkauf
+          </button>
         </nav>
         <button
           type="button"
@@ -232,6 +240,15 @@ export default function App() {
             <p className="empty">lade …</p>
           ) : (
             <Rezepte recipes={recipes} onReload={() => void refresh()} />
+          )}
+        </div>
+      )}
+      {view === "einkauf" && (
+        <div className="app-scroll">
+          {loading ? (
+            <p className="empty">lade …</p>
+          ) : (
+            <Einkaufsliste sude={sude} recipes={recipes} />
           )}
         </div>
       )}
