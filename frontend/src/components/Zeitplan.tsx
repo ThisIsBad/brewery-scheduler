@@ -55,6 +55,10 @@ export function Zeitplan({
   onResizeOccupancy,
 }: ZeitplanProps) {
   const [zoom, setZoom] = useState(1);
+  // Zwei Sichten (Stefan, 2026-08-06): Tanksicht = Zeile je Tank (wo ist
+  // was frei), Sudsicht = Zeile je Charge (die Tankevolution eines Suds
+  // als Kette lesbar). Auswahl und Aktionsleiste sind identisch.
+  const [sicht, setSicht] = useState<"tanks" | "sude">("tanks");
   const [selected, setSelected] = useState<Selected | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dayWidth = ZOOM_WIDTHS[zoom];
@@ -95,6 +99,34 @@ export function Zeitplan({
     }
     return map;
   }, [sude]);
+
+  // Sudsicht: eine Zeile je Charge mit Belegung im sichtbaren Fenster,
+  // sortiert nach der ersten Station.
+  const windowEnd = windowStart + totalDays * DAY_MS;
+  const sudRows = useMemo(
+    () =>
+      sude
+        .filter((s) => s.merged_into_sud_id === null && s.occupancies.length > 0)
+        .map((s) => ({
+          sud: s,
+          occs: [...s.occupancies].sort(
+            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+          ),
+        }))
+        .filter(({ occs }) =>
+          occs.some((o) => {
+            const start = new Date(o.start_at).getTime();
+            const end = o.end_at ? new Date(o.end_at).getTime() : windowEnd;
+            return start < windowEnd && end > windowStart;
+          }),
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.occs[0].start_at).getTime() -
+            new Date(b.occs[0].start_at).getTime(),
+        ),
+    [sude, windowStart, windowEnd],
+  );
 
   // Land on "today" when the plan opens; the past is one swipe away.
   useEffect(() => {

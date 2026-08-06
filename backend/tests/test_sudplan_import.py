@@ -11,10 +11,9 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
-
-from fastapi.testclient import TestClient
 
 from brewery_scheduler import db as db_module
 from brewery_scheduler.main import app
