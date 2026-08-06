@@ -19,6 +19,22 @@ non-negotiable working rules for this repository.
   fresh branch over rewriting history that someone else might already have
   fetched.
 
+## GitHub API budget
+
+The GitHub MCP connection runs on Stefan's personal account quota
+(5,000 requests/hour, shared with everything else on his account) until a
+bot account exists. Be frugal — hitting the limit blocks all merges for
+up to an hour:
+
+- **No polling.** CI failures arrive as webhook events; success is the
+  absence of one. At most ONE `get_check_runs` after a fixed wait
+  (~80 s), then act.
+- **Undraft + merge back-to-back**, no status reads in between.
+- **No redundant reads** (`get`, `list`, `search`) when the answer is
+  already known from a webhook, a prior call, or local git.
+- On a rate-limit error: bounded waits (~10 min), don't hammer. Batch
+  any queued merges into the window when it reopens.
+
 ## Commits
 
 - **Conventional, why-focused messages.** First line ≤72 chars, imperative
