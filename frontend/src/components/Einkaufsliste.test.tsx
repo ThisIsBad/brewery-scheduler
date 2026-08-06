@@ -8,9 +8,9 @@ const isoIn = (days: number) =>
 
 const rezept = (over: Partial<Recipe>): Recipe => ({
   id: "r-1",
-  beer_style: "Keller Hell",
+  beer_style: "Kellerbier Hell",
   version: 1,
-  name: "Keller Hell Brudi-Sven",
+  name: "Brudi",
   fermentation_duration_days: 7,
   open_fermentation_required: false,
   open_fermentation_duration_days: null,

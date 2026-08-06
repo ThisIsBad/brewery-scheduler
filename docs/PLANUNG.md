@@ -81,10 +81,16 @@
   100 hl; **„Bergbier (Gisela)" = Festbier** (belegt durch Sudblatt 210);
   „Collab Sud 2026" läuft auf „Collab Widder"; „Fass"/„Ausschank" sind
   Ketten-Enden, keine Tanks.
-- **Kellerbier gibt es zweimal**: „Keller Hell" (Brudi) und als eigene
-  Sorte „Keller Hell Sven" (zusätzlich kalt nachgehopft) — zwei
+- **Kellerbier gibt es zweimal**: Sorte „Kellerbier Hell" (Brudi) und als
+  eigene Sorte „Kellerbier Hell Sven" (zusätzlich kalt nachgehopft) — zwei
   unterschiedliche Biere, ein Rezeptstrang je Sorte, sortenrein bleibt
-  scharf. Neu angelegt: „Wiener Lager Leopold" (Zutaten offen).
+  scharf. Neu angelegt: „Wiener Lager" (Leopold, Zutaten offen).
+- **Sorte und Name sind getrennt** (Stefan, 2026-08-06): die Sorte trägt
+  die volle Bezeichnung („Kellerbier Hell"), der Rezeptname ist nur der
+  Spitzname („Brudi", „Fritz", „Gisela" …) — Anzeige überall
+  „Kellerbier Hell 17/2026 · Brudi". Gemischte Ausschank-Karten zeigen
+  EINE Zeile pro Bier (Sorte · Name, Sudnummern als Herkunft,
+  Gesamtmenge) statt einer Sud-Aufteilung — vermischt ist vermischt.
 - Import-Prinzip: reparieren was geht, den Rest **am Sud vermerken**
   statt scheitern — 13 nicht nachgepflegte Zeilen („Kette gekappt"),
   3 echte Plan-Überbuchungen (Wanda 285 vs. 298, Lisa 297 vs. 292,

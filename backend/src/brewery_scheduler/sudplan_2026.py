@@ -19,7 +19,7 @@ it can't in each Sud's notes instead of failing:
 Mapping-Entscheidungen (Stefan, 2026-08-05): "Striezitank" ist der
 Bergtank 120 hl; "Kitzmann groß/klein" sind Kitzmann hinten/vorne;
 "Bergbier (Gisela)" ist das Festbier (belegt durch Sudblatt 210);
-"Collab Sud 2026" läuft auf dem Rezept "Collab Widder". "Fass" und
+"Collab Sud 2026" läuft auf dem Rezept "Widder". "Fass" und
 "Ausschank" sind keine Tanks — sie beenden die Kette (abgefüllt bzw.
 direkt ausgeschenkt).
 """
@@ -48,16 +48,16 @@ from .models import (
 DATA_FILE = Path(__file__).parent / "data" / "sudplan_2026.json"
 
 SORTE_TO_RECIPE = {
-    "Kellerbier Hell (Brudi)": "Keller Hell Brudi",
-    "Kellerbier Hell (Sven)": "Keller Hell Sven",
-    "Bergbier (Gisela)": "Festbier Gisela",
-    "Bay. Dunkel (Enno)": "bay. Dunkel Enno",
-    "Spezialsud (Schwesti)": "Spezialsud Schwesti",
-    "Weizen (Fritz)": "Weizen Fritz",
-    "Wiener Lager (Leopold)": "Wiener Lager Leopold",
-    "Rauchbier (Waltraut)": "Rauchbier Waltraut",
-    "Weizenbock (Justus)": "Weizenbock Justus",
-    "Collab Sud 2026": "Collab Widder",
+    "Kellerbier Hell (Brudi)": "Brudi",
+    "Kellerbier Hell (Sven)": "Sven",
+    "Bergbier (Gisela)": "Gisela",
+    "Bay. Dunkel (Enno)": "Enno",
+    "Spezialsud (Schwesti)": "Schwesti",
+    "Weizen (Fritz)": "Fritz",
+    "Wiener Lager (Leopold)": "Leopold",
+    "Rauchbier (Waltraut)": "Waltraut",
+    "Weizenbock (Justus)": "Justus",
+    "Collab Sud 2026": "Widder",
 }
 
 TANK_MAP = {

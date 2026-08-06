@@ -22,7 +22,7 @@ export type TankStage =
   | "ausschank";
 
 /** Free label since migration 0013 — the brewery names its beers
- * (Keller Hell, Rauchbier Waltraut, Collab Widder …). */
+ * (Kellerbier Hell, Rauchbier, Collab Widder …). */
 export type BeerStyle = string;
 
 export type SudStatus =

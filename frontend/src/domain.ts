@@ -46,7 +46,7 @@ export function combinedVolumeHl(lead: Sud, all: Sud[]): number {
   );
 }
 
-/** "Keller Hell 1/2026" — Sorte + laufende Nummer je Jahr, beim
+/** "Kellerbier Hell 1/2026" — Sorte + laufende Nummer je Jahr, beim
  * Doppelsud "Festbier 1+2/2026". Die Sorte gehört zur Nummer, weil je
  * Bier separat gezählt wird (Stefan, 2026-08-06). */
 export function sudNumberLabel(lead: Sud, all: Sud[]): string {

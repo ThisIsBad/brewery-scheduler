@@ -28,7 +28,7 @@ from brewery_scheduler.models import (
 
 # The seeded style names (Bierrezepte.xlsx) — beer_style is a free string
 # since migration 0013.
-KELLERBIER = "Keller Hell"
+KELLERBIER = "Kellerbier Hell"
 WEIZEN = "Weizen"
 FESTBIER = "Festbier"
 SPEZIALSUD = "Spezialsud"
@@ -195,8 +195,8 @@ def test_list_recipes_returns_seeded_recipes(client) -> None:
     body = r.json()
     assert len(body) == 12
     assert {x["beer_style"] for x in body} == {
-        "Keller Hell",
-        "Keller Hell Sven",
+        "Kellerbier Hell",
+        "Kellerbier Hell Sven",
         "Weizen",
         "Festbier",
         "Spezialsud",
@@ -1843,7 +1843,7 @@ def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> No
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "Keller Hell",
+            "beer_style": "Kellerbier Hell",
             "name": "Kellerbier (v2, längere Lagerung)",
             "fermentation_duration_days": 7,
             "open_fermentation_required": False,
@@ -1861,7 +1861,7 @@ def test_recipe_new_version_increments_and_keeps_old_suds(client, session) -> No
     # The old version stays listed (history), the existing Sud keeps its link.
     listed = client.get("/api/recipes").json()
     kellerbier_versions = [
-        x["version"] for x in listed if x["beer_style"] == "Keller Hell"
+        x["version"] for x in listed if x["beer_style"] == "Kellerbier Hell"
     ]
     assert sorted(kellerbier_versions) == [1, 2]
     session.refresh(existing_sud)
@@ -2119,7 +2119,7 @@ def test_recipe_ingredients_roundtrip(client) -> None:
     r = client.post(
         "/api/recipes",
         json={
-            "beer_style": "Keller Hell",
+            "beer_style": "Kellerbier Hell",
             "name": "Kellerbier (mit Schüttung)",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
@@ -2333,21 +2333,21 @@ def test_new_beer_style_starts_at_version_one(client) -> None:
 def test_style_active_archives_all_versions(client) -> None:
     r = client.post(
         "/api/recipes/style-active",
-        json={"beer_style": "Keller Hell", "active": False},
+        json={"beer_style": "Kellerbier Hell", "active": False},
     )
     assert r.status_code == 200, r.text
     assert all(x["active"] is False for x in r.json())
 
     listed = client.get("/api/recipes").json()
-    kh = [x for x in listed if x["beer_style"] == "Keller Hell"]
+    kh = [x for x in listed if x["beer_style"] == "Kellerbier Hell"]
     assert kh and all(x["active"] is False for x in kh)
 
     # A new version of an archived beer stays archived …
     r2 = client.post(
         "/api/recipes",
         json={
-            "beer_style": "Keller Hell",
-            "name": "Keller Hell (Test)",
+            "beer_style": "Kellerbier Hell",
+            "name": "Kellerbier Hell (Test)",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
             "max_storage_duration_days": 60,
@@ -2359,7 +2359,7 @@ def test_style_active_archives_all_versions(client) -> None:
     # … and reactivating brings the whole style back.
     r3 = client.post(
         "/api/recipes/style-active",
-        json={"beer_style": "Keller Hell", "active": True},
+        json={"beer_style": "Kellerbier Hell", "active": True},
     )
     assert r3.status_code == 200
     assert all(x["active"] is True for x in r3.json())
@@ -2376,7 +2376,7 @@ def test_style_farbe_paints_all_versions_and_inherits(client) -> None:
     # erben sie, kaputte Hex-Werte sind ein 422.
     r = client.post(
         "/api/recipes/style-farbe",
-        json={"beer_style": "Keller Hell", "farbe": "#123abc"},
+        json={"beer_style": "Kellerbier Hell", "farbe": "#123abc"},
     )
     assert r.status_code == 200, r.text
     assert all(x["farbe"] == "#123abc" for x in r.json())
@@ -2384,8 +2384,8 @@ def test_style_farbe_paints_all_versions_and_inherits(client) -> None:
     neu = client.post(
         "/api/recipes",
         json={
-            "beer_style": "Keller Hell",
-            "name": "Keller Hell (Farbtest)",
+            "beer_style": "Kellerbier Hell",
+            "name": "Kellerbier Hell (Farbtest)",
             "fermentation_duration_days": 7,
             "storage_duration_days": 21,
             "max_storage_duration_days": 60,
@@ -2396,7 +2396,7 @@ def test_style_farbe_paints_all_versions_and_inherits(client) -> None:
 
     kaputt = client.post(
         "/api/recipes/style-farbe",
-        json={"beer_style": "Keller Hell", "farbe": "gold"},
+        json={"beer_style": "Kellerbier Hell", "farbe": "gold"},
     )
     assert kaputt.status_code == 422
 
@@ -2409,7 +2409,7 @@ def test_style_farbe_paints_all_versions_and_inherits(client) -> None:
     # Die Farbe hängt auch am Sud (über dessen Rezept) — der Zeitplan
     # liest sie dort.
     sude = client.get("/api/sude").json()
-    keller_sud = next(s for s in sude if s["recipe"]["beer_style"] == "Keller Hell")
+    keller_sud = next(s for s in sude if s["recipe"]["beer_style"] == "Kellerbier Hell")
     assert keller_sud["recipe"]["farbe"] == "#123abc"
 
 

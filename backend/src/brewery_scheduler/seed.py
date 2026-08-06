@@ -77,9 +77,9 @@ _ZEITEN_NOTE = (
 
 RECIPES: list[dict] = [
     {
-        "beer_style": "Keller Hell",
+        "beer_style": "Kellerbier Hell",
         "farbe": "#e0a92e",
-        "name": "Keller Hell Brudi",
+        "name": "Brudi",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -109,9 +109,9 @@ RECIPES: list[dict] = [
         # zusätzlich kalt nachgehopft (Stefan, 2026-08-05). Eigene Sorte:
         # ein Rezeptstrang je Sorte, und sortenrein bleibt ehrlich (das
         # kalt gehopfte Bier wird nicht mit Brudi verschnitten).
-        "beer_style": "Keller Hell Sven",
+        "beer_style": "Kellerbier Hell Sven",
         "farbe": "#e5c04a",
-        "name": "Keller Hell Sven",
+        "name": "Sven",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -139,7 +139,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Weizen",
         "farbe": "#d98e2b",
-        "name": "Weizen Fritz",
+        "name": "Fritz",
         "fermentation_duration_days": 7,
         "open_fermentation_required": True,
         "open_fermentation_duration_days": 4,
@@ -169,7 +169,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Festbier",
         "farbe": "#b06c1a",
-        "name": "Festbier Gisela",
+        "name": "Gisela",
         "fermentation_duration_days": 8,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -207,7 +207,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Spezialsud",
         "farbe": "#8e5ba6",
-        "name": "Spezialsud Schwesti",
+        "name": "Schwesti",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -240,7 +240,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "bay. Dunkel",
         "farbe": "#6b4226",
-        "name": "bay. Dunkel Enno",
+        "name": "Enno",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -273,7 +273,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Rauchbier",
         "farbe": "#4a2f1d",
-        "name": "Rauchbier Waltraut",
+        "name": "Waltraut",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -306,7 +306,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Weizenbock",
         "farbe": "#a05c17",
-        "name": "Weizenbock Justus",
+        "name": "Justus",
         "fermentation_duration_days": 7,
         # Wheat-family assumption — offene Gärung wie beim Weizen; vom
         # Braumeister zu bestätigen.
@@ -340,7 +340,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Collab Widder",
         "farbe": "#2e8b8b",
-        "name": "Collab Widder",
+        "name": "Widder",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -374,7 +374,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Wit",
         "farbe": "#cfc06a",
-        "name": "Wit Collab Orca",
+        "name": "Collab Orca",
         "active": False,
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -408,7 +408,7 @@ RECIPES: list[dict] = [
         # Zutaten und Zeiten trägt Vincenz nach.
         "beer_style": "Wiener Lager",
         "farbe": "#b3541e",
-        "name": "Wiener Lager Leopold",
+        "name": "Leopold",
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
         "open_fermentation_duration_days": None,
@@ -420,7 +420,7 @@ RECIPES: list[dict] = [
     {
         "beer_style": "Leichtbier",
         "farbe": "#c0392b",
-        "name": "Leichtbier Werner",
+        "name": "Werner",
         "active": False,
         "fermentation_duration_days": 7,
         "open_fermentation_required": False,
@@ -507,13 +507,13 @@ def seed(
             print(f"Seeded: {len(tanks)} tanks, {len(recipes)} recipes, keine Sude.")
         return
 
-    # Zwei Rezepte teilen sich die Sorte "Keller Hell" — für die Demo-Welt
+    # Zwei Rezepte teilen sich die Sorte "Kellerbier Hell" — für die Demo-Welt
     # zählt der Name, nicht die Sorte.
     by_name = {r.name: r for r in recipes}
     by_style = {
-        "Keller Hell": by_name["Keller Hell Brudi"],
-        "Weizen": by_name["Weizen Fritz"],
-        "Festbier": by_name["Festbier Gisela"],
+        "Kellerbier Hell": by_name["Brudi"],
+        "Weizen": by_name["Fritz"],
+        "Festbier": by_name["Gisela"],
     }
     by_tank = {t.name: t for t in tanks}
 
@@ -538,8 +538,8 @@ def seed(
     # left to the sud_global_seq default.
     kellerbier_day = past_brew_date(14)
     kellerbier = Sud(
-        recipe_id=by_style["Keller Hell"].id,
-        beer_style="Keller Hell",
+        recipe_id=by_style["Kellerbier Hell"].id,
+        beer_style="Kellerbier Hell",
         brew_at=brew_morning(kellerbier_day),
         brew_date=kellerbier_day,
         status=SudStatus.STORING,
