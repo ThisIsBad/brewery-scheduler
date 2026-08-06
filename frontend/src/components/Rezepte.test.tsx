@@ -46,18 +46,18 @@ test("setzt die Bierfarbe beim Schließen des Farbwählers", async () => {
   const onReload = vi.fn();
   render(
     <Rezepte
-      recipes={[recipe({ beer_style: "Keller Hell", farbe: "#e0a92e" })]}
+      recipes={[recipe({ beer_style: "Kellerbier Hell", farbe: "#e0a92e" })]}
       onReload={onReload}
     />,
   );
 
-  const input = screen.getByLabelText("Farbe Keller Hell");
+  const input = screen.getByLabelText("Farbe Kellerbier Hell");
   fireEvent.change(input, { target: { value: "#123abc" } });
   expect(mocked.setRecipeStyleFarbe).not.toHaveBeenCalled(); // erst beim Blur
   fireEvent.blur(input);
   await waitFor(() =>
     expect(mocked.setRecipeStyleFarbe).toHaveBeenCalledWith({
-      beer_style: "Keller Hell",
+      beer_style: "Kellerbier Hell",
       farbe: "#123abc",
     }),
   );

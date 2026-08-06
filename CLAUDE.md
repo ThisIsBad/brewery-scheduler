@@ -92,7 +92,7 @@ Before marking a PR ready or claiming a task complete:
 - **Two Sud numbers, both load-bearing.** `global_number` is Vincenz'
   jahresübergreifende Zählung (2026 = 210…300; new Sude continue at 301)
   and is shown as "Sud 285". `style_year_number` is the per-style count
-  shown as "Keller Hell 28/2026". Never conflate them.
+  shown as "Kellerbier Hell 28/2026". Never conflate them.
 - **The 2026 Sudplanung is seed data** (confirmed 2026-08-05):
   `backend/scripts/extract_sudplan_2026.py` → `data/sudplan_2026.json` →
   `sudplan_2026.py` at seed time. Mapping decisions live in that module's

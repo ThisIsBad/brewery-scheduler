@@ -9,6 +9,7 @@ import {
   formatDate,
   formatHl,
   occupancyAt,
+  partnersOf,
   remainingHl,
   globalSudLabel,
   sudNumberLabel,
@@ -133,17 +134,45 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 </span>
               </header>
               <div className="card-body">
-                {withRemaining.map(({ sud, occ, remaining }) => (
-                  <div className="beer" key={occ.id}>
-                    {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
-                    <span className="muted">({globalSudLabel(sud, sude)})</span>{" "}
-                    · noch {formatHl(remaining)}
-                    {/* Vermischt ist vermischt (Stefan, 2026-08-06): sobald
-                        mehrere Sude im Tank sind, gibt es kein Aufteilen
-                        mehr — Umdrücken nur solange der Sud allein ist. */}
-                    {entries.length === 1 && (
-                      <>
-                        {" "}
+                {/* Vermischt ist vermischt (Stefan, 2026-08-06): im Tank ist
+                    nur noch EIN Bier — die Karte zeigt es als eine Zeile,
+                    nicht als Sud-Aufteilung. Die Sudnummern bleiben als
+                    Herkunft dran. Solange ein Sud allein liegt, gilt die
+                    Einzelzeile samt Umdrücken weiter. */}
+                {entries.length > 1
+                  ? [...withRemaining
+                      .reduce((map, e) => {
+                        const key = `${e.sud.recipe.beer_style}|${e.sud.recipe.name}`;
+                        const g = map.get(key) ?? {
+                          style: e.sud.recipe.beer_style,
+                          name: e.sud.recipe.name,
+                          remaining: 0,
+                          numbers: [] as number[],
+                        };
+                        g.remaining += e.remaining;
+                        g.numbers.push(
+                          e.sud.global_number,
+                          ...partnersOf(e.sud, sude).map((p) => p.global_number),
+                        );
+                        map.set(key, g);
+                        return map;
+                      }, new Map<string, { style: string; name: string; remaining: number; numbers: number[] }>())
+                      .values()].map((b) => (
+                      <div className="beer" key={`${b.style}|${b.name}`}>
+                        {b.style} · {b.name}{" "}
+                        <span className="muted">
+                          (Sud {b.numbers.sort((x, y) => x - y).join("+")})
+                        </span>{" "}
+                        · noch {formatHl(b.remaining)}
+                      </div>
+                    ))
+                  : withRemaining.map(({ sud, occ, remaining }) => (
+                      <div className="beer" key={occ.id}>
+                        {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
+                        <span className="muted">
+                          ({globalSudLabel(sud, sude)})
+                        </span>{" "}
+                        · noch {formatHl(remaining)}{" "}
                         <button
                           type="button"
                           className="secondary"
@@ -153,13 +182,8 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                         >
                           Umdrücken
                         </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-                {entries.length > 1 && (
-                  <div className="muted">Zusammen noch {formatHl(total)}</div>
-                )}
+                      </div>
+                    ))}
                 {warnings.length > 0 && (
                   <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
                 )}

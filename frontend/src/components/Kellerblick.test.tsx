@@ -222,10 +222,17 @@ describe("Kellerblick", () => {
       />,
     );
 
-    // EIN Tank, EINE Karte — beide Biere als Zeilen, Buchungen am Tank.
+    // EIN Tank, EINE Karte — und weil vermischt, EIN Bier statt Sud-Zeilen:
+    // "Sorte · Name (Sud …) · noch …" (Stefan, 2026-08-06).
     expect(screen.getAllByRole("article")).toHaveLength(1);
-    expect(screen.getByText(/Zusammen noch 30 hl/)).toBeInTheDocument();
-    // Vermischt ist vermischt: kein Umdrücken je Sud mehr (Stefan, 2026-08-06).
+    expect(
+      screen.getByText(/kellerbier · Kellerbier/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/\(Sud 210\+211\)/)).toBeInTheDocument();
+    expect(screen.getByText(/noch 30 hl/)).toBeInTheDocument();
+    // Keine Sorten-Nummern je Sud mehr auf der gemischten Karte …
+    expect(screen.queryByText(/kellerbier 1\//)).toBeNull();
+    // … und kein Umdrücken je Sud (vermischt lässt sich nicht aufteilen).
     expect(screen.queryByRole("button", { name: "Umdrücken" })).toBeNull();
     // Sichtbar ist nur die Alltagsaktion; der Rest steckt hinter „Mehr".
     expect(

@@ -64,8 +64,8 @@ def test_import_umfang_und_nummern(plan_session) -> None:
         )
     }
     assert per_style["Festbier"] == 34  # Bergbier (Gisela)
-    assert per_style["Keller Hell"] == 38
-    assert per_style["Keller Hell Sven"] == 2
+    assert per_style["Kellerbier Hell"] == 38
+    assert per_style["Kellerbier Hell Sven"] == 2
 
 
 def test_import_statusverteilung_am_stichtag(plan_session) -> None:
