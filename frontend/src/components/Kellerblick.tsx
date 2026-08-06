@@ -45,6 +45,9 @@ type DialogState =
 
 export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
   const [dialog, setDialog] = useState<DialogState>(null);
+  // Gemischte Ausschank-Karte: nur „Ausgeschenkt" ist direkt sichtbar,
+  // Fass/Schwund stecken hinter „Mehr" (Stefan, 2026-08-06).
+  const [mehrTank, setMehrTank] = useState<string | null>(null);
   // Re-render every minute so cards move between sections while the phone
   // stays open on the cellar round — `now` is recomputed per render.
   const [, setTick] = useState(0);
@@ -134,16 +137,24 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                   <div className="beer" key={occ.id}>
                     {sudNumberLabel(sud, sude)} · {sud.recipe.name}{" "}
                     <span className="muted">({globalSudLabel(sud, sude)})</span>{" "}
-                    · noch {formatHl(remaining)}{" "}
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={() =>
-                        setDialog({ kind: "transfer", sud, occupancy: occ })
-                      }
-                    >
-                      Umdrücken
-                    </button>
+                    · noch {formatHl(remaining)}
+                    {/* Vermischt ist vermischt (Stefan, 2026-08-06): sobald
+                        mehrere Sude im Tank sind, gibt es kein Aufteilen
+                        mehr — Umdrücken nur solange der Sud allein ist. */}
+                    {entries.length === 1 && (
+                      <>
+                        {" "}
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() =>
+                            setDialog({ kind: "transfer", sud, occupancy: occ })
+                          }
+                        >
+                          Umdrücken
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
                 {entries.length > 1 && (
@@ -154,50 +165,114 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                 )}
               </div>
               <footer>
-                <button
-                  type="button"
-                  disabled={total <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "tankWithdraw",
-                      tank: tank!,
-                      entries,
-                      withdrawalKind: "keg_fill",
-                    })
-                  }
-                >
-                  Fass abfüllen
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={total <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "tankWithdraw",
-                      tank: tank!,
-                      entries,
-                      withdrawalKind: "ausschank",
-                    })
-                  }
-                >
-                  Ausgeschenkt
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={total <= 0}
-                  onClick={() =>
-                    setDialog({
-                      kind: "tankWithdraw",
-                      tank: tank!,
-                      entries,
-                      withdrawalKind: "schwund",
-                    })
-                  }
-                >
-                  Schwund
-                </button>
+                {entries.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={total <= 0}
+                      onClick={() =>
+                        setDialog({
+                          kind: "tankWithdraw",
+                          tank: tank!,
+                          entries,
+                          withdrawalKind: "ausschank",
+                        })
+                      }
+                    >
+                      Ausgeschenkt
+                    </button>
+                    {mehrTank === tankId && (
+                      <>
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={total <= 0}
+                          onClick={() =>
+                            setDialog({
+                              kind: "tankWithdraw",
+                              tank: tank!,
+                              entries,
+                              withdrawalKind: "keg_fill",
+                            })
+                          }
+                        >
+                          Fass abfüllen
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={total <= 0}
+                          onClick={() =>
+                            setDialog({
+                              kind: "tankWithdraw",
+                              tank: tank!,
+                              entries,
+                              withdrawalKind: "schwund",
+                            })
+                          }
+                        >
+                          Schwund
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() =>
+                        setMehrTank(mehrTank === tankId ? null : tankId)
+                      }
+                    >
+                      {mehrTank === tankId ? "Weniger" : "Mehr"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      disabled={total <= 0}
+                      onClick={() =>
+                        setDialog({
+                          kind: "tankWithdraw",
+                          tank: tank!,
+                          entries,
+                          withdrawalKind: "keg_fill",
+                        })
+                      }
+                    >
+                      Fass abfüllen
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={total <= 0}
+                      onClick={() =>
+                        setDialog({
+                          kind: "tankWithdraw",
+                          tank: tank!,
+                          entries,
+                          withdrawalKind: "ausschank",
+                        })
+                      }
+                    >
+                      Ausgeschenkt
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={total <= 0}
+                      onClick={() =>
+                        setDialog({
+                          kind: "tankWithdraw",
+                          tank: tank!,
+                          entries,
+                          withdrawalKind: "schwund",
+                        })
+                      }
+                    >
+                      Schwund
+                    </button>
+                  </>
+                )}
               </footer>
             </article>
           );
