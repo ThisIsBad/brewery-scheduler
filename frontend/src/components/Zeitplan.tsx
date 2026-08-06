@@ -36,9 +36,22 @@ function textColorFor(hex: string): string {
 }
 
 const DAY_MS = 86_400_000;
-const ZOOM_WIDTHS = [18, 36, 64];
+
+// Die drei Zeiträume, in denen Vincenz denkt (Stefan, 2026-08-06):
+// Woche fürs Tagesgeschäft, Monat als Standard, Jahr für die Saison.
+// minBlock hält Blöcke tippbar, ohne die Jahresansicht zu fluten.
+type Zeitraum = "woche" | "monat" | "jahr";
+const ZEITRAUM_CONFIG: Record<Zeitraum, { dayWidth: number; minBlock: number }> = {
+  woche: { dayWidth: 64, minBlock: 32 },
+  monat: { dayWidth: 13, minBlock: 16 },
+  jahr: { dayWidth: 3, minBlock: 8 },
+};
+const ZEITRAUM_LABEL: Record<Zeitraum, string> = {
+  woche: "Woche",
+  monat: "Monat",
+  jahr: "Jahr",
+};
 const PAST_DAYS = 7;
-const FUTURE_DAYS = 42;
 
 interface Selected {
   sud: Sud;
@@ -54,21 +67,34 @@ export function Zeitplan({
   onMoveOccupancy,
   onResizeOccupancy,
 }: ZeitplanProps) {
-  const [zoom, setZoom] = useState(1);
+  const [zeitraum, setZeitraum] = useState<Zeitraum>("monat");
   // Zwei Sichten (Stefan, 2026-08-06): Tanksicht = Zeile je Tank (wo ist
   // was frei), Sudsicht = Zeile je Charge (die Tankevolution eines Suds
   // als Kette lesbar). Auswahl und Aktionsleiste sind identisch.
   const [sicht, setSicht] = useState<"tanks" | "sude">("tanks");
   const [selected, setSelected] = useState<Selected | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const dayWidth = ZOOM_WIDTHS[zoom];
+  const { dayWidth, minBlock } = ZEITRAUM_CONFIG[zeitraum];
 
-  const windowStart = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() - PAST_DAYS * DAY_MS;
-  }, []);
-  const totalDays = PAST_DAYS + FUTURE_DAYS;
+  // Woche/Monat: rollierendes Fenster um heute. Jahr: das Kalenderjahr —
+  // deckt die ganze Sudplanung inklusive Historie.
+  const { windowStart, totalDays } = useMemo(() => {
+    const heute = new Date();
+    heute.setHours(0, 0, 0, 0);
+    if (zeitraum === "jahr") {
+      const anfang = new Date(heute.getFullYear(), 0, 1).getTime();
+      const ende = new Date(heute.getFullYear() + 1, 0, 1).getTime();
+      return {
+        windowStart: anfang,
+        totalDays: Math.round((ende - anfang) / DAY_MS),
+      };
+    }
+    const future = zeitraum === "woche" ? 28 : 60;
+    return {
+      windowStart: heute.getTime() - PAST_DAYS * DAY_MS,
+      totalDays: PAST_DAYS + future,
+    };
+  }, [zeitraum]);
 
   const days = useMemo(
     () =>
@@ -126,12 +152,18 @@ export function Zeitplan({
       .sort((a, b) => minGlobal(a.sud) - minGlobal(b.sud));
   }, [sude, windowStart, windowEnd]);
 
+  const scrollToHeute = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const heuteIndex = Math.floor((Date.now() - windowStart) / DAY_MS);
+    el.scrollLeft = Math.max(0, (heuteIndex - 1) * dayWidth);
+  };
+
   // Land on "today" when the plan opens; the past is one swipe away.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollLeft = Math.max(0, (PAST_DAYS - 1) * dayWidth);
-     
-  }, [dayWidth]);
+    scrollToHeute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayWidth, windowStart]);
 
   const nowOffset = ((Date.now() - windowStart) / DAY_MS) * dayWidth;
 
@@ -210,7 +242,7 @@ export function Zeitplan({
     const start = new Date(occ.start_at).getTime();
     const end = occ.end_at ? new Date(occ.end_at).getTime() : windowEnd;
     const left = ((start - windowStart) / DAY_MS) * dayWidth;
-    const width = Math.max(((end - start) / DAY_MS) * dayWidth, 32);
+    const width = Math.max(((end - start) / DAY_MS) * dayWidth, minBlock);
     if (left + width < 0 || left > totalDays * dayWidth) return null;
     const isSelected = selected?.occ.id === occ.id && selected.sud.id === sud.id;
     const warned = (sud.warnings?.length ?? 0) > 0;
@@ -232,9 +264,10 @@ export function Zeitplan({
             ? undefined
             : textColorFor(sud.recipe.farbe ?? FALLBACK_COLOR),
         }}
+        aria-label={label}
         onClick={() => setSelected(isSelected ? null : { sud, occ })}
       >
-        {label}
+        {zeitraum === "jahr" ? null : label}
       </button>
     );
   };
@@ -242,29 +275,20 @@ export function Zeitplan({
   return (
     <div className="zeitplan">
       <div className="zeitplan-toolbar">
-        <button
-          type="button"
-          aria-label="Verkleinern"
-          disabled={zoom === 0}
-          onClick={() => setZoom((z) => Math.max(0, z - 1))}
-        >
-          −
-        </button>
-        <button
-          type="button"
-          aria-label="Vergrößern"
-          disabled={zoom === ZOOM_WIDTHS.length - 1}
-          onClick={() => setZoom((z) => Math.min(ZOOM_WIDTHS.length - 1, z + 1))}
-        >
-          +
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const el = scrollRef.current;
-            if (el) el.scrollLeft = Math.max(0, (PAST_DAYS - 1) * dayWidth);
-          }}
-        >
+        <span className="zeitplan-sicht">
+          {(Object.keys(ZEITRAUM_CONFIG) as Zeitraum[]).map((z) => (
+            <button
+              type="button"
+              key={z}
+              className={zeitraum === z ? "" : "secondary"}
+              aria-pressed={zeitraum === z}
+              onClick={() => setZeitraum(z)}
+            >
+              {ZEITRAUM_LABEL[z]}
+            </button>
+          ))}
+        </span>
+        <button type="button" onClick={scrollToHeute}>
           Heute
         </button>
         <span className="zeitplan-sicht">
@@ -296,21 +320,32 @@ export function Zeitplan({
           <div className="zeitplan-header">
             <div className="zeitplan-tanklabel" />
             <div className="zeitplan-days" style={{ width: totalDays * dayWidth }}>
-              {days.map((d, i) => (
-                <div
-                  key={d.getTime()}
-                  className={
-                    d.getDay() === 0 || d.getDay() === 6
-                      ? "zeitplan-day weekend"
-                      : "zeitplan-day"
-                  }
-                  style={{ width: dayWidth, left: i * dayWidth }}
-                >
-                  {zoom > 0 || d.getDate() === 1 || d.getDay() === 1
-                    ? `${d.getDate()}.${d.getMonth() + 1}.`
-                    : ""}
-                </div>
-              ))}
+              {days.map((d, i) => {
+                if (zeitraum === "jahr" && d.getDate() !== 1) return null;
+                return (
+                  <div
+                    key={d.getTime()}
+                    className={
+                      zeitraum !== "jahr" &&
+                      (d.getDay() === 0 || d.getDay() === 6)
+                        ? "zeitplan-day weekend"
+                        : "zeitplan-day"
+                    }
+                    style={{
+                      width: zeitraum === "jahr" ? 40 : dayWidth,
+                      left: i * dayWidth,
+                    }}
+                  >
+                    {zeitraum === "jahr"
+                      ? d.toLocaleDateString("de-DE", { month: "short" })
+                      : zeitraum === "woche" ||
+                          d.getDate() === 1 ||
+                          d.getDay() === 1
+                        ? `${d.getDate()}.${d.getMonth() + 1}.`
+                        : ""}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
