@@ -390,6 +390,22 @@ button:disabled {
   align-items: center;
 }
 
+.zeitplan-sicht {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* Auswahl: die Kette des gewählten Suds bleibt kräftig und bekommt einen
+   Rahmen, alles Fremde tritt zurück. */
+.zeitplan-block.kette {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 1px;
+}
+
+.zeitplan-block.fremd {
+  opacity: 0.35;
+}
+
 .zeitplan-gruppe {
   font-size: 13px;
   color: #555;
