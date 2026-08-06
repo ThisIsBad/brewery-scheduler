@@ -40,7 +40,8 @@ KURZFORM_SORTEN = {
     "bergbier n3": "Bergbier (Gisela)",
     "festbier": "Bergbier (Gisela)",
     "keller bern": "Keller Bern",
-    "bock": "Bock",
+    # Sud 1 (2021): "Bock" ist der Weizenbock (Stefan, 2026-08-06).
+    "bock": "Weizenbock (Justus)",
     "weizen": "Weizen (Fritz)",
     "weizenbock": "Weizenbock (Justus)",
     "spezial": "Spezialsud (Schwesti)",

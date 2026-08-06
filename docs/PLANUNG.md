@@ -70,11 +70,13 @@
 - Die **komplette Sudhistorie Nr. 1–300 (2021–2026)** ist Seed-Datenbasis:
   `backend/scripts/extract_sudplan.py` (Format-Autodetekt) erzeugt die
   `data/sudplan_*.json`; `sudplan_import.py` lädt alle beim Seeden.
-  2026 = aktueller Plan, 2025 = volle Tankketten (inkl. historischem
-  Entlas-Keller, Tank inaktiv), 2021–2024 = Kurzform-Log (nur Datum,
+  2026 = aktueller Plan, 2025 = volle Tankketten („Entlas" = der
+  Bergtank 100 hl, der 2025 im Entlas stand — derselbe physische Tank,
+  Stefan 2026-08-06), 2021–2024 = Kurzform-Log (nur Datum,
   Sorte, Gärtank; als abgeschlossen importiert; Freitext-Sorten
-  normalisiert, Original als Notiz). Neue Alt-Rezepte (archiviert):
-  Keller Bern, Bock, Collab 2025. Sud 79: Sorte im Log leer →
+  normalisiert, Original als Notiz; „Bock" = Weizenbock Justus). Neue
+  Alt-Rezepte (archiviert): Keller Bern, Collab 2025. Sud 79: Sorte im
+  Log leer →
   Spezialsud mit Prüf-Notiz. Aktualisiert Vincenz ein Excel: Extraktor
   erneut laufen lassen und die JSON committen.
 - **Globale Sudnummer** („Sud 285") ist jetzt Teil der Sud-Identität in
