@@ -98,6 +98,12 @@
   „Kellerbier Hell 17/2026 · Brudi". Gemischte Ausschank-Karten zeigen
   EINE Zeile pro Bier (Sorte · Name, Sudnummern als Herkunft,
   Gesamtmenge) statt einer Sud-Aufteilung — vermischt ist vermischt.
+- **Ausschank-Stationen tragen Plan-Enden** (2026-08-06): „bis leer" ist
+  keine Planungsgröße — offene Fenster sperrten den Zeitplan (jede
+  spätere anderssortige Belegung überlappte → Sortenrein-409). Importierte
+  Stationen enden beim Start der nächsten anderssortigen Station im Tank,
+  spätestens nach 14 Tagen. Live-Buchungen (Umdrücken) bleiben „offen bis
+  leer"; künftige Stationen terminiert man im Ketten-Editor.
 - Import-Prinzip: reparieren was geht, den Rest **am Sud vermerken**
   statt scheitern — 13 nicht nachgepflegte Zeilen („Kette gekappt"),
   3 echte Plan-Überbuchungen (Wanda 285 vs. 298, Lisa 297 vs. 292,

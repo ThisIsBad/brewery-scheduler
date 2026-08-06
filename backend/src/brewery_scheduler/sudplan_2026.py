@@ -72,11 +72,12 @@ CHAIN_END = {"Fass", "Ausschank"}
 
 MERGE_WINDOW = timedelta(hours=48)
 
-# Ein offener Ausschank, der länger als drei Wochen zurückliegt, ist in
-# diesem Betrieb längst leer (Ziel-Ausschankalter im Plan: 1-5 Wochen) —
-# solche Sude werden als abgeschlossen importiert, nur echte aktuelle
-# Zapfstellen bleiben offen.
-AUSSCHANK_DONE = timedelta(days=21)
+# „Bis leer" ist keine Planungsgröße: ein offenes Ausschank-Fenster würde
+# jede spätere anderssortige Belegung im selben Tank blockieren (Sortenrein
+# prüft Zeitfenster). Importierte Stationen enden deshalb beim Start der
+# nächsten anderssortigen Station im Tank, spätestens nach dieser Dauer.
+# Die Live-Buchungen der App arbeiten weiter mit „offen bis leer".
+AUSSCHANK_PLAN_DAUER = timedelta(days=14)
 
 # Standard-Sud (ROADMAP §2.1). Die Paar-Erkennung rechnet mit Plan-Mengen:
 # zwei 15er passen in einen 30-hl-Gärtank, auch wenn die Sudhaus-Ausbeute
@@ -164,21 +165,20 @@ def _derive_status(
     now = _dt(today, 10)
     if brew > today:
         return SudStatus.PLANNED
-    stale_tap = False
     for seg in segments:
         if seg.start <= now and (seg.end is None or now < seg.end):
             if seg.tank.stage == TankStage.AUSSCHANK:
-                if seg.end is None and now - seg.start > AUSSCHANK_DONE:
-                    stale_tap = True
-                    break
                 return SudStatus.IN_AUSSCHANK
             if seg.tank.stage == TankStage.STORAGE:
                 return SudStatus.STORING
             return SudStatus.FERMENTING
     if segments and now < segments[0].start:
         return SudStatus.PLANNED
-    # Kette liegt komplett in der Vergangenheit.
-    if kegged or versteuert or stale_tap:
+    # Kette liegt komplett in der Vergangenheit. Wessen Ausschank-Fenster
+    # vorbei ist, gilt als ausgeschenkt — auch wenn die versteuerte Menge
+    # im Excel nie nachgetragen wurde.
+    war_im_ausschank = bool(segments) and segments[-1].tank.stage == TankStage.AUSSCHANK
+    if kegged or versteuert or war_im_ausschank:
         return SudStatus.SERVED
     return SudStatus.STORING  # steht rechnerisch noch im letzten Tank → Überfällig
 
@@ -216,19 +216,47 @@ def import_sudplan(session: Session, today: date | None = None) -> dict:
     # Sude (Lead wie Partner) — wie es die App bei Neuanlagen auch tut.
     style_counters: dict[tuple[str, int], int] = {}
 
+    prepared: list[tuple[list[dict], Recipe, list]] = []
+    for batch in batches:
+        recipe = recipes.get(SORTE_TO_RECIPE.get(batch[0]["sorte"], ""))
+        if recipe is None:
+            raise RuntimeError(
+                f"Kein Rezept für Sorte {batch[0]['sorte']!r} (Sud {batch[0]['global']})"
+            )
+        prepared.append((batch, recipe, [_sanitize_chain(e, tanks, recipe) for e in batch]))
+
+    # Offene Ausschank-Stationen bekommen ein Plan-Ende (siehe
+    # AUSSCHANK_PLAN_DAUER): Start der nächsten anderssortigen Station im
+    # selben Tank, spätestens Start + Plan-Dauer.
+    starts_by_tank: dict[object, list[tuple[datetime, str]]] = {}
+    for _batch, recipe, chains in prepared:
+        for segments, _kegged, _warnings in chains:
+            for seg in segments:
+                if seg.tank.stage == TankStage.AUSSCHANK:
+                    starts_by_tank.setdefault(seg.tank.id, []).append(
+                        (seg.start, recipe.beer_style)
+                    )
+    for _batch, recipe, chains in prepared:
+        for segments, _kegged, _warnings in chains:
+            for seg in segments:
+                if seg.end is None and seg.tank.stage == TankStage.AUSSCHANK:
+                    fremde = [
+                        start
+                        for start, style in starts_by_tank.get(seg.tank.id, [])
+                        if start > seg.start and style != recipe.beer_style
+                    ]
+                    cap = seg.start + AUSSCHANK_PLAN_DAUER
+                    seg.end = min(min(fremde), cap) if fremde else cap
+                    seg.synthetic = True
+
     # Stimmige Ketten zuerst einbuchen; synthetische Enden verlieren bei
     # Kollisionen (die späteren, gepflegten Daten sind die Wahrheit).
-    def _coherence(batch: list[dict]) -> tuple:
-        segments, _, warnings = _sanitize_chain(batch[0], tanks, recipes[SORTE_TO_RECIPE[batch[0]["sorte"]]])
-        return (1 if warnings else 0, batch[0]["global"])
+    def _coherence(item: tuple) -> tuple:
+        batch, _recipe, chains = item
+        return (1 if chains[0][2] else 0, batch[0]["global"])
 
-    for batch in sorted(batches, key=_coherence):
+    for batch, recipe, member_chains in sorted(prepared, key=_coherence):
         lead_entry = batch[0]
-        recipe = recipes.get(SORTE_TO_RECIPE.get(lead_entry["sorte"], ""))
-        if recipe is None:
-            raise RuntimeError(f"Kein Rezept für Sorte {lead_entry['sorte']!r} (Sud {lead_entry['global']})")
-
-        member_chains = [_sanitize_chain(e, tanks, recipe) for e in batch]
         segments, kegged, warnings = member_chains[0]
 
         # Paar-Feinheiten: gemeinsames Gär-Ende ist das spätere der beiden;
@@ -252,14 +280,6 @@ def import_sudplan(session: Session, today: date | None = None) -> dict:
         batch_volume = sum(e["menge_hl"] or 15 for e in batch)
         brew_date = _parse(lead_entry["brew"])
         status = _derive_status(segments, kegged, brew_date, today, lead_entry["versteuert"])
-
-        # Abgeschlossene Sude belegen keine Tanks mehr: offene Ausschank-
-        # Enden werden auf den letzten bekannten Termin + 28 Tage gedeckelt.
-        if status == SudStatus.SERVED:
-            for seg in segments + [seg for seg, _vol in split_segments]:
-                if seg.end is None:
-                    anchor = _parse(lead_entry["ausschank"]) or seg.start.date()
-                    seg.end = min(_dt(today, 10), _dt(anchor, 12) + timedelta(days=28))
 
         sude: list[Sud] = []
         for i, entry in enumerate(batch):
