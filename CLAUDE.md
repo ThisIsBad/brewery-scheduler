@@ -112,9 +112,10 @@ Before marking a PR ready or claiming a task complete:
 - **The complete Sud history (Nr. 1–300, 2021–2026) is seed data**:
   `backend/scripts/extract_sudplan.py` → `data/sudplan_*.json` →
   `sudplan_import.py` at seed time. Mapping decisions live in that
-  module's docstring — notably "Striezitank" IS the Bergtank 120 hl, and
-  "Bergbier (Gisela)" IS the Festbier. Sude 1–138 are short-form history
-  (date, Sorte, Gärtank only); Entlas is a historic inactive tank. Tests
+  module's docstring — notably "Striezitank" IS the Bergtank 120 hl,
+  "Entlas" IS the Bergtank 100 hl (same physical tank), "Bock" (Sud 1)
+  IS the Weizenbock, and "Bergbier (Gisela)" IS the Festbier. Sude 1–138
+  are short-form history (date, Sorte, Gärtank only). Tests
   run on the small demo world (`seed(demo_sude=True, sudplan=False)`);
   only `test_sudplan_import.py` loads the real history, pinned to
   Stichtag 2026-08-05.
