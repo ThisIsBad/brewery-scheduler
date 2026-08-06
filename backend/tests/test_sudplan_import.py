@@ -8,12 +8,15 @@ der kleinen Demo-Welt (conftest); nur hier wird der echte Plan geladen.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
+from brewery_scheduler import db as db_module
+from brewery_scheduler.main import app
 from brewery_scheduler.models import Base, Sud, Tank, TankOccupancy
 from brewery_scheduler.seed import seed
 from brewery_scheduler.sudplan_2026 import import_sudplan
@@ -33,6 +36,14 @@ def plan_session(engine):
         s.stats = import_sudplan(s, today=STICHTAG)
         s.commit()
         yield s
+
+
+@pytest.fixture()
+def plan_client(engine, plan_session, monkeypatch) -> TestClient:
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    monkeypatch.setattr(db_module, "SessionLocal", SessionLocal)
+    monkeypatch.setattr(db_module, "engine", engine)
+    return TestClient(app)
 
 
 def _sud(session, global_number: int) -> Sud:
@@ -141,3 +152,61 @@ def test_plankonflikte_werden_vermerkt_statt_verschluckt(plan_session) -> None:
         assert "kollidiert" in (_sud(plan_session, number).notes or "")
     # Nicht nachgepflegte Zeilen tragen den Hinweis am Sud.
     assert "Kette gekappt" in (_sud(plan_session, 277).notes or "")
+
+
+def test_ausschank_stationen_haben_plan_enden(plan_session) -> None:
+    """„Bis leer" ist keine Planungsgröße — offene Fenster würden jede
+    spätere anderssortige Belegung blockieren (Stefan, 2026-08-06:
+    „kann wenig bewegen … Sorten werden nicht gemischt")."""
+    offene = (
+        plan_session.query(TankOccupancy)
+        .filter(TankOccupancy.end_at.is_(None))
+        .count()
+    )
+    assert offene == 0
+    # Kitzmann vorne läuft seriell: Kellerbier endet exakt am Start des
+    # Spezialsuds (19.08.), der wiederum am Weizen-Start (02.09.).
+    kellerbier = _sud(plan_session, 288)
+    spezialsud = _sud(plan_session, 292)
+    vorne = _tank(plan_session, "Kitzmann vorne").id
+    kb_occ = next(o for o in kellerbier.occupancies if o.tank_id == vorne)
+    sp_occ = next(o for o in spezialsud.occupancies if o.tank_id == vorne)
+    assert kb_occ.end_at == sp_occ.start_at
+    assert sp_occ.end_at.date() == date(2026, 9, 2)
+
+
+def test_zeitplan_ist_entsperrt_spezialsud_laesst_sich_verschieben(
+    plan_session, plan_client
+) -> None:
+    """Vor den Plan-Enden schlug genau das mit 409 „Sorten werden nicht
+    gemischt" fehl: das Spezialsud-Fenster überlappte die offenen
+    Kellerbier-Belegungen in Kitzmann vorne."""
+    sud = _sud(plan_session, 292)
+    # Der Gärtank-Block wandert einen Tag; die (unveränderte!) Ausschank-
+    # Station läuft im Payload mit — vorher reichte das für die Sperre.
+    payload = []
+    for o in sorted(sud.occupancies, key=lambda o: o.start_at):
+        delta = timedelta(days=1) if o.stage.value == "fermentation_closed" else timedelta()
+        payload.append(
+            {
+                "tank_id": str(o.tank_id),
+                "stage": o.stage.value,
+                "start_at": (o.start_at + delta).isoformat(),
+                "end_at": (o.end_at + delta).isoformat() if o.end_at else None,
+                "volume_hl": float(o.volume_hl) if o.volume_hl is not None else None,
+            }
+        )
+    r = plan_client.put(f"/api/sude/{sud.id}/schedule", json={"occupancies": payload})
+    assert r.status_code == 200, r.text
+
+    # Echte Sortenkonflikte bleiben hart: das Spezialsud-Fenster in den
+    # Weizen (ab 02.09.) hineinzuziehen ist weiterhin ein 409.
+    hinein = [
+        {**occ, "end_at": "2026-09-03T12:00:00+00:00"}
+        if occ["stage"] == "ausschank"
+        else occ
+        for occ in payload
+    ]
+    r = plan_client.put(f"/api/sude/{sud.id}/schedule", json={"occupancies": hinein})
+    assert r.status_code == 409
+    assert "Sorten werden nicht gemischt" in r.json()["detail"]
