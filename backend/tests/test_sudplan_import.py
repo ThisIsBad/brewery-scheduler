@@ -248,18 +248,19 @@ def test_sud_296_geht_ins_fass(plan_session) -> None:
 def test_historie_2021_2024_als_kurzform(plan_session) -> None:
     """Sude 1-138 kommen aus dem Kurzform-Log: nur Datum, Sorte, Gärtank —
     importiert als abgeschlossene Historie."""
+    # "Bock" im Log ist der Weizenbock (Stefan, 2026-08-06).
     erster = _sud(plan_session, 1)
-    assert erster.beer_style == "Bock"
+    assert erster.beer_style == "Weizenbock"
     assert erster.brew_date == date(2021, 9, 21)
     assert erster.status.value == "served"
     assert [o.tank_id for o in erster.occupancies] == [_tank(plan_session, "Alva").id]
 
 
-def test_historie_2025_mit_entlas(plan_session) -> None:
-    """2025 hat volle Tankketten; der Entlas-Keller existiert als
-    inaktiver Tank, damit die alten Belegungen weiter rendern."""
-    entlas = _tank(plan_session, "Entlas")
-    assert entlas.active is False
+def test_historie_2025_entlas_ist_bergtank_100(plan_session) -> None:
+    """Der 100-hl-Ausschanktank stand 2025 im Entlas — es ist derselbe
+    physische Tank wie der Bergtank 100 hl (Stefan, 2026-08-06)."""
+    assert plan_session.query(Tank).filter(Tank.name == "Entlas").count() == 0
+    bergtank = _tank(plan_session, "Bergtank 100 hl")
     sud = _sud(plan_session, 162)
-    assert any(o.tank_id == entlas.id for o in sud.occupancies)
+    assert any(o.tank_id == bergtank.id for o in sud.occupancies)
     assert float(sud.volume_hl) == 16.4

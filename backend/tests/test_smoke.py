@@ -67,8 +67,8 @@ def test_orm_returns_enum_members(session) -> None:
 
 
 def test_seed_creates_full_inventory(session) -> None:
-    assert session.query(Tank).count() == 23
-    assert session.query(Recipe).count() == 15
+    assert session.query(Tank).count() == 22
+    assert session.query(Recipe).count() == 14
     assert session.query(Sud).count() == 4
     assert session.query(TankOccupancy).count() == 6
     # The Excel's „frühere Biere" are seeded archived.
@@ -79,7 +79,6 @@ def test_seed_creates_full_inventory(session) -> None:
         "Wit",
         "Leichtbier",
         "Keller Bern",
-        "Bock",
         "Collab Sud 2025",
     }
 
@@ -122,7 +121,7 @@ def test_list_tanks_returns_full_inventory(client) -> None:
     r = client.get("/api/tanks")
     assert r.status_code == 200
     body = r.json()
-    assert len(body) == 23
+    assert len(body) == 22
     capacities = sorted(t["capacity_hl"] for t in body)
     # Sanity: tanks measured in hectoliters (smallest = 10, largest = 120).
     assert capacities[0] == 10
@@ -151,13 +150,11 @@ def test_list_tanks_returns_full_inventory(client) -> None:
         "Kitzmann vorne",
     ]
     # Striezi Keller: Größe schlägt Nummer — die 10er vor den 35ern.
-    # Entlas (historisch, inaktiv) hängt als letzter Standort hinten dran.
-    assert names[-5:] == [
+    assert names[-4:] == [
         "Striezi Keller 3",
         "Striezi Keller 4",
         "Striezi Keller 1",
         "Striezi Keller 2",
-        "Entlas",
     ]
 
 
@@ -201,7 +198,7 @@ def test_list_recipes_returns_seeded_recipes(client) -> None:
     r = client.get("/api/recipes")
     assert r.status_code == 200
     body = r.json()
-    assert len(body) == 15
+    assert len(body) == 14
     assert {x["beer_style"] for x in body} == {
         "Kellerbier Hell",
         "Kellerbier Hell Sven",
@@ -216,7 +213,6 @@ def test_list_recipes_returns_seeded_recipes(client) -> None:
         "Wit",
         "Leichtbier",
         "Keller Bern",
-        "Bock",
         "Collab Sud 2025",
     }
 
@@ -1751,7 +1747,6 @@ def test_locations_seeded_in_order(client) -> None:
         "Kitzmann Keller",
         "Resenscheck Keller",
         "Striezi Keller",
-        "Entlas Keller",
     ]
 
 
@@ -1759,7 +1754,7 @@ def test_location_create_rename_and_duplicate(client) -> None:
     r = client.post("/api/locations", json={"name": "Festzelt"})
     assert r.status_code == 201, r.text
     created = r.json()
-    assert created["position"] == 6
+    assert created["position"] == 5
 
     dup = client.post("/api/locations", json={"name": "Festzelt"})
     assert dup.status_code == 409

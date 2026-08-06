@@ -66,7 +66,6 @@ SORTE_TO_RECIPE = {
     "Collab Sud 2026": "Widder",
     # Historie (2021-2025): frühere Biere und die alten Collabs.
     "Keller Bern": "Keller Bern",
-    "Bock": "Bock",
     "Collab Sud 2025 (?, ?)": "Collab 2025",
     "Collab Sud 2024 (Orca Brau, Wit)": "Collab Orca",
     "Leicht Rot (Werner)": "Werner",
@@ -77,8 +76,10 @@ TANK_MAP = {
     "Kitzmann klein": "Kitzmann vorne",
     "Bergtank": "Bergtank 100 hl",
     "Striezitank": "Bergtank 120 hl",
-    # 2025er Ausschankziel; heute nicht mehr im Betrieb (Tank inaktiv).
-    "Entlas": "Entlas",
+    # Der 100-hl-Ausschanktank stand 2025 im Entlas — es ist derselbe
+    # physische Tank wie der Bergtank 100 hl (Stefan, 2026-08-06),
+    # analog zum Striezitank (= Bergtank 120 hl).
+    "Entlas": "Bergtank 100 hl",
 }
 
 # Keine Tanks: "Fass" = abgefüllt, "Ausschank" = direkt ausgeschenkt.
