@@ -121,6 +121,10 @@ def update_tank(
                 ),
             )
 
+    # Rate 0 heißt „keine Prognose mehr" — gespeichert als NULL.
+    if data.get("verbrauch_hl_pro_woche") == 0:
+        data["verbrauch_hl_pro_woche"] = None
+
     for field, value in data.items():
         setattr(tank, field, value)
     session.commit()

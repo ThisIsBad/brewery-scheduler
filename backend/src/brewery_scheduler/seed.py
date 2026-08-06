@@ -55,7 +55,9 @@ TANKS: list[dict] = [
     {"name": "Bergtank 100 hl", "location": "Schänke 4", "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
     # Kitzmann Keller
     {"name": "Kitzmann hinten", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
-    {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50},
+    # Biergartensaison: Ø 15 hl Kellerbier/Woche aus diesem Tank
+    # (Stefan, 2026-08-06) — treibt die Reichweiten-Prognose.
+    {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50, "verbrauch_hl_pro_woche": 15},
     # Resenscheck Keller — nur zur Bergkirchweih im Einsatz
     {"name": "Resenscheck", "location": "Resenscheck Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
     # Striezi Keller
@@ -482,6 +484,7 @@ def seed(
             location_id=locations[t["location"]].id,
             stage=t["stage"],
             capacity_hl=t["capacity_hl"],
+            verbrauch_hl_pro_woche=t.get("verbrauch_hl_pro_woche"),
         )
         for t in TANKS
     ]

@@ -2526,3 +2526,28 @@ def test_keg_counts_validation(client, session) -> None:
         },
     )
     assert r4.status_code == 409, r4.text
+
+
+def test_tank_verbrauchsrate(client) -> None:
+    """Ø-Ausschank je Woche ist Planungsgröße am Tank (Stefan, 2026-08-06):
+    Kitzmann vorne startet mit 15 hl/Woche; 0 löscht die Rate."""
+    tanks = client.get("/api/tanks").json()
+    vorne = next(t for t in tanks if t["name"] == "Kitzmann vorne")
+    assert vorne["verbrauch_hl_pro_woche"] == 15
+    # Alle anderen Tanks starten ohne Prognose (Bergkirchweih bleibt manuell).
+    assert all(
+        t["verbrauch_hl_pro_woche"] is None
+        for t in tanks
+        if t["name"] != "Kitzmann vorne"
+    )
+
+    r = client.patch(
+        f"/api/tanks/{vorne['id']}", json={"verbrauch_hl_pro_woche": 20}
+    )
+    assert r.status_code == 200
+    assert r.json()["verbrauch_hl_pro_woche"] == 20
+
+    r = client.patch(
+        f"/api/tanks/{vorne['id']}", json={"verbrauch_hl_pro_woche": 0}
+    )
+    assert r.json()["verbrauch_hl_pro_woche"] is None

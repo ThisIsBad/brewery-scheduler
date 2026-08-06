@@ -170,6 +170,9 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
   const [capacity, setCapacity] = useState(
     tank ? String(tank.capacity_hl) : "",
   );
+  const [verbrauch, setVerbrauch] = useState(
+    tank?.verbrauch_hl_pro_woche ? String(tank.verbrauch_hl_pro_woche) : "",
+  );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +207,8 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
           location_id: locationId,
           stage,
           capacity_hl: capacityHl,
+          // Leeres Feld löscht die Rate (Server: 0 → NULL).
+          verbrauch_hl_pro_woche: parseFloat(verbrauch) || 0,
         });
       } else {
         await api.createTank({
@@ -300,6 +305,19 @@ function TankDialog({ tank, locations, onClose, onDone }: TankDialogProps) {
             required
           />
         </label>
+        {stage === "ausschank" && (
+          <label>
+            Ø-Ausschank (hl/Woche, leer = keine Prognose)
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={verbrauch}
+              onChange={(e) => setVerbrauch(e.target.value)}
+              disabled={isLocked}
+            />
+          </label>
+        )}
 
         {error && <div className="error">{error}</div>}
 

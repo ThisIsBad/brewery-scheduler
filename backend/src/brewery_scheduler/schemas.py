@@ -48,6 +48,7 @@ class TankOut(BaseModel):
     capacity_hl: float
     active: bool
     locked: bool
+    verbrauch_hl_pro_woche: float | None = None
 
 
 class TankCreateIn(BaseModel):
@@ -55,6 +56,7 @@ class TankCreateIn(BaseModel):
     location_id: uuid.UUID
     stage: TankStage
     capacity_hl: float = Field(gt=0)
+    verbrauch_hl_pro_woche: float | None = Field(default=None, gt=0)
 
 
 class TankUpdateIn(BaseModel):
@@ -68,6 +70,8 @@ class TankUpdateIn(BaseModel):
     capacity_hl: float | None = Field(default=None, gt=0)
     active: bool | None = None
     locked: bool | None = None
+    # 0 löscht die Rate (keine Prognose mehr), sonst > 0.
+    verbrauch_hl_pro_woche: float | None = Field(default=None, ge=0)
 
 
 class MalzIn(BaseModel):

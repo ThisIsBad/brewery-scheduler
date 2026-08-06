@@ -98,6 +98,14 @@
   „Kellerbier Hell 17/2026 · Brudi". Gemischte Ausschank-Karten zeigen
   EINE Zeile pro Bier (Sorte · Name, Sudnummern als Herkunft,
   Gesamtmenge) statt einer Sud-Aufteilung — vermischt ist vermischt.
+- **Verbrauchsmodell Biergartensaison** (Stefan, 2026-08-06): 99,9 % des
+  Tank-Ausschanks läuft über Kitzmann vorne, Ø **15 hl Kellerbier/Woche**;
+  alles andere kommt aus Fässern. Abgebildet als **Rate am Tank**
+  (`verbrauch_hl_pro_woche`, Tankverwaltung), NICHT als vorgebuchte
+  Abgänge — Withdrawals bleiben die Ist-/Biersteuer-Spur. Die Rate treibt
+  die Reichweiten-Prognose („reicht bis ~…") im Kellerblick. Tanks ohne
+  Rate (Bergkirchweih: Bergtanks, Resenscheck, Striezi) zeigen nichts —
+  dort läuft der Ausschank bewusst manuell.
 - **Fass-Orientierung** (Stefan, 2026-08-06, KEINE harte Regel): Weizen,
   Spezialsude und Monatsbiere gehen so gut wie immer ins Fass;
   Kitzmann vorne ist praktisch ein reiner Kellerbier-Tank. Bestätigte
