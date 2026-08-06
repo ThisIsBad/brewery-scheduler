@@ -98,6 +98,11 @@
   „Kellerbier Hell 17/2026 · Brudi". Gemischte Ausschank-Karten zeigen
   EINE Zeile pro Bier (Sorte · Name, Sudnummern als Herkunft,
   Gesamtmenge) statt einer Sud-Aufteilung — vermischt ist vermischt.
+- **Fass-Orientierung** (Stefan, 2026-08-06, KEINE harte Regel): Weizen,
+  Spezialsude und Monatsbiere gehen so gut wie immer ins Fass;
+  Kitzmann vorne ist praktisch ein reiner Kellerbier-Tank. Bestätigte
+  Excel-Fehler korrigiert der Loader in `_plan_korrekturen`
+  (aktuell: Sud 296/K35 ins Fass statt Kitzmann vorne).
 - **Ausschank-Stationen tragen Plan-Enden** (2026-08-06): „bis leer" ist
   keine Planungsgröße — offene Fenster sperrten den Zeitplan (jede
   spätere anderssortige Belegung überlappte → Sortenrein-409). Importierte

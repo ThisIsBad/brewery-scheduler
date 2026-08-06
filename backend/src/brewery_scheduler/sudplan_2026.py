@@ -183,12 +183,34 @@ def _derive_status(
     return SudStatus.STORING  # steht rechnerisch noch im letzten Tank → Überfällig
 
 
+def _plan_korrekturen(entries: list[dict]) -> None:
+    """Handkorrekturen an bestätigten Excel-Fehlern — bewusst hier statt in
+    der JSON, damit ein Extraktor-Rerun sie nicht überschreibt.
+
+    Orientierung dazu (Stefan, 2026-08-06, KEINE harte Regel): Weizen,
+    Spezialsude und Monatsbiere gehen so gut wie immer ins Fass;
+    Kitzmann vorne ist praktisch ein reiner Kellerbier-Tank.
+    """
+    for entry in entries:
+        if entry["global"] == 296:
+            # K35: Weizen geht ins Fass, nicht nach Kitzmann vorne.
+            entry["chain"] = [
+                {"tank": "Fass", "bis": None}
+                if hop["tank"] == "Kitzmann klein"
+                else hop
+                for hop in entry["chain"]
+            ]
+            zusatz = "Korrektur: ins Fass statt Kitzmann vorne (Stefan, 2026-08-06)"
+            entry["note"] = f"{entry['note']} · {zusatz}" if entry["note"] else zusatz
+
+
 def import_sudplan(session: Session, today: date | None = None) -> dict:
     """Legt die 91 Sude aus data/sudplan_2026.json an. Idempotenz besorgt
     der Aufrufer (seed überspringt bereits befüllte Datenbanken)."""
 
     today = today or date.today()
     entries = json.loads(DATA_FILE.read_text())
+    _plan_korrekturen(entries)
     tanks = {t.name: t for t in session.query(Tank)}
     recipes = {r.name: r for r in session.query(Recipe)}
 

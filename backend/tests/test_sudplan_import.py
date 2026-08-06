@@ -165,7 +165,8 @@ def test_ausschank_stationen_haben_plan_enden(plan_session) -> None:
     )
     assert offene == 0
     # Kitzmann vorne läuft seriell: Kellerbier endet exakt am Start des
-    # Spezialsuds (19.08.), der wiederum am Weizen-Start (02.09.).
+    # Spezialsuds (19.08.), der wiederum am Start des nächsten
+    # anderssortigen Fensters (Kellerbier 297, 02.09.).
     kellerbier = _sud(plan_session, 288)
     spezialsud = _sud(plan_session, 292)
     vorne = _tank(plan_session, "Kitzmann vorne").id
@@ -210,3 +211,17 @@ def test_zeitplan_ist_entsperrt_spezialsud_laesst_sich_verschieben(
     r = plan_client.put(f"/api/sude/{sud.id}/schedule", json={"occupancies": hinein})
     assert r.status_code == 409
     assert "Sorten werden nicht gemischt" in r.json()["detail"]
+
+
+def test_sud_296_geht_ins_fass(plan_session) -> None:
+    """K35 steht im Excel fälschlich mit Kitzmann klein — Weizen geht ins
+    Fass (Stefan, 2026-08-06). Die Korrektur lebt im Loader, damit ein
+    Extraktor-Rerun sie nicht überschreibt."""
+    sud = _sud(plan_session, 296)
+    vorne = _tank(plan_session, "Kitzmann vorne").id
+    assert all(o.tank_id != vorne for o in sud.occupancies)
+    assert "Korrektur: ins Fass" in (sud.notes or "")
+    # Damit ist der Plan-Konflikt 296/297 (Weizen vs. Kellerbier, beide
+    # ab 02.09. in Kitzmann vorne) aufgelöst.
+    kellerbier_297 = _sud(plan_session, 297)
+    assert any(o.tank_id == vorne for o in kellerbier_297.occupancies)
