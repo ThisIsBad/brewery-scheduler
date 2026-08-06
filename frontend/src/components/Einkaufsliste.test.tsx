@@ -93,3 +93,17 @@ test("Von/Bis grenzen die Liste ein", () => {
     screen.getByText(/Keine Sude mit Sudtag in diesem Zeitraum/),
   ).toBeInTheDocument();
 });
+
+test("Doppelsud: jede Zeile zeigt nur die eigene Sudnummer", () => {
+  const lead = sudAm("s-l", isoIn(2), "r-1", 24);
+  const partner = {
+    ...sudAm("s-p", isoIn(2), "r-1", 25),
+    merged_into_sud_id: "s-l",
+  };
+  render(<Einkaufsliste sude={[lead, partner]} recipes={[rezept({})]} />);
+
+  // Gebraut wird je 15 hl — kein zusammengefaltetes "24+25".
+  expect(screen.getByText(/Kellerbier Hell 24\//)).toBeInTheDocument();
+  expect(screen.getByText(/Kellerbier Hell 25\//)).toBeInTheDocument();
+  expect(screen.queryByText(/24\+25/)).toBeNull();
+});
