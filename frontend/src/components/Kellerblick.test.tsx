@@ -176,8 +176,11 @@ describe("Kellerblick", () => {
     expect(screen.getByText("A-80")).toBeInTheDocument();
     expect(screen.getByText(/noch 20 hl/)).toBeInTheDocument();
     expect(screen.getByText(/noch 10 hl/)).toBeInTheDocument();
-    // Ausschank is no longer the end of the line — re-tanking stays possible.
-    expect(screen.getAllByRole("button", { name: "Umdrücken" })).toHaveLength(2);
+    // Ausschank is no longer the end of the line — re-tanking stays
+    // possible, but tucked behind „Mehr" (one open card at a time).
+    expect(screen.queryByRole("button", { name: "Umdrücken" })).toBeNull();
+    fireEvent.click(screen.getAllByRole("button", { name: "Mehr" })[0]);
+    expect(screen.getAllByRole("button", { name: "Umdrücken" })).toHaveLength(1);
   });
 
   it("bündelt gemischte Ausschanktanks in einer Karte mit Tank-Aktionen", () => {
@@ -246,6 +249,8 @@ describe("Kellerblick", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Schwund" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Weniger" })).toBeInTheDocument();
+    // Vermischt bleibt Umdrücken auch hinter „Mehr" verschwunden.
+    expect(screen.queryByRole("button", { name: "Umdrücken" })).toBeNull();
   });
 
   it("keeps past-window Sude visible under Überfällig with a transfer action", () => {
