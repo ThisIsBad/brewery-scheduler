@@ -1,4 +1,4 @@
-"""Import der Sudplanung 2026 (Sude 210-300).
+"""Import der kompletten Sudhistorie (Nr. 1-300, 2021-2026).
 
 Die Import-Tests pinnen `today` auf den Übernahme-Stichtag 2026-08-05 —
 Status-Ableitungen (served/planned/fermenting) hängen am Kalender und
@@ -19,7 +19,7 @@ from brewery_scheduler import db as db_module
 from brewery_scheduler.main import app
 from brewery_scheduler.models import Base, Sud, Tank, TankOccupancy
 from brewery_scheduler.seed import seed
-from brewery_scheduler.sudplan_2026 import import_sudplan
+from brewery_scheduler.sudplan_import import import_sudplan
 
 STICHTAG = date(2026, 8, 5)
 
@@ -55,11 +55,20 @@ def _tank(session, name: str) -> Tank:
 
 
 def test_import_umfang_und_nummern(plan_session) -> None:
-    assert plan_session.stats["sude"] == 91
-    assert plan_session.stats["paare"] == 37
+    assert plan_session.stats["sude"] == 300
+    assert plan_session.stats["paare"] == 117
 
+    # Die komplette Historie seit 2021 — ohne eine einzige Lücke.
     globals_ = [g for (g,) in plan_session.query(Sud.global_number).order_by(Sud.global_number)]
-    assert globals_ == list(range(210, 301))
+    assert globals_ == list(range(1, 301))
+
+    jahre = [
+        j
+        for (j,) in plan_session.execute(
+            text("SELECT DISTINCT extract(year from brew_date)::int FROM sude ORDER BY 1")
+        )
+    ]
+    assert jahre == [2021, 2022, 2023, 2024, 2025, 2026]
 
     # Neuanlagen zählen hinter dem Plan weiter.
     last, is_called = plan_session.execute(
@@ -67,16 +76,19 @@ def test_import_umfang_und_nummern(plan_session) -> None:
     ).one()
     assert (last, is_called) == (301, False)
 
-    # Sortennummern zählen je Sorte — wie Vincenz' Saison-Tabelle.
-    per_style = {
+    # Sortennummern zählen je Sorte UND Jahr — wie Vincenz' Saison-Tabelle.
+    per_style_2026 = {
         style: n
         for style, n in plan_session.execute(
-            text("SELECT beer_style, max(style_year_number) FROM sude GROUP BY beer_style")
+            text(
+                "SELECT beer_style, max(style_year_number) FROM sude "
+                "WHERE brew_year = 2026 GROUP BY beer_style"
+            )
         )
     }
-    assert per_style["Festbier"] == 34  # Bergbier (Gisela)
-    assert per_style["Kellerbier Hell"] == 38
-    assert per_style["Kellerbier Hell Sven"] == 2
+    assert per_style_2026["Festbier"] == 34  # Bergbier (Gisela)
+    assert per_style_2026["Kellerbier Hell"] == 38
+    assert per_style_2026["Kellerbier Hell Sven"] == 2
 
 
 def test_import_statusverteilung_am_stichtag(plan_session) -> None:
@@ -86,7 +98,7 @@ def test_import_statusverteilung_am_stichtag(plan_session) -> None:
             text("SELECT status, count(*) FROM sude GROUP BY status")
         )
     }
-    assert counts == {"served": 67, "planned": 14, "fermenting": 5, "storing": 5}
+    assert counts == {"served": 276, "planned": 14, "fermenting": 5, "storing": 5}
 
 
 def test_sud_210_uebernimmt_protokoll_und_mapping(plan_session) -> None:
@@ -147,11 +159,17 @@ def test_split_213_214_bedient_zwei_ausschanktanks(plan_session) -> None:
 
 
 def test_plankonflikte_werden_vermerkt_statt_verschluckt(plan_session) -> None:
-    assert plan_session.stats["verworfen"] == 3
-    for number in (251, 285, 297):
+    # 2 im 2026er-Plan plus 12 echte Überbuchungen in der Historie.
+    assert plan_session.stats["verworfen"] == 14
+    for number in (251, 297):
         assert "kollidiert" in (_sud(plan_session, number).notes or "")
     # Nicht nachgepflegte Zeilen tragen den Hinweis am Sud.
     assert "Kette gekappt" in (_sud(plan_session, 277).notes or "")
+    # 285s synthetisches Gär-Ende ist ans nächste Startdatum in Wanda
+    # geklemmt (298er-Paar, 08.08.) — der frühere Konflikt ist damit weg.
+    wanda = _tank(plan_session, "Wanda").id
+    occ_285 = next(o for o in _sud(plan_session, 285).occupancies if o.tank_id == wanda)
+    assert occ_285.end_at.date() == date(2026, 8, 8)
 
 
 def test_ausschank_stationen_haben_plan_enden(plan_session) -> None:
@@ -225,3 +243,23 @@ def test_sud_296_geht_ins_fass(plan_session) -> None:
     # ab 02.09. in Kitzmann vorne) aufgelöst.
     kellerbier_297 = _sud(plan_session, 297)
     assert any(o.tank_id == vorne for o in kellerbier_297.occupancies)
+
+
+def test_historie_2021_2024_als_kurzform(plan_session) -> None:
+    """Sude 1-138 kommen aus dem Kurzform-Log: nur Datum, Sorte, Gärtank —
+    importiert als abgeschlossene Historie."""
+    erster = _sud(plan_session, 1)
+    assert erster.beer_style == "Bock"
+    assert erster.brew_date == date(2021, 9, 21)
+    assert erster.status.value == "served"
+    assert [o.tank_id for o in erster.occupancies] == [_tank(plan_session, "Alva").id]
+
+
+def test_historie_2025_mit_entlas(plan_session) -> None:
+    """2025 hat volle Tankketten; der Entlas-Keller existiert als
+    inaktiver Tank, damit die alten Belegungen weiter rendern."""
+    entlas = _tank(plan_session, "Entlas")
+    assert entlas.active is False
+    sud = _sud(plan_session, 162)
+    assert any(o.tank_id == entlas.id for o in sud.occupancies)
+    assert float(sud.volume_hl) == 16.4

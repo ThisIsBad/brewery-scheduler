@@ -1,9 +1,15 @@
-"""Import Vincenz' Sudplanung 2026 (Sude 210-300) as seed data.
+"""Import Vincenz' komplette Sudhistorie als Seed-Daten.
 
-Source of truth is data/sudplan_2026.json, extracted from the workbook
-"2026_Sudplanung.xlsx" via scripts/extract_sudplan_2026.py. The sheet is a
-hand-maintained plan, so this loader repairs what it can and records what
-it can't in each Sud's notes instead of failing:
+Source of truth sind die data/sudplan_*.json-Dateien, extrahiert aus den
+Sudplanungs-Workbooks via scripts/extract_sudplan.py:
+
+- sudplan_2021_2024.json — Sude 1-138 aus dem Kurzform-Log (nur Datum,
+  Sorte, Gärtank; als abgeschlossene Historie importiert)
+- sudplan_2025.json — Sude 139-209 (Langformat, Tankketten)
+- sudplan_2026.json — Sude 210-300 (Langformat, aktueller Plan)
+
+Die Blätter sind handgepflegt, deshalb repariert der Loader, was geht,
+und vermerkt den Rest am Sud statt zu scheitern:
 
 - Tank chains whose Umdrück-Datum vor dem Braudatum liegt (nicht
   nachgepflegte Zeilen) werden an der ersten unstimmigen Stelle gekappt;
@@ -45,7 +51,7 @@ from .models import (
     WithdrawalKind,
 )
 
-DATA_FILE = Path(__file__).parent / "data" / "sudplan_2026.json"
+DATA_DIR = Path(__file__).parent / "data"
 
 SORTE_TO_RECIPE = {
     "Kellerbier Hell (Brudi)": "Brudi",
@@ -58,6 +64,12 @@ SORTE_TO_RECIPE = {
     "Rauchbier (Waltraut)": "Waltraut",
     "Weizenbock (Justus)": "Justus",
     "Collab Sud 2026": "Widder",
+    # Historie (2021-2025): frühere Biere und die alten Collabs.
+    "Keller Bern": "Keller Bern",
+    "Bock": "Bock",
+    "Collab Sud 2025 (?, ?)": "Collab 2025",
+    "Collab Sud 2024 (Orca Brau, Wit)": "Collab Orca",
+    "Leicht Rot (Werner)": "Werner",
 }
 
 TANK_MAP = {
@@ -65,6 +77,8 @@ TANK_MAP = {
     "Kitzmann klein": "Kitzmann vorne",
     "Bergtank": "Bergtank 100 hl",
     "Striezitank": "Bergtank 120 hl",
+    # 2025er Ausschankziel; heute nicht mehr im Betrieb (Tank inaktiv).
+    "Entlas": "Entlas",
 }
 
 # Keine Tanks: "Fass" = abgefüllt, "Ausschank" = direkt ausgeschenkt.
@@ -205,11 +219,16 @@ def _plan_korrekturen(entries: list[dict]) -> None:
 
 
 def import_sudplan(session: Session, today: date | None = None) -> dict:
-    """Legt die 91 Sude aus data/sudplan_2026.json an. Idempotenz besorgt
-    der Aufrufer (seed überspringt bereits befüllte Datenbanken)."""
+    """Legt die komplette Sudhistorie (Nr. 1-300) aus data/sudplan_*.json
+    an. Idempotenz besorgt der Aufrufer (seed überspringt bereits
+    befüllte Datenbanken)."""
 
     today = today or date.today()
-    entries = json.loads(DATA_FILE.read_text())
+    entries = [
+        entry
+        for pfad in sorted(DATA_DIR.glob("sudplan_*.json"))
+        for entry in json.loads(pfad.read_text())
+    ]
     _plan_korrekturen(entries)
     tanks = {t.name: t for t in session.query(Tank)}
     recipes = {r.name: r for r in session.query(Recipe)}
@@ -271,6 +290,32 @@ def import_sudplan(session: Session, today: date | None = None) -> dict:
                     seg.end = min(min(fremde), cap) if fremde else cap
                     seg.synthetic = True
 
+    # Synthetische Gär-/Lager-Enden (Rezeptdauer statt Plan-Datum) dürfen
+    # nicht in die nächste Belegung des Tanks hineinragen — sonst fliegen
+    # historisch völlig plausible Ketten am EXCLUDE-Constraint raus.
+    alle_starts: dict[object, list[datetime]] = {}
+    for _batch, _recipe, chains in prepared:
+        for segments, _kegged, _warnings in chains:
+            for seg in segments:
+                alle_starts.setdefault(seg.tank.id, []).append(seg.start)
+    for starts in alle_starts.values():
+        starts.sort()
+    for _batch, _recipe, chains in prepared:
+        for segments, _kegged, _warnings in chains:
+            for seg in segments:
+                if not seg.synthetic or seg.tank.stage == TankStage.AUSSCHANK:
+                    continue
+                naechster = next(
+                    (
+                        start
+                        for start in alle_starts.get(seg.tank.id, [])
+                        if seg.start < start < seg.end
+                    ),
+                    None,
+                )
+                if naechster is not None:
+                    seg.end = naechster
+
     # Stimmige Ketten zuerst einbuchen; synthetische Enden verlieren bei
     # Kollisionen (die späteren, gepflegten Daten sind die Wahrheit).
     def _coherence(item: tuple) -> tuple:
@@ -302,13 +347,24 @@ def import_sudplan(session: Session, today: date | None = None) -> dict:
         batch_volume = sum(e["menge_hl"] or 15 for e in batch)
         brew_date = _parse(lead_entry["brew"])
         status = _derive_status(segments, kegged, brew_date, today, lead_entry["versteuert"])
+        # Kurzform-Historie (2021-2024) ist per Definition abgeschlossen;
+        # und was seit über 90 Tagen keinerlei Termin mehr hat, gilt als
+        # ausgeschenkt statt ewig „überfällig" zu mahnen.
+        if lead_entry.get("kurzform"):
+            status = SudStatus.SERVED
+        elif status == SudStatus.STORING:
+            enden = [seg.end for seg in segments if seg.end is not None]
+            referenz = max(enden) if enden else _dt(brew_date, 7)
+            if _dt(today, 10) - referenz > timedelta(days=90):
+                status = SudStatus.SERVED
 
         sude: list[Sud] = []
         for i, entry in enumerate(batch):
             e_brew = _parse(entry["brew"])
             year_key = (recipe.beer_style, e_brew.year)
             style_counters[year_key] = style_counters.get(year_key, 0) + 1
-            note_parts = [f"Sudplan 2026: {entry['code']}"]
+            label = f"Sudplan {e_brew.year}"
+            note_parts = [f"{label}: {entry['code']}" if entry["code"] else label]
             if entry["stw"]:
                 note_parts.append(f"Stammwürze {entry['stw'] * 100:.1f} %".replace(".", ","))
             if entry["versteuert"]:

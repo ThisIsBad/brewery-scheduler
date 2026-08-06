@@ -67,11 +67,16 @@
 
 **Nachtrag 2026-08-05 (Sudplanung 2026 übernommen):**
 
-- Die 91 Sude (Nr. 210–300) aus `2026_Sudplanung.xlsx` sind Seed-Daten:
-  `backend/scripts/extract_sudplan_2026.py` erzeugt
-  `data/sudplan_2026.json`, `sudplan_2026.py` lädt sie beim Seeden.
-  Aktualisiert Vincenz das Excel, Extraktor erneut laufen lassen und die
-  JSON committen.
+- Die **komplette Sudhistorie Nr. 1–300 (2021–2026)** ist Seed-Datenbasis:
+  `backend/scripts/extract_sudplan.py` (Format-Autodetekt) erzeugt die
+  `data/sudplan_*.json`; `sudplan_import.py` lädt alle beim Seeden.
+  2026 = aktueller Plan, 2025 = volle Tankketten (inkl. historischem
+  Entlas-Keller, Tank inaktiv), 2021–2024 = Kurzform-Log (nur Datum,
+  Sorte, Gärtank; als abgeschlossen importiert; Freitext-Sorten
+  normalisiert, Original als Notiz). Neue Alt-Rezepte (archiviert):
+  Keller Bern, Bock, Collab 2025. Sud 79: Sorte im Log leer →
+  Spezialsud mit Prüf-Notiz. Aktualisiert Vincenz ein Excel: Extraktor
+  erneut laufen lassen und die JSON committen.
 - **Globale Sudnummer** („Sud 285") ist jetzt Teil der Sud-Identität in
   API und UI; Neuanlagen zählen ab 301 weiter. Die Sorten-Nummer
   („Keller Hell 28/2026") bleibt daneben bestehen — Vincenz entscheidet

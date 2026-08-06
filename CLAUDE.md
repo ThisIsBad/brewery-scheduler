@@ -109,13 +109,15 @@ Before marking a PR ready or claiming a task complete:
   jahresübergreifende Zählung (2026 = 210…300; new Sude continue at 301)
   and is shown as "Sud 285". `style_year_number` is the per-style count
   shown as "Kellerbier Hell 28/2026". Never conflate them.
-- **The 2026 Sudplanung is seed data** (confirmed 2026-08-05):
-  `backend/scripts/extract_sudplan_2026.py` → `data/sudplan_2026.json` →
-  `sudplan_2026.py` at seed time. Mapping decisions live in that module's
-  docstring — notably "Striezitank" IS the Bergtank 120 hl, and
-  "Bergbier (Gisela)" IS the Festbier. Tests run on the small demo world
-  (`seed(demo_sude=True, sudplan=False)`); only `test_sudplan_import.py`
-  loads the real plan, pinned to Stichtag 2026-08-05.
+- **The complete Sud history (Nr. 1–300, 2021–2026) is seed data**:
+  `backend/scripts/extract_sudplan.py` → `data/sudplan_*.json` →
+  `sudplan_import.py` at seed time. Mapping decisions live in that
+  module's docstring — notably "Striezitank" IS the Bergtank 120 hl, and
+  "Bergbier (Gisela)" IS the Festbier. Sude 1–138 are short-form history
+  (date, Sorte, Gärtank only); Entlas is a historic inactive tank. Tests
+  run on the small demo world (`seed(demo_sude=True, sudplan=False)`);
+  only `test_sudplan_import.py` loads the real history, pinned to
+  Stichtag 2026-08-05.
 - **Primary usage is mobile, in the cellar, with spotty connectivity**
   (confirmed 2026-08, ROADMAP §2.8). Every user-facing feature ships
   mobile-first; the app is a PWA with offline read cache and a queued-

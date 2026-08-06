@@ -1,0 +1,2619 @@
+[
+ {
+  "global": 1,
+  "code": null,
+  "brew": "2021-09-21",
+  "sorte": "Bock",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 2,
+  "code": null,
+  "brew": "2022-02-17",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 3,
+  "code": null,
+  "brew": "2022-02-18",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 4,
+  "code": null,
+  "brew": "2022-02-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 5,
+  "code": null,
+  "brew": "2022-02-23",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 6,
+  "code": null,
+  "brew": "2022-02-24",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 7,
+  "code": null,
+  "brew": "2022-02-25",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 8,
+  "code": null,
+  "brew": "2022-02-28",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Spezial",
+  "kurzform": true
+ },
+ {
+  "global": 9,
+  "code": null,
+  "brew": "2022-03-01",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 10,
+  "code": null,
+  "brew": "2022-03-23",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 11,
+  "code": null,
+  "brew": "2022-03-23",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 12,
+  "code": null,
+  "brew": "2022-03-24",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 13,
+  "code": null,
+  "brew": "2022-03-24",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 14,
+  "code": null,
+  "brew": "2022-03-25",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 15,
+  "code": null,
+  "brew": "2022-03-26",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 16,
+  "code": null,
+  "brew": "2022-04-07",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 17,
+  "code": null,
+  "brew": "2022-04-08",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 18,
+  "code": null,
+  "brew": "2022-04-08",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 19,
+  "code": null,
+  "brew": "2022-04-09",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 20,
+  "code": null,
+  "brew": "2022-04-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 21,
+  "code": null,
+  "brew": "2022-04-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 22,
+  "code": null,
+  "brew": "2022-04-23",
+  "sorte": "Rauchbier (Waltraut)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Rauchbier",
+  "kurzform": true
+ },
+ {
+  "global": 23,
+  "code": null,
+  "brew": "2022-04-23",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 24,
+  "code": null,
+  "brew": "2022-05-11",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 25,
+  "code": null,
+  "brew": "2022-05-12",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 26,
+  "code": null,
+  "brew": "2022-05-13",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 27,
+  "code": null,
+  "brew": "2022-05-14",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 28,
+  "code": null,
+  "brew": "2022-05-15",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 29,
+  "code": null,
+  "brew": "2022-05-19",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 30,
+  "code": null,
+  "brew": "2022-05-21",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell Sven",
+  "kurzform": true
+ },
+ {
+  "global": 31,
+  "code": null,
+  "brew": "2022-05-22",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell Sven",
+  "kurzform": true
+ },
+ {
+  "global": 32,
+  "code": null,
+  "brew": "2022-06-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 33,
+  "code": null,
+  "brew": "2022-06-26",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 34,
+  "code": null,
+  "brew": "2022-06-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 35,
+  "code": null,
+  "brew": "2022-06-29",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 36,
+  "code": null,
+  "brew": "2022-07-09",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Festbier",
+  "kurzform": true
+ },
+ {
+  "global": 37,
+  "code": null,
+  "brew": "2022-07-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 38,
+  "code": null,
+  "brew": "2022-07-30",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 39,
+  "code": null,
+  "brew": "2022-07-31",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell 2.0",
+  "kurzform": true
+ },
+ {
+  "global": 40,
+  "code": null,
+  "brew": "2022-08-11",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": null,
+  "kurzform": true
+ },
+ {
+  "global": 41,
+  "code": null,
+  "brew": "2022-08-11",
+  "sorte": "Keller Bern",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller Bern",
+  "kurzform": true
+ },
+ {
+  "global": 42,
+  "code": null,
+  "brew": "2023-02-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell n2",
+  "kurzform": true
+ },
+ {
+  "global": 43,
+  "code": null,
+  "brew": "2023-02-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 44,
+  "code": null,
+  "brew": "2023-02-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 45,
+  "code": null,
+  "brew": "2023-02-23",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 46,
+  "code": null,
+  "brew": "2023-02-24",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 47,
+  "code": null,
+  "brew": "2023-02-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 48,
+  "code": null,
+  "brew": "2023-02-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 49,
+  "code": null,
+  "brew": "2023-03-07",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizen",
+  "kurzform": true
+ },
+ {
+  "global": 50,
+  "code": null,
+  "brew": "2023-03-16",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 51,
+  "code": null,
+  "brew": "2023-03-17",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 52,
+  "code": null,
+  "brew": "2023-03-19",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier n3",
+  "kurzform": true
+ },
+ {
+  "global": 53,
+  "code": null,
+  "brew": "2023-03-20",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 54,
+  "code": null,
+  "brew": "2023-03-21",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 55,
+  "code": null,
+  "brew": "2023-03-21",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 56,
+  "code": null,
+  "brew": "2023-04-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 57,
+  "code": null,
+  "brew": "2023-04-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 58,
+  "code": null,
+  "brew": "2023-04-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 59,
+  "code": null,
+  "brew": "2023-04-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 60,
+  "code": null,
+  "brew": "2023-04-14",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 61,
+  "code": null,
+  "brew": "2023-04-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 62,
+  "code": null,
+  "brew": "2023-04-29",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 63,
+  "code": null,
+  "brew": "2023-04-30",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 64,
+  "code": null,
+  "brew": "2023-05-01",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 65,
+  "code": null,
+  "brew": "2023-05-03",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: SpezialFantasia",
+  "kurzform": true
+ },
+ {
+  "global": 66,
+  "code": null,
+  "brew": "2023-05-04",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: spezialFantasia",
+  "kurzform": true
+ },
+ {
+  "global": 67,
+  "code": null,
+  "brew": "2023-06-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 68,
+  "code": null,
+  "brew": "2023-06-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 69,
+  "code": null,
+  "brew": "2023-06-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 70,
+  "code": null,
+  "brew": "2023-06-10",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 71,
+  "code": null,
+  "brew": "2023-06-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 72,
+  "code": null,
+  "brew": "2023-06-15",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Sven n4",
+  "kurzform": true
+ },
+ {
+  "global": 73,
+  "code": null,
+  "brew": "2023-06-15",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Sven",
+  "kurzform": true
+ },
+ {
+  "global": 74,
+  "code": null,
+  "brew": "2023-06-24",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 75,
+  "code": null,
+  "brew": "2023-06-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 76,
+  "code": null,
+  "brew": "2023-06-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 77,
+  "code": null,
+  "brew": "2023-07-16",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 78,
+  "code": null,
+  "brew": "2023-07-16",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 79,
+  "code": null,
+  "brew": "2023-07-18",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Sorte im Log leer — bitte prüfen",
+  "kurzform": true
+ },
+ {
+  "global": 80,
+  "code": null,
+  "brew": "2023-07-19",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 81,
+  "code": null,
+  "brew": "2023-07-23",
+  "sorte": "Rauchbier (Waltraut)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Rauch n6",
+  "kurzform": true
+ },
+ {
+  "global": 82,
+  "code": null,
+  "brew": "2023-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 83,
+  "code": null,
+  "brew": "2023-08-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 84,
+  "code": null,
+  "brew": "2023-08-11",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Spezial Mix",
+  "kurzform": true
+ },
+ {
+  "global": 85,
+  "code": null,
+  "brew": "2023-09-11",
+  "sorte": "Weizenbock (Justus)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizenbock",
+  "kurzform": true
+ },
+ {
+  "global": 86,
+  "code": null,
+  "brew": "2024-02-20",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 87,
+  "code": null,
+  "brew": "2024-02-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 88,
+  "code": null,
+  "brew": "2024-02-21",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 89,
+  "code": null,
+  "brew": "2024-02-22",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 90,
+  "code": null,
+  "brew": "2024-02-23",
+  "sorte": "Bay. Dunkel (Enno)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: bay. Dunkel",
+  "kurzform": true
+ },
+ {
+  "global": 91,
+  "code": null,
+  "brew": "2024-02-27",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 92,
+  "code": null,
+  "brew": "2024-02-28",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 93,
+  "code": null,
+  "brew": "2024-02-29",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 94,
+  "code": null,
+  "brew": "2024-02-29",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 95,
+  "code": null,
+  "brew": "2024-03-09",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizen",
+  "kurzform": true
+ },
+ {
+  "global": 96,
+  "code": null,
+  "brew": "2024-03-11",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 97,
+  "code": null,
+  "brew": "2024-03-12",
+  "sorte": "Bergbier (Gisela)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Bergbier",
+  "kurzform": true
+ },
+ {
+  "global": 98,
+  "code": null,
+  "brew": "2024-03-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 99,
+  "code": null,
+  "brew": "2024-03-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 100,
+  "code": null,
+  "brew": "2023-03-29",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 101,
+  "code": null,
+  "brew": "2024-04-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 102,
+  "code": null,
+  "brew": "2024-04-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 103,
+  "code": null,
+  "brew": "2024-04-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 104,
+  "code": null,
+  "brew": "2024-04-17",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Sven",
+  "kurzform": true
+ },
+ {
+  "global": 105,
+  "code": null,
+  "brew": "2024-04-18",
+  "sorte": "Kellerbier Hell (Sven)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Sven/Keller",
+  "kurzform": true
+ },
+ {
+  "global": 106,
+  "code": null,
+  "brew": "2024-04-19",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Spezial",
+  "kurzform": true
+ },
+ {
+  "global": 107,
+  "code": null,
+  "brew": "2024-04-20",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Spezial",
+  "kurzform": true
+ },
+ {
+  "global": 108,
+  "code": null,
+  "brew": "2024-04-20",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 109,
+  "code": null,
+  "brew": "2024-04-20",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 110,
+  "code": null,
+  "brew": "2024-05-02",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 111,
+  "code": null,
+  "brew": "2024-05-03",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 112,
+  "code": null,
+  "brew": "2024-05-04",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 113,
+  "code": null,
+  "brew": "2024-05-14",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizen",
+  "kurzform": true
+ },
+ {
+  "global": 114,
+  "code": null,
+  "brew": "2024-06-02",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 115,
+  "code": null,
+  "brew": "2024-06-02",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 116,
+  "code": null,
+  "brew": "2024-06-04",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 117,
+  "code": null,
+  "brew": "2024-06-05",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 118,
+  "code": null,
+  "brew": "2024-06-11",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 119,
+  "code": null,
+  "brew": "2024-06-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 120,
+  "code": null,
+  "brew": "2024-06-12",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 121,
+  "code": null,
+  "brew": "2024-06-13",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 122,
+  "code": null,
+  "brew": "2024-06-14",
+  "sorte": "Leicht Rot (Werner)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Leicht Rot",
+  "kurzform": true
+ },
+ {
+  "global": 123,
+  "code": null,
+  "brew": "2024-07-03",
+  "sorte": "Collab Sud 2024 (Orca Brau, Wit)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: orca",
+  "kurzform": true
+ },
+ {
+  "global": 124,
+  "code": null,
+  "brew": "2024-07-05",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: spezial",
+  "kurzform": true
+ },
+ {
+  "global": 125,
+  "code": null,
+  "brew": "2024-07-06",
+  "sorte": "Spezialsud (Schwesti)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lisa",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: spezial",
+  "kurzform": true
+ },
+ {
+  "global": 126,
+  "code": null,
+  "brew": "2024-07-09",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller hell",
+  "kurzform": true
+ },
+ {
+  "global": 127,
+  "code": null,
+  "brew": "2024-07-10",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller hell",
+  "kurzform": true
+ },
+ {
+  "global": 128,
+  "code": null,
+  "brew": "2024-07-23",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 129,
+  "code": null,
+  "brew": "2024-07-23",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Yuri",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller hell",
+  "kurzform": true
+ },
+ {
+  "global": 130,
+  "code": null,
+  "brew": "2024-07-24",
+  "sorte": "Weizen (Fritz)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Lovis",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizen",
+  "kurzform": true
+ },
+ {
+  "global": 131,
+  "code": null,
+  "brew": "2024-07-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 132,
+  "code": null,
+  "brew": "2024-07-25",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Anouk",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller hell",
+  "kurzform": true
+ },
+ {
+  "global": 133,
+  "code": null,
+  "brew": "2024-07-27",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller keller",
+  "kurzform": true
+ },
+ {
+  "global": 134,
+  "code": null,
+  "brew": "2024-07-28",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Wanda",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: keller hell",
+  "kurzform": true
+ },
+ {
+  "global": 135,
+  "code": null,
+  "brew": "2024-08-06",
+  "sorte": "Rauchbier (Waltraut)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Alva",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Rauchbier",
+  "kurzform": true
+ },
+ {
+  "global": 136,
+  "code": null,
+  "brew": "2024-08-07",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 137,
+  "code": null,
+  "brew": "2024-08-08",
+  "sorte": "Kellerbier Hell (Brudi)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [
+   {
+    "tank": "Greta",
+    "bis": null
+   }
+  ],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Keller Hell",
+  "kurzform": true
+ },
+ {
+  "global": 138,
+  "code": null,
+  "brew": "2024-09-15",
+  "sorte": "Weizenbock (Justus)",
+  "menge_hl": null,
+  "stw": null,
+  "chain": [],
+  "ausschank": null,
+  "versteuert": null,
+  "braumeister": null,
+  "note": "Log-Sorte: Weizenbock",
+  "kurzform": true
+ }
+]
