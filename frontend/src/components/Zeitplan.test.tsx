@@ -203,3 +203,80 @@ describe("Zeitplan (Auswahl überlebt Moves)", () => {
     );
   });
 });
+
+describe("Zeitplan (Sudsicht)", () => {
+  const zweiStationen: Sud = {
+    ...sud,
+    occupancies: [
+      sud.occupancies[0],
+      {
+        id: "occ-2",
+        sud_id: "sud-1",
+        tank_id: F30B.id,
+        stage: "fermentation_closed",
+        start_at: daysFromNow(8),
+        end_at: daysFromNow(15),
+        volume_hl: null,
+      },
+    ],
+  };
+
+  it("Umschalter: Sudsicht zeigt eine Zeile je Charge mit Tanknamen als Blöcke", () => {
+    render(
+      <Zeitplan
+        tanks={[F30, F30B]}
+        sude={[zweiStationen]}
+        onMoveOccupancy={() => {}}
+        onResizeOccupancy={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sude" }));
+    // Zeilenlabel ist die Charge, die Blöcke tragen die Tanknamen der Kette.
+    expect(screen.getByText(/kellerbier 1\/\d{4}/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "F-30-1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "F-30-2" })).toBeInTheDocument();
+
+    // Auswahl + Aktionsleiste funktionieren wie in der Tanksicht.
+    fireEvent.click(screen.getByRole("button", { name: "F-30-2" }));
+    expect(
+      screen.getByRole("toolbar", { name: "Sud verschieben" }),
+    ).toBeInTheDocument();
+  });
+
+  it("Tanksicht: Auswahl hebt die Kette hervor und dimmt fremde Sude", () => {
+    const anderer: Sud = {
+      ...sud,
+      id: "sud-9",
+      style_year_number: 2,
+      global_number: 286,
+      occupancies: [
+        {
+          id: "occ-9",
+          sud_id: "sud-9",
+          tank_id: F30B.id,
+          stage: "fermentation_closed",
+          start_at: daysFromNow(2),
+          end_at: daysFromNow(9),
+          volume_hl: null,
+        },
+      ],
+    };
+    render(
+      <Zeitplan
+        tanks={[F30, F30B]}
+        sude={[zweiStationen, anderer]}
+        onMoveOccupancy={() => {}}
+        onResizeOccupancy={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: /kellerbier 1\/\d{4}/ })[0]);
+    const bloecke = screen.getAllByRole("button", { name: /kellerbier/ });
+    const klassen = bloecke.map((b) => b.className);
+    // Die zweite Station derselben Charge trägt die Ketten-Markierung …
+    expect(klassen.some((k) => k.includes("kette"))).toBe(true);
+    // … und der fremde Sud tritt zurück.
+    expect(klassen.some((k) => k.includes("fremd"))).toBe(true);
+  });
+});

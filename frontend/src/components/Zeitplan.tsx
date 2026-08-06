@@ -55,6 +55,10 @@ export function Zeitplan({
   onResizeOccupancy,
 }: ZeitplanProps) {
   const [zoom, setZoom] = useState(1);
+  // Zwei Sichten (Stefan, 2026-08-06): Tanksicht = Zeile je Tank (wo ist
+  // was frei), Sudsicht = Zeile je Charge (die Tankevolution eines Suds
+  // als Kette lesbar). Auswahl und Aktionsleiste sind identisch.
+  const [sicht, setSicht] = useState<"tanks" | "sude">("tanks");
   const [selected, setSelected] = useState<Selected | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dayWidth = ZOOM_WIDTHS[zoom];
@@ -84,6 +88,7 @@ export function Zeitplan({
   );
 
   const sudById = useMemo(() => new Map(sude.map((s) => [s.id, s])), [sude]);
+  const tankById = useMemo(() => new Map(tanks.map((t) => [t.id, t])), [tanks]);
   const blocksByTank = useMemo(() => {
     const map = new Map<string, { sud: Sud; occ: Occupancy }[]>();
     for (const sud of sude) {
@@ -95,6 +100,34 @@ export function Zeitplan({
     }
     return map;
   }, [sude]);
+
+  // Sudsicht: eine Zeile je Charge mit Belegung im sichtbaren Fenster,
+  // sortiert nach der ersten Station.
+  const windowEnd = windowStart + totalDays * DAY_MS;
+  const sudRows = useMemo(
+    () =>
+      sude
+        .filter((s) => s.merged_into_sud_id === null && s.occupancies.length > 0)
+        .map((s) => ({
+          sud: s,
+          occs: [...s.occupancies].sort(
+            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+          ),
+        }))
+        .filter(({ occs }) =>
+          occs.some((o) => {
+            const start = new Date(o.start_at).getTime();
+            const end = o.end_at ? new Date(o.end_at).getTime() : windowEnd;
+            return start < windowEnd && end > windowStart;
+          }),
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.occs[0].start_at).getTime() -
+            new Date(b.occs[0].start_at).getTime(),
+        ),
+    [sude, windowStart, windowEnd],
+  );
 
   // Land on "today" when the plan opens; the past is one swipe away.
   useEffect(() => {
@@ -171,6 +204,44 @@ export function Zeitplan({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sude]);
 
+  const renderBlock = (
+    sud: Sud,
+    occ: Occupancy,
+    label: string,
+    kettenKlasse = "",
+  ) => {
+    const start = new Date(occ.start_at).getTime();
+    const end = occ.end_at ? new Date(occ.end_at).getTime() : windowEnd;
+    const left = ((start - windowStart) / DAY_MS) * dayWidth;
+    const width = Math.max(((end - start) / DAY_MS) * dayWidth, 32);
+    if (left + width < 0 || left > totalDays * dayWidth) return null;
+    const isSelected = selected?.occ.id === occ.id && selected.sud.id === sud.id;
+    const warned = (sud.warnings?.length ?? 0) > 0;
+    return (
+      <button
+        type="button"
+        key={occ.id}
+        className={
+          "zeitplan-block" +
+          (isSelected ? " selected" : "") +
+          (warned ? " warn" : "") +
+          kettenKlasse
+        }
+        style={{
+          left: Math.max(left, 0),
+          width: left < 0 ? width + left : width,
+          background: warned ? undefined : sud.recipe.farbe ?? FALLBACK_COLOR,
+          color: warned
+            ? undefined
+            : textColorFor(sud.recipe.farbe ?? FALLBACK_COLOR),
+        }}
+        onClick={() => setSelected(isSelected ? null : { sud, occ })}
+      >
+        {label}
+      </button>
+    );
+  };
+
   return (
     <div className="zeitplan">
       <div className="zeitplan-toolbar">
@@ -199,6 +270,24 @@ export function Zeitplan({
         >
           Heute
         </button>
+        <span className="zeitplan-sicht">
+          <button
+            type="button"
+            className={sicht === "tanks" ? "" : "secondary"}
+            aria-pressed={sicht === "tanks"}
+            onClick={() => setSicht("tanks")}
+          >
+            Tanks
+          </button>
+          <button
+            type="button"
+            className={sicht === "sude" ? "" : "secondary"}
+            aria-pressed={sicht === "sude"}
+            onClick={() => setSicht("sude")}
+          >
+            Sude
+          </button>
+        </span>
         <span className="muted">Sud antippen, dann unten verschieben.</span>
       </div>
 
@@ -228,65 +317,67 @@ export function Zeitplan({
             </div>
           </div>
 
-          {rows.map((tank) => (
-            <div className="zeitplan-row" key={tank.id}>
-              <div className="zeitplan-tanklabel">
-                <strong>{tank.name}</strong>
-                <span className="muted">
-                  {STAGE_LABEL[tank.stage]} · {tank.capacity_hl} hl
-                </span>
+          {sicht === "tanks" &&
+            rows.map((tank) => (
+              <div className="zeitplan-row" key={tank.id}>
+                <div className="zeitplan-tanklabel">
+                  <strong>{tank.name}</strong>
+                  <span className="muted">
+                    {STAGE_LABEL[tank.stage]} · {tank.capacity_hl} hl
+                  </span>
+                </div>
+                <div
+                  className="zeitplan-track"
+                  style={{ width: totalDays * dayWidth }}
+                >
+                  {nowOffset >= 0 && nowOffset <= totalDays * dayWidth && (
+                    <div className="zeitplan-now" style={{ left: nowOffset }} />
+                  )}
+                  {/* Auswahl hebt die ganze Kette des Suds hervor — so ist
+                      die Bewegung über mehrere Tanks auch hier lesbar. */}
+                  {(blocksByTank.get(tank.id) ?? []).map(({ sud, occ }) =>
+                    renderBlock(
+                      sud,
+                      occ,
+                      sudNumberLabel(sud, sude),
+                      !selected
+                        ? ""
+                        : selected.sud.id === sud.id
+                          ? selected.occ.id === occ.id
+                            ? ""
+                            : " kette"
+                          : " fremd",
+                    ),
+                  )}
+                </div>
               </div>
-              <div
-                className="zeitplan-track"
-                style={{ width: totalDays * dayWidth }}
-              >
-                {nowOffset >= 0 && nowOffset <= totalDays * dayWidth && (
-                  <div className="zeitplan-now" style={{ left: nowOffset }} />
-                )}
-                {(blocksByTank.get(tank.id) ?? []).map(({ sud, occ }) => {
-                  const start = new Date(occ.start_at).getTime();
-                  const end = occ.end_at
-                    ? new Date(occ.end_at).getTime()
-                    : windowStart + totalDays * DAY_MS;
-                  const left = ((start - windowStart) / DAY_MS) * dayWidth;
-                  const width = Math.max(
-                    ((end - start) / DAY_MS) * dayWidth,
-                    32,
-                  );
-                  if (left + width < 0 || left > totalDays * dayWidth) return null;
-                  const isSelected =
-                    selected?.occ.id === occ.id && selected.sud.id === sud.id;
-                  const warned = (sud.warnings?.length ?? 0) > 0;
-                  return (
-                    <button
-                      type="button"
-                      key={occ.id}
-                      className={
-                        "zeitplan-block" +
-                        (isSelected ? " selected" : "") +
-                        (warned ? " warn" : "")
-                      }
-                      style={{
-                        left: Math.max(left, 0),
-                        width: left < 0 ? width + left : width,
-                        background: warned
-                          ? undefined
-                          : sud.recipe.farbe ?? FALLBACK_COLOR,
-                        color: warned
-                          ? undefined
-                          : textColorFor(sud.recipe.farbe ?? FALLBACK_COLOR),
-                      }}
-                      onClick={() =>
-                        setSelected(isSelected ? null : { sud, occ })
-                      }
-                    >
-                      {sudNumberLabel(sud, sude)}
-                    </button>
-                  );
-                })}
+            ))}
+          {sicht === "sude" &&
+            sudRows.map(({ sud, occs }) => (
+              <div className="zeitplan-row" key={sud.id}>
+                <div className="zeitplan-tanklabel">
+                  <strong>{sudNumberLabel(sud, sude)}</strong>
+                  <span className="muted">
+                    {sud.recipe.name} · {globalSudLabel(sud, sude)}
+                  </span>
+                </div>
+                <div
+                  className="zeitplan-track"
+                  style={{ width: totalDays * dayWidth }}
+                >
+                  {nowOffset >= 0 && nowOffset <= totalDays * dayWidth && (
+                    <div className="zeitplan-now" style={{ left: nowOffset }} />
+                  )}
+                  {occs.map((occ) =>
+                    renderBlock(
+                      sud,
+                      occ,
+                      tankById.get(occ.tank_id)?.name ?? "?",
+                    ),
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
