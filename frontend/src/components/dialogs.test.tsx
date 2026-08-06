@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { vi } from "vitest";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
+import { ReplanDialog } from "./ReplanDialog";
 import { ScheduleDialog } from "./ScheduleDialog";
 import { TankWithdrawDialog } from "./TankWithdrawDialog";
 import { TransferDialog } from "./TransferDialog";
@@ -762,5 +763,129 @@ describe("WithdrawDialog (Fass-Stückzahlen)", () => {
     );
     expect(screen.getByLabelText("Menge (hl)")).toBeInTheDocument();
     expect(screen.queryByLabelText("Fässer 50 l (Stück)")).toBeNull();
+  });
+});
+
+describe("ReplanDialog (Tankkette)", () => {
+  const toLocal = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const ferm: Occupancy = {
+    id: "occ-f",
+    sud_id: "sud-1",
+    tank_id: F30.id,
+    stage: "fermentation_closed",
+    start_at: "2026-09-01T07:00:00Z",
+    end_at: "2026-09-08T12:00:00Z",
+    volume_hl: null,
+  };
+  const lager: Occupancy = {
+    id: "occ-l",
+    sud_id: "sud-1",
+    tank_id: STORAGE_TANK.id,
+    stage: "storage",
+    start_at: "2026-09-08T12:00:00Z",
+    end_at: "2026-09-29T12:00:00Z",
+    volume_hl: null,
+  };
+  const geplant = () => sud({ status: "planned", occupancies: [ferm, lager] });
+  const alleTanks = [F30, F15, STORAGE_TANK, A100, A80];
+
+  it("zeigt die Kette als Stationen und schickt sie verkettet ab", async () => {
+    const planned = geplant();
+    render(
+      <ReplanDialog
+        sud={planned}
+        tanks={alleTanks}
+        sude={[planned]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    // Bestehende Kette vorbelegt: Gärtank → Lagertank.
+    expect(screen.getByLabelText("Station 1")).toHaveValue(F30.id);
+    expect(screen.getByLabelText("Station 2")).toHaveValue(STORAGE_TANK.id);
+
+    // Dritte Station anhängen: Ausschank, offen — wie beim Aufteilen.
+    fireEvent.click(screen.getByRole("button", { name: "+ Station" }));
+    fireEvent.change(screen.getByLabelText("Station 3"), {
+      target: { value: A100.id },
+    });
+    fireEvent.change(screen.getByLabelText("Von 3"), {
+      target: { value: toLocal("2026-09-29T12:00:00Z") },
+    });
+    fireEvent.change(screen.getByLabelText("Ende der letzten Station"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Umplanen" }));
+
+    await waitFor(() => expect(mocked.updateSchedule).toHaveBeenCalled());
+    const [sudId, payload] = mocked.updateSchedule.mock.calls[0];
+    expect(sudId).toBe("sud-1");
+    const kette = payload.occupancies;
+    expect(kette).toHaveLength(3);
+    // Stufe kommt aus dem gewählten Tank; Ende = Start der nächsten Station.
+    expect(kette[0]).toMatchObject({
+      tank_id: F30.id,
+      stage: "fermentation_closed",
+    });
+    expect(kette[0].end_at).toBe(kette[1].start_at);
+    expect(kette[1]).toMatchObject({ tank_id: STORAGE_TANK.id, stage: "storage" });
+    expect(kette[1].end_at).toBe(kette[2].start_at);
+    expect(kette[2]).toMatchObject({
+      tank_id: A100.id,
+      stage: "ausschank",
+      end_at: null,
+      volume_hl: 15,
+    });
+  });
+
+  it("Station entfernen kürzt die Kette; das Ende bleibt am letzten Glied", async () => {
+    const planned = geplant();
+    render(
+      <ReplanDialog
+        sud={planned}
+        tanks={alleTanks}
+        sude={[planned]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Station 2 entfernen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Umplanen" }));
+
+    await waitFor(() => expect(mocked.updateSchedule).toHaveBeenCalled());
+    const [, payload] = mocked.updateSchedule.mock.calls[0];
+    expect(payload.occupancies).toHaveLength(1);
+    expect(payload.occupancies[0].tank_id).toBe(F30.id);
+    // Das vorbelegte Ende (29.09.) hängt jetzt an der einzigen Station.
+    expect(payload.occupancies[0].end_at).toBe(
+      new Date("2026-09-29T12:00:00Z").toISOString(),
+    );
+  });
+
+  it("sperrt Absenden, wenn die Stationen nicht aufeinander folgen", () => {
+    const planned = geplant();
+    render(
+      <ReplanDialog
+        sud={planned}
+        tanks={alleTanks}
+        sude={[planned]}
+        onClose={() => {}}
+        onDone={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Von 2"), {
+      target: { value: toLocal("2026-08-30T12:00:00Z") },
+    });
+    expect(
+      screen.getByText(/müssen zeitlich aufeinander folgen/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Umplanen" })).toBeDisabled();
   });
 });

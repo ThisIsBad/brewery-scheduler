@@ -85,6 +85,13 @@
   eigene Sorte „Kellerbier Hell Sven" (zusätzlich kalt nachgehopft) — zwei
   unterschiedliche Biere, ein Rezeptstrang je Sorte, sortenrein bleibt
   scharf. Neu angelegt: „Wiener Lager" (Leopold, Zutaten offen).
+- **Tankevolution je Sud** (Stefan, 2026-08-06): typischerweise Gärtank →
+  Lagertank → Ausschank/Fass, aber nicht immer — das Bier darf im Gärtank
+  bleiben, der als Lagertank weiterdient (Gärtank hat zwei Abgänge zum
+  Umdrücken: oberhalb und unterhalb der Hefe; der Lagertank nur einen).
+  Der Umplanen-Dialog ist deshalb ein Ketten-Editor: Stationen mit freier
+  Tankwahl über alle Typen, Ende = Start der nächsten, letzte Station
+  optional offen; Stufe je Station aus dem gewählten Tank.
 - **Sorte und Name sind getrennt** (Stefan, 2026-08-06): die Sorte trägt
   die volle Bezeichnung („Kellerbier Hell"), der Rezeptname ist nur der
   Spitzname („Brudi", „Fritz", „Gisela" …) — Anzeige überall

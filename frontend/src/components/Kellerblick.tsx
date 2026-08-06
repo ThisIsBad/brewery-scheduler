@@ -40,7 +40,7 @@ type DialogState =
       entries: { sud: Sud; occ: Occupancy }[];
       withdrawalKind: WithdrawalKind;
     }
-  | { kind: "replan"; sud: Sud; occupancy: Occupancy }
+  | { kind: "replan"; sud: Sud }
   | { kind: "schedule"; sud: Sud }
   | null;
 
@@ -415,7 +415,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     type="button"
                     className="secondary"
                     onClick={() =>
-                      setDialog({ kind: "replan", sud, occupancy: occ })
+                      setDialog({ kind: "replan", sud })
                     }
                   >
                     Umplanen
@@ -495,7 +495,6 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
       {dialog?.kind === "replan" && (
         <ReplanDialog
           sud={dialog.sud}
-          firstOccupancy={dialog.occupancy}
           tanks={tanks}
           sude={sude}
           onClose={() => setDialog(null)}

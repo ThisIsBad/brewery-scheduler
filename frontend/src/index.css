@@ -702,6 +702,26 @@ div.tank-row {
   min-width: 70px;
 }
 
+.station {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.station label:first-child {
+  flex: 2;
+}
+
+.station label {
+  flex: 1;
+  min-width: 0;
+}
+
+.station button {
+  flex: 0 0 auto;
+}
+
+
 .allocation-row button {
   min-height: 44px;
   border-radius: 8px;
