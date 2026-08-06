@@ -363,3 +363,65 @@ describe("Zeitplan (Zeitraum-Auswahl)", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("Zeitplan (Toolbar-Gruppen + Jahresauswahl)", () => {
+  it("gruppiert nach Zeitraum und Plantyp und markiert die aktive Wahl", () => {
+    render(
+      <Zeitplan tanks={[F30]} sude={[sud]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />,
+    );
+    expect(screen.getByText("Zeitraum")).toBeInTheDocument();
+    expect(screen.getByText("Plantyp")).toBeInTheDocument();
+    // Aktive Wahl im Tab-Stil (Klasse active, wie die Tabs oben).
+    expect(screen.getByRole("button", { name: "Monat" }).className).toContain(
+      "active",
+    );
+    expect(screen.getByRole("button", { name: "Tanks" }).className).toContain(
+      "active",
+    );
+    expect(screen.getByRole("button", { name: "Woche" }).className).not.toContain(
+      "active",
+    );
+  });
+
+  it("Jahresauswahl listet die Jahre der Daten; Vorjahr zeigt dessen Sude", () => {
+    const vorjahr: Sud = {
+      ...sud,
+      id: "sud-alt",
+      global_number: 180,
+      brew_at: "2025-06-01T07:00:00Z",
+      brew_date: "2025-06-01",
+      status: "served",
+      occupancies: [
+        {
+          id: "occ-alt",
+          sud_id: "sud-alt",
+          tank_id: F30.id,
+          stage: "fermentation_closed",
+          start_at: "2025-06-01T07:00:00Z",
+          end_at: "2025-06-15T12:00:00Z",
+          volume_hl: null,
+        },
+      ],
+    };
+    render(
+      <Zeitplan
+        tanks={[F30]}
+        sude={[sud, vorjahr]}
+        onMoveOccupancy={() => {}}
+        onResizeOccupancy={() => {}}
+      />,
+    );
+
+    const auswahl = screen.getByLabelText("Jahr");
+    const jahre = [...auswahl.querySelectorAll("option")].map((o) => o.textContent);
+    expect(jahre).toContain("2025");
+    expect(jahre).toContain(String(new Date().getFullYear()));
+
+    // 2025 + Jahresansicht: der historische Block ist da, der aktuelle nicht.
+    fireEvent.change(auswahl, { target: { value: "2025" } });
+    fireEvent.click(screen.getByRole("button", { name: "Jahr" }));
+    expect(
+      screen.getAllByRole("button", { name: /kellerbier 1\/\d{4}/ }).length,
+    ).toBe(1);
+  });
+});
