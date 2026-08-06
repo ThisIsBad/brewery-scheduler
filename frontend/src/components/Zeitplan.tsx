@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
-import { STAGE_LABEL, globalSudLabel, sudNumberLabel } from "../domain";
+import { STAGE_LABEL, globalSudLabel, partnersOf, sudNumberLabel } from "../domain";
 
 interface ZeitplanProps {
   tanks: Tank[];
@@ -102,32 +102,29 @@ export function Zeitplan({
   }, [sude]);
 
   // Sudsicht: eine Zeile je Charge mit Belegung im sichtbaren Fenster,
-  // sortiert nach der ersten Station.
+  // aufsteigend nach globaler Sudnummer — beim Doppelsud zählt die
+  // niedrigere Nummer des Paars (Stefan, 2026-08-06).
   const windowEnd = windowStart + totalDays * DAY_MS;
-  const sudRows = useMemo(
-    () =>
-      sude
-        .filter((s) => s.merged_into_sud_id === null && s.occupancies.length > 0)
-        .map((s) => ({
-          sud: s,
-          occs: [...s.occupancies].sort(
-            (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
-          ),
-        }))
-        .filter(({ occs }) =>
-          occs.some((o) => {
-            const start = new Date(o.start_at).getTime();
-            const end = o.end_at ? new Date(o.end_at).getTime() : windowEnd;
-            return start < windowEnd && end > windowStart;
-          }),
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.occs[0].start_at).getTime() -
-            new Date(b.occs[0].start_at).getTime(),
+  const sudRows = useMemo(() => {
+    const minGlobal = (s: Sud) =>
+      Math.min(s.global_number, ...partnersOf(s, sude).map((p) => p.global_number));
+    return sude
+      .filter((s) => s.merged_into_sud_id === null && s.occupancies.length > 0)
+      .map((s) => ({
+        sud: s,
+        occs: [...s.occupancies].sort(
+          (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
         ),
-    [sude, windowStart, windowEnd],
-  );
+      }))
+      .filter(({ occs }) =>
+        occs.some((o) => {
+          const start = new Date(o.start_at).getTime();
+          const end = o.end_at ? new Date(o.end_at).getTime() : windowEnd;
+          return start < windowEnd && end > windowStart;
+        }),
+      )
+      .sort((a, b) => minGlobal(a.sud) - minGlobal(b.sud));
+  }, [sude, windowStart, windowEnd]);
 
   // Land on "today" when the plan opens; the past is one swipe away.
   useEffect(() => {
