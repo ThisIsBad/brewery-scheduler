@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import type { Sud, Tank } from "../api/types";
 import { Kellerblick } from "./Kellerblick";
@@ -225,13 +225,20 @@ describe("Kellerblick", () => {
     // EIN Tank, EINE Karte — beide Biere als Zeilen, Buchungen am Tank.
     expect(screen.getAllByRole("article")).toHaveLength(1);
     expect(screen.getByText(/Zusammen noch 30 hl/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Fass abfüllen" }),
-    ).toBeInTheDocument();
+    // Vermischt ist vermischt: kein Umdrücken je Sud mehr (Stefan, 2026-08-06).
+    expect(screen.queryByRole("button", { name: "Umdrücken" })).toBeNull();
+    // Sichtbar ist nur die Alltagsaktion; der Rest steckt hinter „Mehr".
     expect(
       screen.getByRole("button", { name: "Ausgeschenkt" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Fass abfüllen" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Schwund" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Mehr" }));
+    expect(
+      screen.getByRole("button", { name: "Fass abfüllen" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Schwund" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Weniger" })).toBeInTheDocument();
   });
 
   it("keeps past-window Sude visible under Überfällig with a transfer action", () => {
