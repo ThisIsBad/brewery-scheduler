@@ -22,7 +22,7 @@ from .models import (
     TankOccupancy,
     TankStage,
 )
-from .sudplan_2026 import import_sudplan
+from .sudplan_import import import_sudplan
 
 # Vincenz' echte Tankwelt (Stefan, 2026-08-06). Namenskonvention: Gär- und
 # Lagertanks tragen Rufnamen, Ausschanktanks heißen nach ihrem Keller —
@@ -32,6 +32,8 @@ LOCATIONS: list[str] = [
     "Kitzmann Keller",
     "Resenscheck Keller",
     "Striezi Keller",
+    # Historisch (bis 2025) — nur noch für die alten Belegungen.
+    "Entlas Keller",
 ]
 
 TANKS: list[dict] = [
@@ -60,6 +62,9 @@ TANKS: list[dict] = [
     {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50, "verbrauch_hl_pro_woche": 15},
     # Resenscheck Keller — nur zur Bergkirchweih im Einsatz
     {"name": "Resenscheck", "location": "Resenscheck Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    # Entlas Keller — bis 2025 im Ausschank, heute nicht mehr im Betrieb;
+    # inaktiv, damit die Historie im Zeitplan weiter rendert.
+    {"name": "Entlas", "location": "Entlas Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 100, "active": False},
     # Striezi Keller
     {"name": "Striezi Keller 1", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
     {"name": "Striezi Keller 2", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
@@ -406,6 +411,44 @@ RECIPES: list[dict] = [
         "notes": _ZEITEN_NOTE + " Orangenschalen ca. 3 h zirkuliert.",
     },
     {
+        # Frühere Biere aus der 2021-2024-Historie — Rezeptdaten unbekannt,
+        # archiviert; nur damit die alten Sude eine Heimat haben.
+        "beer_style": "Keller Bern",
+        "farbe": "#9c7a3c",
+        "name": "Keller Bern",
+        "active": False,
+        "fermentation_duration_days": 7,
+        "open_fermentation_required": False,
+        "open_fermentation_duration_days": None,
+        "storage_duration_days": 21,
+        "max_storage_duration_days": 60,
+        "notes": "Aus der Sudhistorie 2021-2024 angelegt — Rezept unbekannt.",
+    },
+    {
+        "beer_style": "Bock",
+        "farbe": "#7a4a21",
+        "name": "Bock",
+        "active": False,
+        "fermentation_duration_days": 7,
+        "open_fermentation_required": False,
+        "open_fermentation_duration_days": None,
+        "storage_duration_days": 28,
+        "max_storage_duration_days": 90,
+        "notes": "Aus der Sudhistorie 2021 angelegt — Rezept unbekannt.",
+    },
+    {
+        "beer_style": "Collab Sud 2025",
+        "farbe": "#4a8b6f",
+        "name": "Collab 2025",
+        "active": False,
+        "fermentation_duration_days": 7,
+        "open_fermentation_required": False,
+        "open_fermentation_duration_days": None,
+        "storage_duration_days": 14,
+        "max_storage_duration_days": 45,
+        "notes": "Aus der Sudplanung 2025 angelegt — Partner und Rezept offen.",
+    },
+    {
         # Aus der Sudplanung 2026 (Sud 265) — im Excel ohne Rezeptdaten;
         # Zutaten und Zeiten trägt Vincenz nach.
         "beer_style": "Wiener Lager",
@@ -484,6 +527,7 @@ def seed(
             location_id=locations[t["location"]].id,
             stage=t["stage"],
             capacity_hl=t["capacity_hl"],
+            active=t.get("active", True),
             verbrauch_hl_pro_woche=t.get("verbrauch_hl_pro_woche"),
         )
         for t in TANKS
