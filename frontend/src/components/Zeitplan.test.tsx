@@ -330,3 +330,36 @@ describe("Zeitplan (Sudsicht-Sortierung)", () => {
     expect(posPaar).toBeLessThan(posSpaeter);
   });
 });
+
+describe("Zeitplan (Zeitraum-Auswahl)", () => {
+  it("bietet Woche/Monat/Jahr statt Zoom-Buttons", () => {
+    render(
+      <Zeitplan tanks={[F30]} sude={[sud]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />,
+    );
+    expect(screen.getByRole("button", { name: "Woche" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Monat" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Jahr" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Vergrößern" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Verkleinern" })).toBeNull();
+    // Monat ist der Standard.
+    expect(screen.getByRole("button", { name: "Monat" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("Jahr zeigt Monatsnamen im Kopf, Blöcke bleiben ansprechbar", () => {
+    render(
+      <Zeitplan tanks={[F30]} sude={[sud]} onMoveOccupancy={() => {}} onResizeOccupancy={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Jahr" }));
+    // Monatsnamen statt Tagesdaten (de-DE Kurzform, z. B. "Jan.").
+    expect(screen.getByText(/^Jan/)).toBeInTheDocument();
+    expect(screen.getByText(/^Dez/)).toBeInTheDocument();
+    // Der Block traegt seinen Namen weiter als aria-label und ist waehlbar.
+    fireEvent.click(screen.getByRole("button", { name: /kellerbier 1\/\d{4}/ }));
+    expect(
+      screen.getByRole("toolbar", { name: "Sud verschieben" }),
+    ).toBeInTheDocument();
+  });
+});
