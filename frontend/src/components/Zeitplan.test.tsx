@@ -280,3 +280,53 @@ describe("Zeitplan (Sudsicht)", () => {
     expect(klassen.some((k) => k.includes("fremd"))).toBe(true);
   });
 });
+
+describe("Zeitplan (Sudsicht-Sortierung)", () => {
+  it("ordnet aufsteigend nach globaler Nummer; Paare zählen mit der niedrigeren", () => {
+    // 290 startet FRÜHER, steht aber hinter dem 285er-Paar (285+286 < 290).
+    const paarLead: Sud = {
+      ...sud,
+      id: "sud-p",
+      global_number: 286,
+      occupancies: [
+        { ...sud.occupancies[0], id: "occ-p", sud_id: "sud-p", start_at: daysFromNow(5), end_at: daysFromNow(12) },
+      ],
+    };
+    const paarPartner: Sud = {
+      ...sud,
+      id: "sud-q",
+      style_year_number: 2,
+      global_number: 285,
+      merged_into_sud_id: "sud-p",
+      occupancies: [],
+    };
+    const spaeterNummeriert: Sud = {
+      ...sud,
+      id: "sud-r",
+      style_year_number: 3,
+      global_number: 290,
+      occupancies: [
+        { ...sud.occupancies[0], id: "occ-r", sud_id: "sud-r", tank_id: F30B.id, start_at: daysFromNow(1), end_at: daysFromNow(4) },
+      ],
+    };
+
+    const { container } = render(
+      <Zeitplan
+        tanks={[F30, F30B]}
+        sude={[spaeterNummeriert, paarLead, paarPartner]}
+        onMoveOccupancy={() => {}}
+        onResizeOccupancy={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Sude" }));
+
+    const labels = [...container.querySelectorAll(".zeitplan-tanklabel span")].map(
+      (el) => el.textContent ?? "",
+    );
+    const posPaar = labels.findIndex((t) => t.includes("Sud 285+286"));
+    const posSpaeter = labels.findIndex((t) => t.includes("Sud 290"));
+    expect(posPaar).toBeGreaterThanOrEqual(0);
+    expect(posSpaeter).toBeGreaterThanOrEqual(0);
+    expect(posPaar).toBeLessThan(posSpaeter);
+  });
+});
