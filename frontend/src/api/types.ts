@@ -42,6 +42,9 @@ export interface Tank {
   capacity_hl: number;
   active: boolean;
   locked: boolean;
+  /** Ø-Ausschank hl/Woche (Planungsgröße für die Reichweite);
+   * null = keine Prognose, z. B. Bergkirchweih-Tanks. */
+  verbrauch_hl_pro_woche?: number | null;
 }
 
 export interface Recipe {
@@ -137,6 +140,8 @@ export interface TankUpdateIn {
   capacity_hl?: number;
   active?: boolean;
   locked?: boolean;
+  /** 0 löscht die Rate. */
+  verbrauch_hl_pro_woche?: number;
 }
 
 export interface ScheduleOccupancyIn {

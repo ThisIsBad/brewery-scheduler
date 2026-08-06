@@ -175,6 +175,22 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                         · noch {formatHl(remaining)}
                       </div>
                     ))}
+                {/* Reichweite aus der Tank-Rate (Stefan, 2026-08-06):
+                    Biergartensaison = Ø 15 hl/Woche aus Kitzmann vorne.
+                    Tanks ohne Rate (Bergkirchweih) zeigen nichts. */}
+                {tank?.verbrauch_hl_pro_woche != null && total > 0 && (
+                  <div className="muted">
+                    Ø {tank.verbrauch_hl_pro_woche} hl/Woche — reicht bis ~
+                    {formatDate(
+                      new Date(
+                        Date.now() +
+                          (total / tank.verbrauch_hl_pro_woche) *
+                            7 *
+                            86_400_000,
+                      ).toISOString(),
+                    )}
+                  </div>
+                )}
                 {warnings.length > 0 && (
                   <div className="warn-note">⚠️ {warnings.join(" · ")}</div>
                 )}

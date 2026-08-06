@@ -368,3 +368,53 @@ describe("Kellerblick (Rezept-Abweichungen)", () => {
     expect(screen.queryByText(/abweichende Rezeptzeiten/)).toBeNull();
   });
 });
+
+describe("Kellerblick (Reichweite aus Tank-Rate)", () => {
+  it("zeigt bei hinterlegter Rate das prognostizierte Leer-Datum", () => {
+    const mitRate: Tank = { ...AUSSCHANK_TANK, verbrauch_hl_pro_woche: 15 };
+    const imAusschank = baseSud({
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-r",
+          sud_id: "sud-1",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+    render(
+      <Kellerblick tanks={[mitRate]} sude={[imAusschank]} onChanged={() => {}} />,
+    );
+    // 15 hl Rest bei 15 hl/Woche → reicht ~eine Woche.
+    expect(screen.getByText(/Ø 15 hl\/Woche — reicht bis ~/)).toBeInTheDocument();
+  });
+
+  it("ohne Rate keine Prognose (Bergkirchweih bleibt manuell)", () => {
+    const imAusschank = baseSud({
+      status: "in_ausschank",
+      occupancies: [
+        {
+          id: "occ-o",
+          sud_id: "sud-1",
+          tank_id: AUSSCHANK_TANK.id,
+          stage: "ausschank",
+          start_at: daysFromNow(-1),
+          end_at: null,
+          volume_hl: 15,
+        },
+      ],
+    });
+    render(
+      <Kellerblick
+        tanks={[AUSSCHANK_TANK]}
+        sude={[imAusschank]}
+        onChanged={() => {}}
+      />,
+    );
+    expect(screen.queryByText(/reicht bis/)).toBeNull();
+  });
+});

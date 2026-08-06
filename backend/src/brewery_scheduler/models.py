@@ -157,6 +157,13 @@ class Tank(Base):
     # Master-data lock (2026-08-03): a locked tank cannot be edited or
     # removed until unlocked — occupancies are deliberately unaffected.
     locked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Ø-Ausschank je Woche als Planungsgröße (Stefan, 2026-08-06):
+    # Biergartensaison ≈ 15 hl/Woche aus Kitzmann vorne. NULL = keine
+    # Prognose (z. B. Bergkirchweih-Tanks — dort läuft alles manuell).
+    # Das Ist bleibt in den Withdrawals; die Rate treibt nur Vorschau.
+    verbrauch_hl_pro_woche: Mapped[float | None] = mapped_column(
+        Numeric(6, 2), nullable=True
+    )
 
 
 class Sud(Base):
