@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import type { Recipe, Sud } from "../api/types";
-import { formatDate, sudNumberLabel } from "../domain";
+import { formatDate } from "../domain";
 
 interface EinkaufslisteProps {
   sude: Sud[];
@@ -106,7 +106,10 @@ export function Einkaufsliste({ sude, recipes }: EinkaufslisteProps) {
           <div className="einkauf-row" key={sud.id}>
             <span>{formatDate(sud.brew_date)}</span>
             <span>
-              {sudNumberLabel(sud, sude)} · {sud.recipe.name}
+              {/* Jede Zeile ist EIN Braugang (15 hl) — auch beim Doppelsud
+                  zählt hier nur die eigene Nummer (Stefan, 2026-08-06). */}
+              {sud.recipe.beer_style} {sud.style_year_number}/
+              {sud.brew_date.slice(0, 4)} · {sud.recipe.name}
             </span>
             <span className="muted">{sud.volume_hl} hl</span>
           </div>
