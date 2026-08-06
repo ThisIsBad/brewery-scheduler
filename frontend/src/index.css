@@ -390,9 +390,31 @@ button:disabled {
   align-items: center;
 }
 
-.zeitplan-sicht {
+/* Segmentgruppen im Tab-Look: die aktive Wahl markiert wie oben. */
+.zeitplan-segment {
   display: inline-flex;
-  gap: 4px;
+  gap: 2px;
+  background: #eceff1;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.zeitplan-segment button {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+}
+
+.zeitplan-segment button.active {
+  background: #2a6;
+  color: #fff;
+  font-weight: 600;
+}
+
+.zeitplan-jahr {
+  min-height: 36px;
 }
 
 /* Auswahl: die Kette des gewählten Suds bleibt kräftig und bekommt einen

@@ -68,6 +68,10 @@ export function Zeitplan({
   onResizeOccupancy,
 }: ZeitplanProps) {
   const [zeitraum, setZeitraum] = useState<Zeitraum>("monat");
+  // Jahresauswahl: die Jahre kommen aus den Daten — sobald die Historie
+  // der Vorjahre eingepflegt ist, tauchen sie hier automatisch auf.
+  const heutigesJahr = new Date().getFullYear();
+  const [jahr, setJahr] = useState(heutigesJahr);
   // Zwei Sichten (Stefan, 2026-08-06): Tanksicht = Zeile je Tank (wo ist
   // was frei), Sudsicht = Zeile je Charge (die Tankevolution eines Suds
   // als Kette lesbar). Auswahl und Aktionsleiste sind identisch.
@@ -76,25 +80,32 @@ export function Zeitplan({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { dayWidth, minBlock } = ZEITRAUM_CONFIG[zeitraum];
 
-  // Woche/Monat: rollierendes Fenster um heute. Jahr: das Kalenderjahr —
-  // deckt die ganze Sudplanung inklusive Historie.
+  const jahre = useMemo(() => {
+    const set = new Set(sude.map((s) => Number(s.brew_date.slice(0, 4))));
+    set.add(heutigesJahr);
+    return [...set].sort((a, b) => a - b);
+  }, [sude, heutigesJahr]);
+
+  // Woche/Monat: rollierendes Fenster um heute — in einem anderen Jahr ab
+  // dessen 1. Januar. Jahr: das gewählte Kalenderjahr komplett.
   const { windowStart, totalDays } = useMemo(() => {
-    const heute = new Date();
-    heute.setHours(0, 0, 0, 0);
     if (zeitraum === "jahr") {
-      const anfang = new Date(heute.getFullYear(), 0, 1).getTime();
-      const ende = new Date(heute.getFullYear() + 1, 0, 1).getTime();
+      const anfang = new Date(jahr, 0, 1).getTime();
+      const ende = new Date(jahr + 1, 0, 1).getTime();
       return {
         windowStart: anfang,
         totalDays: Math.round((ende - anfang) / DAY_MS),
       };
     }
     const future = zeitraum === "woche" ? 28 : 60;
-    return {
-      windowStart: heute.getTime() - PAST_DAYS * DAY_MS,
-      totalDays: PAST_DAYS + future,
-    };
-  }, [zeitraum]);
+    const heute = new Date();
+    heute.setHours(0, 0, 0, 0);
+    const windowStart =
+      jahr === heute.getFullYear()
+        ? heute.getTime() - PAST_DAYS * DAY_MS
+        : new Date(jahr, 0, 1).getTime();
+    return { windowStart, totalDays: PAST_DAYS + future };
+  }, [zeitraum, jahr]);
 
   const days = useMemo(
     () =>
@@ -275,12 +286,13 @@ export function Zeitplan({
   return (
     <div className="zeitplan">
       <div className="zeitplan-toolbar">
-        <span className="zeitplan-sicht">
+        <span className="zeitplan-gruppe">Zeitraum</span>
+        <span className="zeitplan-segment">
           {(Object.keys(ZEITRAUM_CONFIG) as Zeitraum[]).map((z) => (
             <button
               type="button"
               key={z}
-              className={zeitraum === z ? "" : "secondary"}
+              className={zeitraum === z ? "active" : ""}
               aria-pressed={zeitraum === z}
               onClick={() => setZeitraum(z)}
             >
@@ -288,13 +300,32 @@ export function Zeitplan({
             </button>
           ))}
         </span>
-        <button type="button" onClick={scrollToHeute}>
+        <select
+          className="zeitplan-jahr"
+          aria-label="Jahr"
+          value={jahr}
+          onChange={(e) => setJahr(Number(e.target.value))}
+        >
+          {jahre.map((j) => (
+            <option key={j} value={j}>
+              {j}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            setJahr(heutigesJahr);
+            scrollToHeute();
+          }}
+        >
           Heute
         </button>
-        <span className="zeitplan-sicht">
+        <span className="zeitplan-gruppe">Plantyp</span>
+        <span className="zeitplan-segment">
           <button
             type="button"
-            className={sicht === "tanks" ? "" : "secondary"}
+            className={sicht === "tanks" ? "active" : ""}
             aria-pressed={sicht === "tanks"}
             onClick={() => setSicht("tanks")}
           >
@@ -302,14 +333,13 @@ export function Zeitplan({
           </button>
           <button
             type="button"
-            className={sicht === "sude" ? "" : "secondary"}
+            className={sicht === "sude" ? "active" : ""}
             aria-pressed={sicht === "sude"}
             onClick={() => setSicht("sude")}
           >
             Sude
           </button>
         </span>
-        <span className="muted">Sud antippen, dann unten verschieben.</span>
       </div>
 
       <div className="zeitplan-scroll" ref={scrollRef}>
