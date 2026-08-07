@@ -10,6 +10,7 @@ vi.mock("./api/client", () => ({
     listSude: vi.fn(),
     listRecipes: vi.fn(),
     transferSud: vi.fn(),
+    ich: vi.fn(),
   },
 }));
 
@@ -22,6 +23,7 @@ const mocked = api as unknown as {
   listSude: ReturnType<typeof vi.fn>;
   listRecipes: ReturnType<typeof vi.fn>;
   transferSud: ReturnType<typeof vi.fn>;
+  ich: ReturnType<typeof vi.fn>;
 };
 
 const STORAGE_TANK: Tank = {
@@ -91,6 +93,7 @@ test("zeigt Prozess-Warnungen aus einem Transfer als schließbares Banner", asyn
   ]);
   mocked.listSude.mockResolvedValue([lead]);
   mocked.listRecipes.mockResolvedValue([]);
+  mocked.ich.mockResolvedValue({ benutzer: "stefan" });
   mocked.transferSud.mockResolvedValue({
     ...lead,
     status: "in_ausschank",
@@ -120,6 +123,7 @@ test("altes Backend ohne /api/locations: App lädt trotzdem und nennt den Fix", 
   mocked.listTanks.mockResolvedValue([STORAGE_TANK]);
   mocked.listSude.mockResolvedValue([lead]);
   mocked.listRecipes.mockResolvedValue([]);
+  mocked.ich.mockResolvedValue({ benutzer: "stefan" });
   mocked.listLocations.mockRejectedValue(new Error("Not Found"));
 
   render(<App />);
