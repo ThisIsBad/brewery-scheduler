@@ -225,11 +225,13 @@ def import_sudplan(session: Session, today: date | None = None) -> dict:
     befüllte Datenbanken)."""
 
     today = today or date.today()
-    entries = [
-        entry
-        for pfad in sorted(DATA_DIR.glob("sudplan_*.json"))
-        for entry in json.loads(pfad.read_text())
-    ]
+    dateien = sorted(DATA_DIR.glob("sudplan_*.json"))
+    if not dateien:
+        raise RuntimeError(
+            f"Keine Sudplan-Daten in {DATA_DIR} — im installierten Paket fehlen "
+            "die JSON-Dateien (siehe package-data in pyproject.toml)."
+        )
+    entries = [entry for pfad in dateien for entry in json.loads(pfad.read_text())]
     _plan_korrekturen(entries)
     tanks = {t.name: t for t in session.query(Tank)}
     recipes = {r.name: r for r in session.query(Recipe)}
