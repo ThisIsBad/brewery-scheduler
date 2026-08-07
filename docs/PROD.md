@@ -116,6 +116,24 @@ Vier Plätze sind vorgesehen; für mehr je eine Zeile in `PLAETZE`
 (`deploy/benutzer.sh`), `deploy/caddy-entrypoint.sh` und
 `deploy/docker-compose.prod.yml` ergänzen.
 
+## Läuft der neue Stand wirklich?
+
+```bash
+./deploy/stand.sh
+```
+
+Zeigt ausgechecktes Tag, Bauzeitpunkt der Oberfläche, ob die Cache-Regeln
+im Container stecken und wie viele Konten es gibt. Das Deploy ruft es
+selbst mit `--pruefen` auf — ein Ausrollvorgang, der nichts bewirkt hat,
+wird damit rot statt still durchzulaufen.
+
+**Wenn ein Handy trotzdem die alte Fassung zeigt:** Schuld ist der
+Service Worker, der Anfragen abfängt, bevor sie den Server erreichen —
+die Cache-Regeln greifen dort also nicht. Das Löschen des
+Startbildschirm-Symbols entfernt ihn *nicht*. Wirksam ist nur:
+Einstellungen → Safari → Erweitert → Website-Daten → den Eintrag der
+Domain löschen. Danach im Profil den Bau-Zeitpunkt prüfen.
+
 ## Sicherheit (Testphase)
 
 Basic-Auth vor der gesamten App (ein Konto je Person), Datenbank und
