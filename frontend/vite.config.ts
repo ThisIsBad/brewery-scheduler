@@ -5,6 +5,9 @@ import { VitePWA } from "vite-plugin-pwa";
 const backendUrl = process.env.VITE_BACKEND_URL ?? "http://localhost:8000";
 
 export default defineConfig({
+  // Der Bauzeitpunkt steht im Profil der App: nur so lässt sich am
+  // Gerät erkennen, ob es die ausgerollte Fassung hat.
+  define: { __BAU_ZEIT__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     VitePWA({

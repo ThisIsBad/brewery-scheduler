@@ -130,6 +130,10 @@ test("altes Backend ohne /api/locations: App lädt trotzdem und nennt den Fix", 
 
   // Kellerblick kommt trotzdem hoch …
   expect(await screen.findByText("S-30-1")).toBeInTheDocument();
-  // … und der Banner sagt, was zu tun ist.
-  expect(screen.getByText(/\.\/up ausführen/)).toBeInTheDocument();
+  // … und der Banner beschreibt den Zustand, statt eine Umgebung zu
+  // raten: derselbe Fehler tritt auf dem Server auf, wo es weder ein
+  // ./up noch einen Codespace gibt.
+  expect(
+    screen.getByText(/Standorte konnten nicht geladen werden/),
+  ).toBeInTheDocument();
 });
