@@ -256,4 +256,9 @@ mit Selbstheilung/Watchdogs/Statusdateien. 71 Backend- und 40 Frontend-Tests.
   Buchungen mit Restmengen, Tankverwaltung + Standorte + Schloss,
   Warnmarkierungen, Codespace-Robustheit (Watchdogs, Statusdateien,
   Sync-Auto-Neustart, öffentlicher Testport)
+- Konten je Person + Änderungsprotokoll ✓ (2026-08-07). Der Verlauf hängt
+  als **eigener Tab** zentral in der App — der erste Wurf hatte ihn je Sud
+  an den Karten, was Stefan als Clutter verwarf: „am Sud selbst macht es
+  nur für den Sud Sinn". Wohin er endgültig gehört, ist offen; der Tab ist
+  die Zwischenstufe, an der sich das beurteilen lässt.
 - Offen aus Phase 2: **Offline-Mutations-Queue** (C8, issue #10)

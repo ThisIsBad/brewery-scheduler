@@ -8,10 +8,17 @@ import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { Rezepte } from "./components/Rezepte";
 import { Tankverwaltung } from "./components/Tankverwaltung";
+import { Verlauf } from "./components/Verlauf";
 import { Warteschlange } from "./components/Warteschlange";
 import { Zeitplan } from "./components/Zeitplan";
 
-type View = "kellerblick" | "zeitplan" | "tanks" | "rezepte" | "einkauf";
+type View =
+  | "kellerblick"
+  | "zeitplan"
+  | "tanks"
+  | "rezepte"
+  | "einkauf"
+  | "verlauf";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -204,6 +211,13 @@ export default function App() {
           >
             Einkauf
           </button>
+          <button
+            type="button"
+            className={view === "verlauf" ? "active" : ""}
+            onClick={() => setView("verlauf")}
+          >
+            Verlauf
+          </button>
         </nav>
         <button
           type="button"
@@ -280,6 +294,12 @@ export default function App() {
           ) : (
             <Einkaufsliste sude={sude} recipes={recipes} />
           )}
+        </div>
+      )}
+
+      {view === "verlauf" && (
+        <div className="app-scroll">
+          <Verlauf sude={sude} tanks={tanks} />
         </div>
       )}
 
