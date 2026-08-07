@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .models import SudStatus, TankStage, WithdrawalKind
+from .models import AuditAction, SudStatus, TankStage, WithdrawalKind
 
 
 class LocationOut(BaseModel):
@@ -342,3 +342,19 @@ class TransferIn(BaseModel):
     # whole batch moves (pre-split behaviour, kept for older clients).
     from_tank_id: uuid.UUID | None = None
     allocations: list[TransferAllocationIn] = Field(min_length=1)
+
+
+class AuditOut(BaseModel):
+    """Eine Zeile des Änderungsprotokolls. `changes` trägt je Feld
+    `{"alt": …, "neu": …}` (bei Anlegen und Löschen den Zustand)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    at: datetime
+    actor: str
+    action: AuditAction
+    entity: str
+    entity_id: uuid.UUID
+    sud_id: uuid.UUID | None
+    changes: dict
