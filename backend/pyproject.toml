@@ -32,6 +32,11 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# Die Sudhistorie ist Seed-Daten, keine Beilage: ohne sie startet das
+# installierte Paket nicht. Wheels tragen sonst nur .py-Dateien.
+[tool.setuptools.package-data]
+brewery_scheduler = ["data/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

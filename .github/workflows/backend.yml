@@ -54,3 +54,23 @@ jobs:
 
       - name: Run smoke tests
         run: pytest -ra
+
+      # Die Tests laufen editierbar installiert und sehen den Quellbaum —
+      # das Prod-Image installiert dagegen ein Wheel. Fehlten dort die
+      # Seed-Daten, startete das Backend erst beim Kunden nicht mehr.
+      - name: Seed-Daten liegen im Wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build --wheel --outdir dist
+          python - <<'PY'
+          import glob, os, zipfile
+          wheel = glob.glob("dist/*.whl")[0]
+          im_wheel = set(zipfile.ZipFile(wheel).namelist())
+          fehlend = [
+              os.path.basename(p)
+              for p in glob.glob("src/brewery_scheduler/data/*.json")
+              if f"brewery_scheduler/data/{os.path.basename(p)}" not in im_wheel
+          ]
+          assert not fehlend, f"Im Wheel fehlen: {fehlend}"
+          print("Datendateien im Wheel:", sorted(n for n in im_wheel if "/data/" in n))
+          PY
