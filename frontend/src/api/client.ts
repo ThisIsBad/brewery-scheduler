@@ -14,6 +14,7 @@ import type {
   TankCreateIn,
   TankUpdateIn,
   TransferIn,
+  Verlaufseintrag,
   WithdrawIn,
 } from "./types";
 
@@ -97,6 +98,10 @@ export const api = {
   deleteLocation: (locationId: string) =>
     request<void>(`/api/locations/${locationId}`, { method: "DELETE" }),
   listSude: () => request<Sud[]>("/api/sude"),
+  listVerlauf: (sudId?: string) =>
+    request<Verlaufseintrag[]>(
+      sudId ? `/api/verlauf?sud_id=${sudId}` : "/api/verlauf",
+    ),
   listRecipes: () => request<Recipe[]>("/api/recipes"),
   createSud: (payload: SudCreateIn) =>
     request<Sud>("/api/sude", {

@@ -286,3 +286,16 @@ export interface TransferIn {
   from_tank_id?: string;
   allocations: TransferAllocationIn[];
 }
+
+/** Eine Zeile des Änderungsprotokolls. `changes` trägt je Feld
+ * `{ alt, neu }`; beim Anlegen und Löschen steht dort der Zustand. */
+export interface Verlaufseintrag {
+  id: string;
+  at: string;
+  actor: string;
+  action: "create" | "update" | "delete";
+  entity: string;
+  entity_id: string;
+  sud_id: string | null;
+  changes: Record<string, unknown>;
+}
