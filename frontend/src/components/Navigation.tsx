@@ -93,6 +93,23 @@ export function Navigation({ view, onView }: NavigationProps) {
   );
 }
 
+function bauZeit(): string {
+  // Gesetzt wird der Wert beim Bauen (vite.config.ts). In Tests und bei
+  // einem Bau ohne die Definition gibt es ihn nicht — dann lieber
+  // „unbekannt" als ein Absturz im Profil.
+  const roh = typeof __BAU_ZEIT__ === "string" ? __BAU_ZEIT__ : "";
+  const zeit = new Date(roh);
+  return Number.isNaN(zeit.getTime())
+    ? "unbekannt"
+    : zeit.toLocaleString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+}
+
 export function Profil() {
   const [offen, setOffen] = useState(false);
   const [benutzer, setBenutzer] = useState<string | null>(null);
@@ -145,6 +162,9 @@ export function Profil() {
               Für ein anderes Konto alle Fenster der App schließen und neu
               öffnen — die Anmeldung merkt sich der Browser dauerhaft.
             </p>
+            {/* Ohne Datum lässt sich am Gerät nicht sagen, ob es den
+                ausgerollten Stand hat. */}
+            <p className="muted">Stand der App: {bauZeit()}</p>
             <button type="button" onClick={() => setOffen(false)}>
               Schließen
             </button>

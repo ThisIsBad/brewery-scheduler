@@ -40,13 +40,14 @@ export default function App() {
         setLocations(await api.listLocations());
         setError(null);
       } catch {
-        // Mixed state right after a code sync: the dev server already
-        // serves the new frontend while uvicorn still runs the old
-        // backend without /api/locations. Name the fix instead of
-        // failing the whole load.
+        // Kann zweierlei heißen: frisch synchronisierte Entwicklung
+        // (neues Frontend, altes Backend ohne /api/locations) oder ein
+        // Gerät, das gerade keine Verbindung hat und aus dem Cache liest.
+        // Die Meldung nennt deshalb den Zustand, nicht eine geratene
+        // Umgebung — der alte Text schickte auf dem Server in die Irre.
         setLocations([]);
         setError(
-          "Backend läuft noch mit altem Stand — im Terminal ./up ausführen oder den Codespace neu starten.",
+          "Standorte konnten nicht geladen werden — angezeigte Daten können veraltet sein. App neu öffnen; bleibt es dabei, läuft der Server mit einem älteren Stand.",
         );
       }
     } catch (e) {

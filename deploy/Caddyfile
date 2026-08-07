@@ -19,6 +19,19 @@
 
 	handle {
 		root * /srv
+
+		# Gebaute Dateien tragen ihren Inhalt im Namen — eine neue Fassung
+		# heißt anders, die alte darf ewig im Cache bleiben.
+		@unveraenderlich path /assets/*
+		header @unveraenderlich Cache-Control "public, max-age=31536000, immutable"
+
+		# Alles andere entscheidet über die Version: Einstiegsseite,
+		# Service Worker, Manifest. Ohne Revalidierung hält ein Handy
+		# tagelang an der alten Fassung fest (2026-08-07 in freier Wildbahn
+		# beobachtet) — dann kommt kein Update mehr an.
+		@fluechtig not path /assets/*
+		header @fluechtig Cache-Control "no-cache"
+
 		try_files {path} /index.html
 		file_server
 	}
