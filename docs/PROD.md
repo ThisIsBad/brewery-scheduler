@@ -95,10 +95,32 @@ docker volume rm brewery-scheduler_pgdata   # Name ggf. via `docker volume ls` p
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d
 ```
 
+## Eine Person hinzufügen
+
+Jede Person bekommt ein eigenes Konto — das Änderungsprotokoll hängt am
+Benutzernamen, ein gemeinsames Konto wäre dort wertlos. Vier Plätze sind
+vorgesehen; für mehr je eine Zeile in `deploy/caddy-entrypoint.sh` und
+`deploy/docker-compose.prod.yml` ergänzen.
+
+```bash
+cd /opt/brewery-scheduler
+docker run --rm caddy:2 caddy hash-password --plaintext 'PASSWORT-DER-PERSON'
+nano deploy/.env      # z. B. BASIC_AUTH_USER_2=stefan und den Hash daneben
+docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d
+```
+
+Den Hash in **einfache Anführungszeichen** setzen, er enthält `$`-Zeichen.
+Der Neustart dauert Sekunden und rührt die Datenbank nicht an. Ein Konto
+entziehen heißt: Zeile in `deploy/.env` leeren und denselben Befehl noch
+einmal.
+
 ## Sicherheit (Testphase)
 
-Basic-Auth vor der gesamten App (ein gemeinsames Testkonto), Datenbank und
-Backend sind nicht von außen erreichbar, nur Caddy hat offene Ports.
+Basic-Auth vor der gesamten App (ein Konto je Person), Datenbank und
+Backend sind nicht von außen erreichbar, nur Caddy hat offene Ports. Den
+Benutzernamen setzt ausschließlich Caddy als Header `X-Authenticated-User`
+— das Backend nimmt ihn nur deshalb für bare Münze, weil es keinen anderen
+Weg von außen gibt.
 **Vor echten Daten** (siehe PLANUNG.md §A): echter Login (Phase 5),
 Backups extern spiegeln, und der öffentliche Codespace-Port wird wieder
 privat.

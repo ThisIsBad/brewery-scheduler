@@ -42,6 +42,13 @@ services:
       SITE_ADDRESS: ${SITE_ADDRESS:?deploy/.env anlegen — siehe deploy/.env.example}
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:?}
       BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?}
+      # Weitere Personen; leere Plätze überspringt der Entrypoint.
+      BASIC_AUTH_USER_2: ${BASIC_AUTH_USER_2:-}
+      BASIC_AUTH_HASH_2: ${BASIC_AUTH_HASH_2:-}
+      BASIC_AUTH_USER_3: ${BASIC_AUTH_USER_3:-}
+      BASIC_AUTH_HASH_3: ${BASIC_AUTH_HASH_3:-}
+      BASIC_AUTH_USER_4: ${BASIC_AUTH_USER_4:-}
+      BASIC_AUTH_HASH_4: ${BASIC_AUTH_HASH_4:-}
     volumes:
       - caddy_data:/data
       - caddy_config:/config

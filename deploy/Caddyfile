@@ -2,12 +2,19 @@
 # HTTPS via Let's Encrypt. Nur eine IP ohne Domain? Dann ":80" eintragen —
 # ohne TLS, aber weiterhin hinter Basic-Auth.
 {$SITE_ADDRESS} {
+	# Je Person ein eigenes Konto — der Benutzername landet im Protokoll,
+	# ein gemeinsames Konto wäre dort wertlos. Die Liste schreibt
+	# caddy-entrypoint.sh beim Start aus deploy/.env.
 	basic_auth {
-		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+		import /etc/caddy/benutzer.caddy
 	}
 
 	handle /api/* {
-		reverse_proxy backend:8000
+		reverse_proxy backend:8000 {
+			# Überschreibt, was der Client geschickt hat — das Backend
+			# darf dem Namen nur glauben, weil er hier gesetzt wird.
+			header_up X-Authenticated-User {http.auth.user.id}
+		}
 	}
 
 	handle {
