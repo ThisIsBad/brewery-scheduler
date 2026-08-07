@@ -10,7 +10,7 @@ import type {
   Tank,
   TankStage,
 } from "../api/types";
-import { latestRecipes } from "../domain";
+import { formatHl, latestRecipes } from "../domain";
 
 interface NewSudDialogProps {
   open: boolean;
@@ -244,7 +244,7 @@ export function NewSudDialog({
                 <option value="">— wählen —</option>
                 {compatibleTanks.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} ({t.capacity_hl} hl)
+                    {t.name} ({formatHl(t.capacity_hl)})
                   </option>
                 ))}
               </select>

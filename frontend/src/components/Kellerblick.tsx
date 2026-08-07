@@ -8,6 +8,7 @@ import {
   firstFutureOccupancy,
   formatDate,
   formatHl,
+  formatZahl,
   occupancyAt,
   partnersOf,
   remainingHl,
@@ -180,7 +181,7 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     Tanks ohne Rate (Bergkirchweih) zeigen nichts. */}
                 {tank?.verbrauch_hl_pro_woche != null && total > 0 && (
                   <div className="muted">
-                    Ø {tank.verbrauch_hl_pro_woche} hl/Woche — reicht bis ~
+                    Ø {formatZahl(tank.verbrauch_hl_pro_woche)} hl/Woche — reicht bis ~
                     {formatDate(
                       new Date(
                         Date.now() +

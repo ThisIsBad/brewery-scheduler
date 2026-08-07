@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Occupancy, Sud, Tank } from "../api/types";
-import { STAGE_LABEL, globalSudLabel, partnersOf, sudNumberLabel } from "../domain";
+import { STAGE_LABEL, formatHl, globalSudLabel, partnersOf, sudNumberLabel } from "../domain";
 
 interface ZeitplanProps {
   tanks: Tank[];
@@ -385,7 +385,7 @@ export function Zeitplan({
                 <div className="zeitplan-tanklabel">
                   <strong>{tank.name}</strong>
                   <span className="muted">
-                    {STAGE_LABEL[tank.stage]} · {tank.capacity_hl} hl
+                    {STAGE_LABEL[tank.stage]} · {formatHl(tank.capacity_hl)}
                   </span>
                 </div>
                 <div

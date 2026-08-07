@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import type { Recipe, Sud } from "../api/types";
-import { formatDate } from "../domain";
+import { formatDate, formatHl, formatZahl } from "../domain";
 
 interface EinkaufslisteProps {
   sude: Sud[];
@@ -14,7 +14,7 @@ function isoDate(d: Date): string {
 }
 
 function fmtKg(kg: number): string {
-  return `${kg % 1 === 0 ? kg : kg.toFixed(1)} kg`;
+  return `${formatZahl(kg)} kg`;
 }
 
 function fmtGramm(g: number): string {
@@ -111,7 +111,7 @@ export function Einkaufsliste({ sude, recipes }: EinkaufslisteProps) {
               {sud.recipe.beer_style} {sud.style_year_number}/
               {sud.brew_date.slice(0, 4)} · {sud.recipe.name}
             </span>
-            <span className="muted">{sud.volume_hl} hl</span>
+            <span className="muted">{formatHl(sud.volume_hl)}</span>
           </div>
         ))}
       </section>
