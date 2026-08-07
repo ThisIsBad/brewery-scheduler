@@ -21,4 +21,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 FROM caddy:2 AS web
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY deploy/caddy-entrypoint.sh /caddy-entrypoint.sh
+RUN chmod +x /caddy-entrypoint.sh
 COPY --from=frontend-build /build/dist /srv
+ENTRYPOINT ["/caddy-entrypoint.sh"]
