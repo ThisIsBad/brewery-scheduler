@@ -19,6 +19,7 @@ import { ReplanDialog } from "./ReplanDialog";
 import { ScheduleDialog } from "./ScheduleDialog";
 import { TankWithdrawDialog } from "./TankWithdrawDialog";
 import { TransferDialog } from "./TransferDialog";
+import { VerlaufDialog } from "./VerlaufDialog";
 import { WithdrawDialog } from "./WithdrawDialog";
 
 interface KellerblickProps {
@@ -43,6 +44,9 @@ type DialogState =
     }
   | { kind: "replan"; sud: Sud }
   | { kind: "schedule"; sud: Sud }
+  // Mehrere Sude, weil ein Ausschanktank mehrere enthalten kann; ohne
+  // Angabe zeigt der Dialog alle Änderungen.
+  | { kind: "verlauf"; fuer?: Sud[] }
   | null;
 
 export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
@@ -259,6 +263,18 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     >
                       Schwund
                     </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() =>
+                        setDialog({
+                          kind: "verlauf",
+                          fuer: entries.map((e) => e.sud),
+                        })
+                      }
+                    >
+                      Verlauf
+                    </button>
                   </>
                 )}
                 <button
@@ -348,6 +364,13 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
                     }
                   >
                     Ausgeschenkt
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => setDialog({ kind: "verlauf", fuer: [sud] })}
+                  >
+                    Verlauf
                   </button>
                 </footer>
               </article>
@@ -519,6 +542,14 @@ export function Kellerblick({ tanks, sude, onChanged }: KellerblickProps) {
             onChanged(updated);
             setDialog(null);
           }}
+        />
+      )}
+      {dialog?.kind === "verlauf" && (
+        <VerlaufDialog
+          fuer={dialog.fuer}
+          sude={sude}
+          tanks={tanks}
+          onClose={() => setDialog(null)}
         />
       )}
       {dialog?.kind === "schedule" && (
