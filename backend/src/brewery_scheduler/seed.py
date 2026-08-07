@@ -54,12 +54,12 @@ TANKS: list[dict] = [
     {"name": "Bergtank 120 hl", "location": "Schänke 4", "stage": TankStage.AUSSCHANK, "capacity_hl": 120},
     {"name": "Bergtank 100 hl", "location": "Schänke 4", "stage": TankStage.AUSSCHANK, "capacity_hl": 100},
     # Kitzmann Keller
-    {"name": "Kitzmann hinten", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    {"name": "Kitzmann hinten", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 90},
     # Biergartensaison: Ø 15 hl Kellerbier/Woche aus diesem Tank
     # (Stefan, 2026-08-06) — treibt die Reichweiten-Prognose.
-    {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 50, "verbrauch_hl_pro_woche": 15},
+    {"name": "Kitzmann vorne", "location": "Kitzmann Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 51.8, "verbrauch_hl_pro_woche": 15},
     # Resenscheck Keller — nur zur Bergkirchweih im Einsatz
-    {"name": "Resenscheck", "location": "Resenscheck Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 80},
+    {"name": "Resenscheck", "location": "Resenscheck Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 73.5},
     # Striezi Keller
     {"name": "Striezi Keller 1", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},
     {"name": "Striezi Keller 2", "location": "Striezi Keller", "stage": TankStage.AUSSCHANK, "capacity_hl": 35},

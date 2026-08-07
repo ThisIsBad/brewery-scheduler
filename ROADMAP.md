@@ -25,27 +25,22 @@ This section is the source of truth for the brewery's operational reality. All s
 
 All volumes in **hectoliters (hl)**. 1 hl = 100 l.
 
-**Main cellar — fermentation tanks** (total capacity: **180 hl**)
+**Schänke 4 — fermentation tanks** (total capacity: **180 hl**)
 
 - 5 × 30 hl (closed)
 - 2 × 15 hl (closed)
 - 1 × 15 hl (open — wheat beer only)
 
-**Main cellar — storage tanks** (total: 150 hl)
+**Schänke 4 — storage tanks** (total: 150 hl)
 
 - 5 × 30 hl
 
-**Main cellar — Ausschank tanks** (total: 350 hl)
+**Ausschank tanks** (total: 525.3 hl; sizes re-measured 2026-08-07)
 
-- 1 × 120 hl
-- 1 × 100 hl
-- 1 × 80 hl
-- 1 × 50 hl
-
-**Secondary cellar**
-
-- 2 × 35 hl (Ausschank / final stage)
-- 2 × 10 hl (storage)
+- Bergtank 120 hl + Bergtank 100 hl (Schänke 4 — Bergkirchweih)
+- Kitzmann hinten 90 hl + Kitzmann vorne 51.8 hl (Kitzmann Keller)
+- Resenscheck 73.5 hl (Resenscheck Keller — Bergkirchweih only)
+- 2 × 35 hl + 2 × 10 hl (Striezi Keller)
 
 ### 2.3 Stage Progression
 
@@ -72,7 +67,7 @@ Brewhouse → Fermentation tank → Storage tank → Ausschank tank → Customer
 | 2 days post-festival | **Changeover** | Transition back |
 | Post-festival → season end | **Regular beer garden** | Kellerbier, wheat beer, 2 special beers |
 
-**Always-available constraint during regular operation:** Kellerbier, wheat beer, and both specials must be available continuously. Kellerbier specifically is served from the 50 hl Ausschank tank in regular operation.
+**Always-available constraint during regular operation:** Kellerbier, wheat beer, and both specials must be available continuously. Kellerbier specifically is served from Kitzmann vorne (51.8 hl) in regular operation.
 
 ### 2.6 Pentecost Production Targets
 
