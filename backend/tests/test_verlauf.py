@@ -149,3 +149,10 @@ def test_zeitstempel_liegt_in_der_gegenwart(client, session) -> None:
     eintrag = client.get("/api/verlauf", headers=BENUTZER).json()[0]
     abstand = datetime.now(timezone.utc) - datetime.fromisoformat(eintrag["at"])
     assert abs(abstand) < timedelta(minutes=5)
+
+
+def test_ich_nennt_den_angemeldeten_benutzer(client) -> None:
+    """Die Profilanzeige braucht den Namen; der Browser kennt ihn nicht,
+    weil Caddy ihn nur serverseitig weiterreicht."""
+    assert client.get("/api/ich", headers=BENUTZER).json() == {"benutzer": "stefan"}
+    assert client.get("/api/ich").json() == {"benutzer": "unbekannt"}
