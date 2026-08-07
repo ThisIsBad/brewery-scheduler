@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
 import type { Sud, Tank, Verlaufseintrag } from "../api/types";
-import { formatZahl, partnersOf, sudNumberLabel } from "../domain";
+import { formatZahl, sudNumberLabel } from "../domain";
 
-interface VerlaufDialogProps {
-  /** Die Sude, um die es geht — bei einem gemischten Ausschanktank alle
-   * darin enthaltenen. Ohne Angabe zeigt der Dialog alle Änderungen. */
-  fuer?: Sud[];
+interface VerlaufProps {
   sude: Sud[];
   tanks: Tank[];
-  onClose: () => void;
 }
 
 const AKTION: Record<Verlaufseintrag["action"], string> = {
@@ -70,6 +66,7 @@ function wert(roh: unknown): string {
 
 function zeitpunkt(iso: string): string {
   return new Date(iso).toLocaleString("de-DE", {
+    weekday: "short",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -95,100 +92,74 @@ function beschreibung(
     .map(([feld, roh]) => `${feldName(feld)}: ${auflösen(feld, roh)}`);
 }
 
-export function VerlaufDialog({
-  fuer,
-  sude,
-  tanks,
-  onClose,
-}: VerlaufDialogProps) {
+/** Tag als Überschrift: „Wer hat gestern was gemacht" ist die Frage,
+ * mit der man hier hereinkommt. */
+function tag(iso: string): string {
+  return new Date(iso).toLocaleDateString("de-DE", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+export function Verlauf({ sude, tanks }: VerlaufProps) {
   const [eintraege, setEintraege] = useState<Verlaufseintrag[] | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
-  const [nurDiese, setNurDiese] = useState(fuer !== undefined);
-
-  // Ein Doppelsud führt seine Belegungen am Lead, kann aber selbst
-  // geändert worden sein — der Partner gehört zum selben Bier.
-  const ids = useMemo(
-    () => [
-      ...new Set(
-        (fuer ?? [])
-          .flatMap((s) => [s, ...partnersOf(s, sude)])
-          .map((s) => s.id),
-      ),
-    ],
-    [fuer, sude],
-  );
-  const schluessel = ids.join(",");
-
-  // „Tank: …" hilft niemandem — der Name schon.
-  const tankNamen = useMemo(
-    () => new Map(tanks.map((t) => [t.id, t.name])),
-    [tanks],
-  );
-  const auflösen = (feld: string, roh: unknown): string =>
-    feld === "tank_id" ? (tankNamen.get(String(roh)) ?? wert(roh)) : wert(roh);
 
   useEffect(() => {
     let aktuell = true;
-    setEintraege(null);
-    setFehler(null);
-    const abfrage = nurDiese
-      ? Promise.all(ids.map((id) => api.listVerlauf(id))).then((listen) =>
-          listen
-            .flat()
-            .sort((a, b) => b.at.localeCompare(a.at)),
-        )
-      : api.listVerlauf();
-    abfrage
+    api
+      .listVerlauf()
       .then((daten) => aktuell && setEintraege(daten))
-      .catch((e) => aktuell && setFehler(e instanceof Error ? e.message : String(e)));
+      .catch(
+        (e) => aktuell && setFehler(e instanceof Error ? e.message : String(e)),
+      );
     return () => {
       aktuell = false;
     };
-    // `ids` ist bei jedem Render neu; der Schlüssel hält die Abfrage stabil.
-  }, [nurDiese, schluessel]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  const tankNamen = new Map(tanks.map((t) => [t.id, t.name]));
+  const auflösen = (feld: string, roh: unknown): string =>
+    feld === "tank_id" ? (tankNamen.get(String(roh)) ?? wert(roh)) : wert(roh);
+
+  // Ohne Sud-Karte drumherum muss jede Zeile selbst sagen, worum es geht.
+  const sudLabel = (sudId: string | null): string | null => {
+    if (!sudId) return null;
+    const sud = sude.find((s) => s.id === sudId);
+    return sud ? sudNumberLabel(sud, sude) : null;
+  };
+
+  let letzterTag: string | null = null;
 
   return (
-    <div className="dialog-backdrop" role="dialog" aria-label="Verlauf">
-      <div className="dialog">
-        <h2>Verlauf</h2>
-        {fuer && nurDiese && (
-          <p className="muted">
-            {[...new Set(fuer.map((s) => sudNumberLabel(s, sude)))].join(" · ")}
-          </p>
-        )}
+    <div className="verlauf-seite">
+      <h2>Verlauf</h2>
+      <p className="muted">
+        Alle Änderungen, neueste zuerst — wer hat wann was gemacht.
+      </p>
 
-        {fuer && (
-          <div className="zeitplan-segment">
-            <button
-              type="button"
-              className={nurDiese ? "active" : ""}
-              onClick={() => setNurDiese(true)}
-            >
-              {fuer.length > 1 ? "Diese Sude" : "Dieser Sud"}
-            </button>
-            <button
-              type="button"
-              className={nurDiese ? "" : "active"}
-              onClick={() => setNurDiese(false)}
-            >
-              Alles
-            </button>
-          </div>
-        )}
+      {fehler && <p className="error">{fehler}</p>}
+      {!fehler && eintraege === null && <p className="empty">lade …</p>}
+      {eintraege !== null && eintraege.length === 0 && (
+        <p className="empty">Noch keine Änderungen aufgezeichnet.</p>
+      )}
 
-        {fehler && <p className="error">{fehler}</p>}
-        {!fehler && eintraege === null && <p className="muted">Lädt …</p>}
-        {eintraege !== null && eintraege.length === 0 && (
-          <p className="muted">Noch keine Änderungen aufgezeichnet.</p>
-        )}
-
-        <ul className="verlauf">
-          {(eintraege ?? []).map((eintrag) => (
+      <ul className="verlauf">
+        {(eintraege ?? []).map((eintrag) => {
+          const heute = tag(eintrag.at);
+          const neuerTag = heute !== letzterTag;
+          letzterTag = heute;
+          const label = sudLabel(eintrag.sud_id);
+          return (
             <li key={eintrag.id}>
+              {neuerTag && <h3>{heute}</h3>}
               <div>
                 <strong>{eintrag.actor}</strong> hat{" "}
                 {BEREICH[eintrag.entity] ?? eintrag.entity}{" "}
                 {AKTION[eintrag.action]}
+                {label ? ` — ${label}` : ""}
                 <span className="muted"> · {zeitpunkt(eintrag.at)}</span>
               </div>
               {beschreibung(eintrag, auflösen).map((zeile) => (
@@ -197,13 +168,9 @@ export function VerlaufDialog({
                 </div>
               ))}
             </li>
-          ))}
-        </ul>
-
-        <button type="button" onClick={onClose}>
-          Schließen
-        </button>
-      </div>
+          );
+        })}
+      </ul>
     </div>
   );
 }

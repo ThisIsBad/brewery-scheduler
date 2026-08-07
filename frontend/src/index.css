@@ -32,15 +32,27 @@ body {
 .app-header h1 {
   font-size: 16px;
   margin: 0;
+  flex: 0 0 auto;
 }
 
+/* Sechs Tabs passen auf einem Handy nicht in eine Zeile — waagrecht
+   scrollen statt abschneiden. */
 .tabs {
   display: flex;
   gap: 4px;
   flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tabs button {
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 14px;
   padding: 10px 14px;
   border: none;
@@ -57,6 +69,7 @@ body {
 }
 
 .new-sud {
+  flex: 0 0 auto;
   font-size: 14px;
   padding: 10px 14px;
   min-height: 44px;
@@ -777,16 +790,26 @@ div.tank-row {
   cursor: pointer;
 }
 
+.verlauf-seite {
+  padding: 12px;
+}
+
 .verlauf {
   list-style: none;
   margin: 12px 0;
   padding: 0;
-  max-height: 45vh;
-  overflow-y: auto;
 }
 
 .verlauf li {
   padding: 8px 0;
   border-bottom: 1px solid #eee;
   font-size: 14px;
+}
+
+.verlauf h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+  margin: 16px 0 6px;
 }
