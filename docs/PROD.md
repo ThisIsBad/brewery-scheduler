@@ -98,21 +98,23 @@ docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d
 ## Eine Person hinzufügen
 
 Jede Person bekommt ein eigenes Konto — das Änderungsprotokoll hängt am
-Benutzernamen, ein gemeinsames Konto wäre dort wertlos. Vier Plätze sind
-vorgesehen; für mehr je eine Zeile in `deploy/caddy-entrypoint.sh` und
-`deploy/docker-compose.prod.yml` ergänzen.
+Benutzernamen, ein gemeinsames Konto wäre dort wertlos.
 
 ```bash
 cd /opt/brewery-scheduler
-docker run --rm caddy:2 caddy hash-password --plaintext 'PASSWORT-DER-PERSON'
-nano deploy/.env      # z. B. BASIC_AUTH_USER_2=stefan und den Hash daneben
-docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env up -d
+./deploy/benutzer.sh stefan          # fragt das Passwort verdeckt ab
+./deploy/benutzer.sh --liste
+./deploy/benutzer.sh --entfernen alex
 ```
 
-Den Hash in **einfache Anführungszeichen** setzen, er enthält `$`-Zeichen.
-Der Neustart dauert Sekunden und rührt die Datenbank nicht an. Ein Konto
-entziehen heißt: Zeile in `deploy/.env` leeren und denselben Befehl noch
-einmal.
+Das Skript hasht das Passwort, trägt es in `deploy/.env` ein und startet
+Caddy neu; die Datenbank bleibt unberührt. Ohne Passwort-Argument landet
+es auch nicht in der Shell-Historie. Ein zweiter Aufruf mit demselben
+Namen ändert das Passwort, statt einen zweiten Platz zu belegen.
+
+Vier Plätze sind vorgesehen; für mehr je eine Zeile in `PLAETZE`
+(`deploy/benutzer.sh`), `deploy/caddy-entrypoint.sh` und
+`deploy/docker-compose.prod.yml` ergänzen.
 
 ## Sicherheit (Testphase)
 
