@@ -5,6 +5,19 @@ kleine Linux-VM mit Docker tut es), ein Stack, Basic-Auth davor. Die
 Testdaten (Tanks, deine 10 Rezepte, Beispiel-Sude) werden beim ersten
 Start automatisch eingespielt.
 
+## Die laufende Installation (seit 2026-08-07)
+
+- **https://sudplanung.entlaskeller.de** — Hetzner-VM `Sudplanung-Prod`,
+  Ubuntu, Stack unter `/opt/brewery-scheduler`, Zertifikat von Caddy
+  automatisch. Die Subdomain hängt als A-Record bei domainfactory neben
+  der bestehenden Website; deren DNS-Einträge bleiben unberührt.
+- **Update auf ein neues Release:** `git fetch --tags && git checkout vX.Y.Z`
+  im Stack-Verzeichnis, dann `docker compose … up -d --build`.
+- **Fallstrick aus dem ersten Go-Live:** Das Image installiert das Backend
+  als Wheel. Neue nicht-Python-Dateien (Seed-Daten, Templates) müssen in
+  `package-data` von `backend/pyproject.toml` stehen, sonst fehlen sie im
+  Container, obwohl im Codespace alles läuft. Die CI prüft das seither.
+
 ## Dev / Prod in einem Satz
 
 **`main` ist Dev** (Codespace wie bisher, jede Änderung landet dort
