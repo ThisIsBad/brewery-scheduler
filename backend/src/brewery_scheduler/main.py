@@ -84,3 +84,11 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
 @app.get("/health", tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/ich", tags=["meta"])
+def ich(request: Request) -> dict[str, str]:
+    """Wer ist angemeldet — für die Profilanzeige. Die App kennt den Namen
+    sonst nicht: Caddy prüft die Anmeldung und reicht ihn nur ans Backend
+    weiter, der Browser sieht ihn nie."""
+    return {"benutzer": angemeldeter_benutzer(request)}
