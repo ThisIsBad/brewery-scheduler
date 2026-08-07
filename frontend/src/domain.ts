@@ -145,8 +145,13 @@ export function dayProgressLabel(occ: Occupancy, when: Date): string {
   return `Tag ${Math.min(day, total)} von ${total}`;
 }
 
+/** Deutsche Zahldarstellung: ganze Zahlen pur, sonst eine Nachkommastelle. */
+export function formatZahl(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(".", ",");
+}
+
 export function formatHl(volume: number): string {
-  return `${Number.isInteger(volume) ? volume : volume.toFixed(1)} hl`;
+  return `${formatZahl(volume)} hl`;
 }
 
 export function formatDate(iso: string): string {

@@ -8,7 +8,7 @@ import type {
   Malz,
   Recipe,
 } from "../api/types";
-import { STYLE_LABEL, formatDate } from "../domain";
+import { STYLE_LABEL, formatDate, formatZahl } from "../domain";
 
 interface RezepteProps {
   recipes: Recipe[];
@@ -95,10 +95,10 @@ export function Rezepte({ recipes, onReload }: RezepteProps) {
                     Wasser:{" "}
                     {[
                       current.wasser?.hauptguss_hl != null
-                        ? `Hauptguss ${current.wasser.hauptguss_hl} hl`
+                        ? `Hauptguss ${formatZahl(current.wasser.hauptguss_hl)} hl`
                         : null,
                       (current.wasser?.nachguss_hl?.length ?? 0) > 0
-                        ? `Nachgüsse ${current.wasser!.nachguss_hl!.join(" + ")} hl`
+                        ? `Nachgüsse ${current.wasser!.nachguss_hl!.map(formatZahl).join(" + ")} hl`
                         : null,
                     ]
                       .filter(Boolean)
@@ -299,7 +299,7 @@ function FarbWahl({ style, farbe, onError, onSaved }: FarbWahlProps) {
 
 function fmtDays(value: number | null): string {
   if (value === null) return "—";
-  return `${value % 1 === 0 ? value : value.toFixed(1)} Tage`;
+  return `${formatZahl(value)} Tage`;
 }
 
 function schuettungSumme(malts: Malz[]): number {
@@ -307,7 +307,7 @@ function schuettungSumme(malts: Malz[]): number {
 }
 
 function fmtKg(kg: number): string {
-  return `${kg % 1 === 0 ? kg : kg.toFixed(1)} kg`;
+  return `${formatZahl(kg)} kg`;
 }
 
 /** Anteil an der Gesamtschüttung — die „Anteil in %“-Spalte der Excel. */

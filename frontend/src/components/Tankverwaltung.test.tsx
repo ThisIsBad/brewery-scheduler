@@ -52,7 +52,13 @@ beforeEach(() => {
 test("gruppiert Tanks nach Standort und zeigt Ausgeblendete separat", () => {
   const tanks = [
     tank({ id: "t-1", name: "S-30-1", location_id: "loc-1" }),
-    tank({ id: "t-2", name: "A2-35-1", location_id: "loc-2", stage: "ausschank" }),
+    tank({
+      id: "t-2",
+      name: "A2-35-1",
+      location_id: "loc-2",
+      stage: "ausschank",
+      capacity_hl: 51.8,
+    }),
     tank({ id: "t-3", name: "ALT-1", location_id: "loc-1", active: false }),
   ];
   render(
@@ -63,6 +69,8 @@ test("gruppiert Tanks nach Standort und zeigt Ausgeblendete separat", () => {
   expect(screen.getByText("Nebenkeller")).toBeInTheDocument();
   expect(screen.getByText("S-30-1")).toBeInTheDocument();
   expect(screen.getByText("A2-35-1")).toBeInTheDocument();
+  // Nachgemessene Größen tragen Nachkommastellen — deutsch mit Komma.
+  expect(screen.getByText(/51,8 hl/)).toBeInTheDocument();
   expect(screen.getByText("Ausgeblendet")).toBeInTheDocument();
   expect(screen.getByText("ALT-1")).toBeInTheDocument();
   expect(
