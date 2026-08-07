@@ -7,18 +7,12 @@ import { Einkaufsliste } from "./components/Einkaufsliste";
 import { Kellerblick } from "./components/Kellerblick";
 import { NewSudDialog } from "./components/NewSudDialog";
 import { Rezepte } from "./components/Rezepte";
+import type { View } from "./components/Navigation";
+import { Navigation, Profil, VIEW_TITEL } from "./components/Navigation";
 import { Tankverwaltung } from "./components/Tankverwaltung";
 import { Verlauf } from "./components/Verlauf";
 import { Warteschlange } from "./components/Warteschlange";
 import { Zeitplan } from "./components/Zeitplan";
-
-type View =
-  | "kellerblick"
-  | "zeitplan"
-  | "tanks"
-  | "rezepte"
-  | "einkauf"
-  | "verlauf";
 
 export default function App() {
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -174,51 +168,8 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Brauerei</h1>
-        <nav className="tabs" aria-label="Ansicht">
-          <button
-            type="button"
-            className={view === "kellerblick" ? "active" : ""}
-            onClick={() => setView("kellerblick")}
-          >
-            Kellerblick
-          </button>
-          <button
-            type="button"
-            className={view === "zeitplan" ? "active" : ""}
-            onClick={() => setView("zeitplan")}
-          >
-            Zeitplan
-          </button>
-          <button
-            type="button"
-            className={view === "tanks" ? "active" : ""}
-            onClick={() => setView("tanks")}
-          >
-            Tanks
-          </button>
-          <button
-            type="button"
-            className={view === "rezepte" ? "active" : ""}
-            onClick={() => setView("rezepte")}
-          >
-            Rezepte
-          </button>
-          <button
-            type="button"
-            className={view === "einkauf" ? "active" : ""}
-            onClick={() => setView("einkauf")}
-          >
-            Einkauf
-          </button>
-          <button
-            type="button"
-            className={view === "verlauf" ? "active" : ""}
-            onClick={() => setView("verlauf")}
-          >
-            Verlauf
-          </button>
-        </nav>
+        <h1>{VIEW_TITEL[view]}</h1>
+        <Profil />
         <button
           type="button"
           className="new-sud"
@@ -302,6 +253,8 @@ export default function App() {
           <Verlauf sude={sude} tanks={tanks} />
         </div>
       )}
+
+      <Navigation view={view} onView={setView} />
 
       {dialogOpen && (
         <NewSudDialog

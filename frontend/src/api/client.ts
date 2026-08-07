@@ -97,6 +97,7 @@ export const api = {
     }),
   deleteLocation: (locationId: string) =>
     request<void>(`/api/locations/${locationId}`, { method: "DELETE" }),
+  ich: () => request<{ benutzer: string }>("/api/ich"),
   listSude: () => request<Sud[]>("/api/sude"),
   listVerlauf: (sudId?: string) =>
     request<Verlaufseintrag[]>(

@@ -32,40 +32,8 @@ body {
 .app-header h1 {
   font-size: 16px;
   margin: 0;
-  flex: 0 0 auto;
-}
-
-/* Sechs Tabs passen auf einem Handy nicht in eine Zeile — waagrecht
-   scrollen statt abschneiden. */
-.tabs {
-  display: flex;
-  gap: 4px;
   flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.tabs button {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  font-size: 14px;
-  padding: 10px 14px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.tabs button.active {
-  background: #2a6;
-  color: #fff;
-  font-weight: 600;
 }
 
 .new-sud {
@@ -812,4 +780,63 @@ div.tank-row {
   letter-spacing: 0.04em;
   color: #666;
   margin: 16px 0 6px;
+}
+
+/* Navigation unten am Daumen statt oben in der Ecke (Stefan,
+   2026-08-07). Sie ist Teil der Flex-Spalte, schwebt also nicht über
+   dem Inhalt — nur der Home-Balken des iPhones braucht Abstand. */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid #ddd;
+  background: #fff;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav button {
+  flex: 1;
+  min-height: 52px;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+}
+
+.bottom-nav button.active {
+  color: #2a6;
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 #2a6;
+}
+
+.profil {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+}
+
+.dialog button.menue-eintrag {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.dialog button.menue-eintrag.aktiv {
+  border-color: #2a6;
+  color: #2a6;
+  font-weight: 600;
 }
