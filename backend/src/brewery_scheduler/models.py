@@ -332,3 +332,40 @@ class TankOccupancy(Base):
 
     sud: Mapped[Sud] = relationship(back_populates="occupancies")
     tank: Mapped[Tank] = relationship(lazy="joined")
+
+
+class AuditAction(str, enum.Enum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+
+
+class AuditLog(Base):
+    """Wer hat wann was geändert (Stefan, 2026-08-07): Änderungen an
+    Suden, Belegungen, Abgängen, Tanks und Rezepten.
+
+    Die Zeilen entstehen automatisch beim Flush (`audit.py`) — kein
+    Endpunkt schreibt hier von Hand, damit keiner es vergessen kann.
+    Seed und Import laufen ohne angemeldeten Benutzer und erzeugen
+    deshalb bewusst keine Einträge.
+    """
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    actor: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[AuditAction] = mapped_column(_enum(AuditAction, 16), nullable=False)
+    entity: Mapped[str] = mapped_column(String(64), nullable=False)
+    entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+
+    # Auch Änderungen an Belegungen und Abgängen hängen sich am Sud ein,
+    # damit dessen Verlauf mit einer Abfrage vollständig ist. Bewusst ohne
+    # Fremdschlüssel: ein gelöschter Sud würde sonst seinen eigenen
+    # Verlauf mitnehmen — gerade der ist dann interessant.
+    sud_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+    changes: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)

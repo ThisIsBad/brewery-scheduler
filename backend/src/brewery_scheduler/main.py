@@ -1,9 +1,13 @@
+import logging
+import time
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from .api import locations, recipes, sude, tanks
+from .api import locations, recipes, sude, tanks, verlauf
 from .config import settings
+from .db import angemeldeter_benutzer
 
 app = FastAPI(title=settings.api_title, version="0.1.0")
 
@@ -11,6 +15,30 @@ app.include_router(tanks.router)
 app.include_router(locations.router)
 app.include_router(recipes.router)
 app.include_router(sude.router)
+app.include_router(verlauf.router)
+
+log = logging.getLogger("brewery")
+
+NUR_LESEND = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+@app.middleware("http")
+async def zugriffe_protokollieren(request: Request, call_next):
+    """Technisches Gegenstück zum fachlichen Protokoll: eine Zeile je
+    ändernder Anfrage und je Fehler, mit Benutzer und Dauer. Lesende
+    Anfragen bleiben still, sonst ersäuft das Log im Abrufrauschen."""
+    beginn = time.perf_counter()
+    response = await call_next(request)
+    if request.method not in NUR_LESEND or response.status_code >= 400:
+        log.info(
+            "%s %s %s -> %s (%.0f ms)",
+            angemeldeter_benutzer(request),
+            request.method,
+            request.url.path,
+            response.status_code,
+            (time.perf_counter() - beginn) * 1000,
+        )
+    return response
 
 
 # The GiST EXCLUDE constraint is the Phase-1 barrier against double-booking
